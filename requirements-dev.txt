@@ -1,0 +1,14 @@
+-r requirements.txt
+
+coveralls
+distro
+isort
+pep517
+pip
+pip-chill
+pytest # Installed as dependency for pytest-mock
+pytest-cov
+pytest-mock
+pytoml
+ruff
+setuptools

@@ -1,0 +1,3 @@
+[bandit]
+exclude = test,docs,.github,
+skips = B301,B607,B605
