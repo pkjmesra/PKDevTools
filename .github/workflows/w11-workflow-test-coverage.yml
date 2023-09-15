@@ -57,7 +57,7 @@ jobs:
               sudo find /tmp/ -name "*.py" -exec rm -rf {} \;
               find . -name ".coverage.*" -exec rm -rf {} \;
             DEP_BUILD: |
-              cd /home/runner/work/pktools/pktools/
+              cd /home/runner/work/PKTools/pktools/
               python -m pip install --upgrade pip
               pip3 install -r requirements.txt
               pip3 install -r requirements-dev.txt

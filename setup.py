@@ -83,7 +83,10 @@ setup(
     + "/"
     + __PACKAGENAME__,  # use the URL to the github repo
     zip_safe=False,
-    entry_points="",
+    entry_points="""
+	[console_scripts]
+	pktools=pktools.classes.githubutilities:githubutilities
+	""",
     download_url="https://github.com/"
     + __USERNAME__
     + "/"

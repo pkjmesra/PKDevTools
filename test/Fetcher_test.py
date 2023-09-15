@@ -22,12 +22,10 @@
     SOFTWARE.
 
 """
-from unittest import mock
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from requests.exceptions import ConnectTimeout, ReadTimeout
-from urllib3.exceptions import ReadTimeoutError
 
 from pktools.classes.Fetcher import fetcher
 

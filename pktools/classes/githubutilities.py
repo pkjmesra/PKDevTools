@@ -72,12 +72,15 @@ def dget_latest_release_url(owner,repo):
         aset_output("DOWNLOAD_URL",url)
     return url
 
+def githubutilities():
+    if args.getreleaseurl:
+        print(dget_latest_release_url(args.setoutput.split(",")[0],args.setoutput.split(",")[1]))
+    if args.setoutput is not None:
+        aset_output(args.setoutput.split(",")[0],args.setoutput.split(",")[1])
+    if args.setmultilineoutput is not None:
+        bset_multiline_output(args.setmultilineoutput.split(",")[0],args.setmultilineoutput.split(",")[1])
+    if args.fetchurl is not None:
+        cfetchURL(args.fetchurl.split(",")[0],args.fetchurl.split(",")[1])
 
-if args.getreleaseurl:
-    print(dget_latest_release_url(args.setoutput.split(",")[0],args.setoutput.split(",")[1]))
-if args.setoutput is not None:
-    aset_output(args.setoutput.split(",")[0],args.setoutput.split(",")[1])
-if args.setmultilineoutput is not None:
-    bset_multiline_output(args.setmultilineoutput.split(",")[0],args.setmultilineoutput.split(",")[1])
-if args.fetchurl is not None:
-    cfetchURL(args.fetchurl.split(",")[0],args.fetchurl.split(",")[1])
+if __name__ == "__main__":
+    githubutilities()
