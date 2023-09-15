@@ -22,4 +22,3 @@
     SOFTWARE.
 
 """
-VERSION='0.11'

@@ -38,7 +38,7 @@ def mock_fetcher():
 def test_run_workflow_positive(mock_fetcher):
     mock_fetcher.return_value.status_code = 204
     _,_,_,ghp_token = get_secrets()
-    result = run_workflow("command", "user","options")
+    result = run_workflow("command", "user","options","w13-workflow-backtest_generic.yml","main","pkjmesra","PKTools")
     assert result == mock_fetcher.return_value
     mock_fetcher.assert_called_once_with(
         "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
@@ -53,7 +53,7 @@ def test_run_workflow_positive(mock_fetcher):
 def test_run_workflow_negative(mock_fetcher):
     mock_fetcher.return_value.status_code = 400
     _,_,_,ghp_token = get_secrets()
-    result = run_workflow("command", "user","options")
+    result = run_workflow("command", "user","options","w13-workflow-backtest_generic.yml","main","pkjmesra","PKTools")
     assert result == mock_fetcher.return_value
     mock_fetcher.assert_called_once_with(
         "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
@@ -68,7 +68,7 @@ def test_run_workflow_negative(mock_fetcher):
 def test_run_workflow_edge(mock_fetcher):
     mock_fetcher.return_value.status_code = 200
     _,_,_,ghp_token = get_secrets()
-    result = run_workflow("command", "user","options")
+    result = run_workflow("command", "user","options","w13-workflow-backtest_generic.yml","main","pkjmesra","PKTools")
     assert result == mock_fetcher.return_value
     mock_fetcher.assert_called_once_with(
         "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
@@ -84,7 +84,7 @@ def test_run_workflow_error(mock_fetcher):
     _,_,_,ghp_token = get_secrets()
     mock_fetcher.side_effect = Exception("Error")
     with pytest.raises(Exception):
-        result = run_workflow("command", "user","options")
+        result = run_workflow("command", "user","options","w13-workflow-backtest_generic.yml","main","pkjmesra","PKTools")
         assert result == mock_fetcher.side_effect
         mock_fetcher.assert_called_once_with(
             "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",

@@ -154,4 +154,4 @@ class fetcher:
             self.deleteFileWithPattern("*_cache.sqlite")
             requests_cache.install_cache('PKDevTools_cache')
         except Exception as e:
-            self.default_logger.debug(e, exc_info=True)
+            default_logger().debug(e, exc_info=True)

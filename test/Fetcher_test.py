@@ -126,10 +126,10 @@ def test_postURL_retry_max_retries(tools_instance):
     with patch("requests_cache.CachedSession.post", side_effect=[ConnectTimeout]):
         with patch("requests.post") as mock_post_later:
             tools_instance.postURL(url, data=data, headers=headers)
-            mock_post_later.assert_called_with(url, proxies=None, data=data, headers=headers, timeout=4)
+            mock_post_later.assert_called_with(url, proxies=None, data=data, headers=headers, timeout=10)
 
 
-def test_postURL_retry_enable_cache_restart(tools_instance, configManager):
+def test_postURL_retry_enable_cache_restart(tools_instance):
     url = "https://example.com"
     data = {"key": "value"}
     headers = {"Content-Type": "application/json"}
