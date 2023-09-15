@@ -36,10 +36,10 @@ from distutils.core import setup
 
 import setuptools  # noqa
 
-from pktools.classes import VERSION
+from PKDevTools.classes import VERSION
 
 __USERNAME__ = "pkjmesra"
-__PACKAGENAME__ = "pktools"
+__PACKAGENAME__ = "PKDevTools"
 with open("README.md", "r") as fh:
     long_description = fh.read()
 with open("requirements.txt", "r") as fh:
@@ -85,7 +85,7 @@ setup(
     zip_safe=False,
     entry_points="""
 	[console_scripts]
-	pktools=pktools.classes.githubutilities:githubutilities
+	PKDevTools=PKDevTools.classes.githubutilities:githubutilities
 	""",
     download_url="https://github.com/"
     + __USERNAME__

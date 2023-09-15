@@ -27,7 +27,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from requests.exceptions import ConnectTimeout, ReadTimeout
 
-from pktools.classes.Fetcher import fetcher
+from PKDevTools.classes.Fetcher import fetcher
 
 @pytest.fixture
 def tools_instance():
@@ -137,6 +137,6 @@ def test_postURL_retry_enable_cache_restart(tools_instance, configManager):
     response.status_code = 200
     with patch("requests_cache.CachedSession.post", side_effect=[ConnectTimeout, response]):
         with patch("requests_cache.is_installed", return_value=False):
-            with patch("pktools.classes.Fetcher.fetcher.restartRequestsCache") as mock_restart_cache:
+            with patch("PKDevTools.classes.Fetcher.fetcher.restartRequestsCache") as mock_restart_cache:
                 tools_instance.postURL(url, data=data, headers=headers, trial=2)
                 mock_restart_cache.assert_called_once()

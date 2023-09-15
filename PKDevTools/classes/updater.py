@@ -46,7 +46,7 @@ argParser.add_argument(
 )
 args = argParser.parse_args()
 
-# args.path='pktools/release.md'
+# args.path='PKDevTools/release.md'
 # args.find='/0.4/'
 # args.replace='/0.41/'
 # args.type='link'

@@ -117,7 +117,7 @@ jobs:
         GITHUB_REF=${GITHUB_REF#refs/tags/}
         echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-        CURRENT_VERSION=`grep -o "'.*'" pktools/classes/__init__.py | sed "s/'//g"`
+        CURRENT_VERSION=`grep -o "'.*'" PKDevTools/classes/__init__.py | sed "s/'//g"`
         VERSION_ARR=(${CURRENT_VERSION//./ })
         MAJOR_MINOR=${VERSION_ARR[0]}.${VERSION_ARR[1]}
         TODAY=`date +%Y%m%d`
@@ -128,8 +128,8 @@ jobs:
         else
           THIS_VERSION="${{ inputs.version }}"
         fi
-        rm -rf pktools/classes/__init__.py
-        echo VERSION=\'`echo ${THIS_VERSION}`\' >> pktools/classes/__init__.py
+        rm -rf PKDevTools/classes/__init__.py
+        echo VERSION=\'`echo ${THIS_VERSION}`\' >> PKDevTools/classes/__init__.py
         echo "##[set-output name=THIS_VERSION;]$(echo ${THIS_VERSION})"
         echo "##[set-output name=CURRENT_VERSION;]$(echo ${CURRENT_VERSION})"
        
@@ -143,8 +143,8 @@ jobs:
       run: |
         rmdir /s /q build
         rmdir /s /q dist
-        # del /s /q pktools/classes/__init__.py
-        # echo VERSION='${{ steps.vars.outputs.THIS_VERSION }}' >> pktools/classes/__init__.py
+        # del /s /q PKDevTools/classes/__init__.py
+        # echo VERSION='${{ steps.vars.outputs.THIS_VERSION }}' >> PKDevTools/classes/__init__.py
         python setup.py clean build sdist bdist_wheel
         twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*
     - name: Publish distribution 📦 to PyPI
@@ -158,8 +158,8 @@ jobs:
       run: |
         rmdir /s /q build
         rmdir /s /q dist
-        # del /s /q pktools/classes/__init__.py
-        # echo VERSION='${{ steps.vars.outputs.THIS_VERSION }}' >> pktools/classes/__init__.py
+        # del /s /q PKDevTools/classes/__init__.py
+        # echo VERSION='${{ steps.vars.outputs.THIS_VERSION }}' >> PKDevTools/classes/__init__.py
         python setup.py clean build sdist bdist_wheel
         twine upload --verbose dist/*
     - name: Archive artifacts
@@ -168,20 +168,3 @@ jobs:
         name: wheel-egg-code-tar-${{ steps.vars.outputs.THIS_VERSION }}-${{ steps.vars.outputs.branch }}-${{ steps.vars.outputs.sha_short }}
         path: |
           dist
-    - name: Configure .env.dev file
-      shell: bash
-      env:
-        CHAT_ID_DEV : ${{secrets.CHAT_ID_DEV}}
-        TOKEN_DEV : ${{secrets.TOKEN_DEV}}
-        CHAT_IDADMIN_DEV : ${{secrets.CHAT_IDADMIN_DEV}}
-      run: |
-        python -c "import os; file = open('pktools/.env.dev', 'w'); file.write('CHAT_ID='+os.environ['CHAT_ID_DEV']+'\n'); file.write('TOKEN='+os.environ['TOKEN_DEV']+'\n'); file.write('chat_idADMIN='+os.environ['CHAT_IDADMIN_DEV']+'\n'); file.close()"
-      
-    - name: Send notification about new release
-      shell: bash
-      env:
-        RELEASE_VERSION : ${{ steps.vars.outputs.THIS_VERSION }}
-      run: |
-        pip install .
-        cd pktools
-        python -c "import os; from pktools.classes.Telegram import send_message; send_message('Dear Channel!\nA new version of pktools (v' + os.environ['RELEASE_VERSION'] + ') just got released. Check it out at \n\nhttps://github.com/pkjmesra/pktools/releases \n\n or \n\nhttps://pypi.org/project/pktools/')"

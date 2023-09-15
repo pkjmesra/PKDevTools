@@ -138,7 +138,7 @@ class filterlogger:
 
     def addHandlers(self, log_file_path=None, levelname=logging.NOTSET):
         if log_file_path is None:
-            log_file_path = os.path.join(os.getcwd(), "pktools-logs.txt")
+            log_file_path = os.path.join(os.getcwd(), "PKDevTools-logs.txt")
         trace_formatter = logging.Formatter(
             fmt="\n%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d\n%(message)s\n"
         )
@@ -230,7 +230,7 @@ def setup_custom_logger(
     name,
     levelname=logging.DEBUG,
     trace=False,
-    log_file_path="pktools-logs.txt",
+    log_file_path="PKDevTools-logs.txt",
     filter=None,
 ):
     # console_info_formatter = logging.Formatter(fmt='\n%(levelname)s - %(filename)s(%(funcName)s - %(lineno)d)\n%(message)s\n')
@@ -249,7 +249,7 @@ def setup_custom_logger(
         global __DEBUG__
         __DEBUG__ = True
     if trace:
-        tracelogger = logging.getLogger("pktools_file_logger")
+        tracelogger = logging.getLogger("PKDevTools_file_logger")
         tracelogger.setLevel(levelname)
         tracelogger.addHandler(consolehandler)
         if levelname == logging.DEBUG:
@@ -263,11 +263,11 @@ def setup_custom_logger(
 
 
 def default_logger():
-    return filterlogger.getlogger(logging.getLogger("pktools"))
+    return filterlogger.getlogger(logging.getLogger("PKDevTools"))
 
 
 def file_logger():
-    return filterlogger.getlogger(logging.getLogger("pktools_file_logger"))
+    return filterlogger.getlogger(logging.getLogger("PKDevTools_file_logger"))
 
 
 def trace_log(line):

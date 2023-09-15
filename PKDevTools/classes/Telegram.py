@@ -35,7 +35,7 @@ import requests
 from dotenv import dotenv_values
 from telegram.constants import ParseMode
 
-from pktools.classes.log import default_logger
+from PKDevTools.classes.log import default_logger
 
 # from io import BytesIO
 # from PIL import Image
@@ -75,7 +75,7 @@ def initTelegram():
         except Exception as e:
             default_logger().debug(e, exc_info=True)
             # print(
-            #     "[+] Telegram token and secrets are not configured!\n[+] See https://github.com/pkjmesra/pktools#creating-your-own-telegram-channel-to-receive-your-own-alerts"
+            #     "[+] Telegram token and secrets are not configured!\n[+] See https://github.com/pkjmesra/PKDevTools#creating-your-own-telegram-channel-to-receive-your-own-alerts"
             # )
             pass
         Channel_Id = "-" + str(Channel_Id)

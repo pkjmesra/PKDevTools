@@ -22,7 +22,7 @@
 #     SOFTWARE.
 
 # """
-name: 1. pktools Build - New Release
+name: 1. PKDevTools Build - New Release
 
 on:
   # push:
@@ -106,13 +106,13 @@ jobs:
           GITHUB_REF=${GITHUB_REF#refs/tags/}
           echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          CURRENT_VERSION=`grep -o "'.*'" pktools/classes/__init__.py | sed "s/'//g"`
+          CURRENT_VERSION=`grep -o "'.*'" PKDevTools/classes/__init__.py | sed "s/'//g"`
           VERSION_ARR=(${CURRENT_VERSION//./ })
           MAJOR_MINOR=${VERSION_ARR[0]}.${VERSION_ARR[1]}
           TODAY=`date +%Y%m%d`
           THIS_VERSION=${MAJOR_MINOR}.${TODAY}.${{github.run_number}}
-          rm -rf pktools/classes/__init__.py
-          echo VERSION=\'`echo ${THIS_VERSION}`\' >> pktools/classes/__init__.py
+          rm -rf PKDevTools/classes/__init__.py
+          echo VERSION=\'`echo ${THIS_VERSION}`\' >> PKDevTools/classes/__init__.py
           echo "##[set-output name=THIS_VERSION;]$(echo ${THIS_VERSION})"
           echo "##[set-output name=CURRENT_VERSION;]$(echo ${CURRENT_VERSION})"
 
@@ -124,11 +124,11 @@ jobs:
             pip3 install mistletoe
             echo ${{ steps.vars.outputs.CURRENT_VERSION }}
             echo ${{ steps.vars.outputs.THIS_VERSION }}
-            python pktools/classes/updater.py -p pktools/release.md -f /${{ steps.vars.outputs.CURRENT_VERSION }}/ -r /${{ steps.vars.outputs.THIS_VERSION }}/ -t link
-            python pktools/classes/updater.py -p pktools/release.md -f [v${{ steps.vars.outputs.CURRENT_VERSION }}] -r [v${{ steps.vars.outputs.THIS_VERSION }}] -t text
-            python pktools/classes/updater.py -p README.md -f /${{ steps.vars.outputs.CURRENT_VERSION }}/ -r /${{ steps.vars.outputs.THIS_VERSION }}/ -t link
-            git add pktools/classes/__init__.py --force
-            git add pktools/release.md --force
+            python PKDevTools/classes/updater.py -p PKDevTools/release.md -f /${{ steps.vars.outputs.CURRENT_VERSION }}/ -r /${{ steps.vars.outputs.THIS_VERSION }}/ -t link
+            python PKDevTools/classes/updater.py -p PKDevTools/release.md -f [v${{ steps.vars.outputs.CURRENT_VERSION }}] -r [v${{ steps.vars.outputs.THIS_VERSION }}] -t text
+            python PKDevTools/classes/updater.py -p README.md -f /${{ steps.vars.outputs.CURRENT_VERSION }}/ -r /${{ steps.vars.outputs.THIS_VERSION }}/ -t link
+            git add PKDevTools/classes/__init__.py --force
+            git add PKDevTools/release.md --force
             git add README.md --force
             git commit -m "GitHub Action Workflow - Updating version to latest"
             git tag ${{ steps.vars.outputs.THIS_VERSION }} -a -f -m 'Release v${{ steps.vars.outputs.THIS_VERSION }}'
@@ -150,8 +150,8 @@ jobs:
         shell: bash
         run: |
           pip install mistletoe
-          python pktools/classes/updater.py -p pktools/release.md -f /${{ steps.vars.outputs.CURRENT_VERSION }}/ -r /${{ steps.vars.outputs.THIS_VERSION }}/ -t link
-          r=$(cat pktools/release.md)
+          python PKDevTools/classes/updater.py -p PKDevTools/release.md -f /${{ steps.vars.outputs.CURRENT_VERSION }}/ -r /${{ steps.vars.outputs.THIS_VERSION }}/ -t link
+          r=$(cat PKDevTools/release.md)
           r="${r//'%'/'%25'}"
           r="${r//$'\n'/'%0A'}"
           r="${r//$'\r'/'%0D'}"
@@ -164,7 +164,7 @@ jobs:
         run: ${{ matrix.CMD_BUILD }}
 
   Call-python-publish-workflow:
-      uses: pkjmesra/pktools/.github/workflows/w2-workflow-python-publish.yml@main
+      uses: pkjmesra/PKTools/.github/workflows/w2-workflow-python-publish.yml@main
       needs: [Build]
       with:
         branch-name: ${{ needs.Build.outputs.tag }}

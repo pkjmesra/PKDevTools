@@ -32,12 +32,12 @@ from requests.exceptions import ConnectTimeout, ReadTimeout
 from requests_cache import CachedSession
 from urllib3.exceptions import ReadTimeoutError
 
-from pktools.classes.ColorText import colorText
-from pktools.classes.log import default_logger
+from PKDevTools.classes.ColorText import colorText
+from PKDevTools.classes.log import default_logger
 
 requests.packages.urllib3.util.connection.HAS_IPV6 = False
 session = CachedSession(
-    "pktools_cache",
+    "PKDevTools_cache",
     expire_after=timedelta(hours=6),
     stale_if_error=True,
 )
@@ -152,6 +152,6 @@ class fetcher:
                 requests_cache.clear()
                 requests_cache.uninstall_cache()
             self.deleteFileWithPattern("*_cache.sqlite")
-            requests_cache.install_cache('pktools_cache')
+            requests_cache.install_cache('PKDevTools_cache')
         except Exception as e:
             self.default_logger.debug(e, exc_info=True)

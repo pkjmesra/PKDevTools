@@ -7,13 +7,13 @@ When contributing to this repository, please first discuss the change you wish t
 * It is a good practice to always keep your fork up-to-date before starting development of features/fixes to avoid merge conflicts.
 * Update your fork using following code snippet.
 ```
-# Add a new remote repo called as pktools_upstream
-git remote add pktools_upstream https://github.com/pkjmesra/pktools.git
+# Add a new remote repo called as PKDevTools_upstream
+git remote add PKDevTools_upstream https://github.com/pkjmesra/PKDevTools.git
 
 # Sync your fork before starting work
-git fetch pktools_upstream
+git fetch PKDevTools_upstream
 git checkout <BRANCH_YOU_ARE_WORKING_ON>
-git merge pktools_upstream/<BRANCH_FROM_THIS_REPO_YOU_WANT_TO_MERGE_IN_YOUR_BRANCH>
+git merge PKDevTools_upstream/<BRANCH_FROM_THIS_REPO_YOU_WANT_TO_MERGE_IN_YOUR_BRANCH>
 ```
 
 

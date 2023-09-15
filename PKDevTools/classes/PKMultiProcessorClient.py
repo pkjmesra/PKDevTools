@@ -29,8 +29,8 @@ import os
 import sys
 from queue import Empty
 
-# usage: pktoolscli.exe [-h] [-a ANSWERDEFAULT] [-c CRONINTERVAL] [-d] [-e] [-o OPTIONS] [-p] [-t] [-l] [-v]
-# pktoolscli.exe: error: unrecognized arguments: --multiprocessing-fork parent_pid=4620 pipe_handle=708
+# usage: PKDevToolscli.exe [-h] [-a ANSWERDEFAULT] [-c CRONINTERVAL] [-d] [-e] [-o OPTIONS] [-p] [-t] [-l] [-v]
+# PKDevToolscli.exe: error: unrecognized arguments: --multiprocessing-fork parent_pid=4620 pipe_handle=708
 # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-Multiprocessing
 # Module multiprocessing is organized differently in Python 3.4+
 try:

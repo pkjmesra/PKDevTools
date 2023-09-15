@@ -26,9 +26,9 @@ from unittest.mock import patch
 
 import pytest
 
-from pktools.classes.Fetcher import fetcher
-from pktools.classes.WorkflowManager import run_workflow
-from pktools.classes.Telegram import get_secrets
+from PKDevTools.classes.Fetcher import fetcher
+from PKDevTools.classes.WorkflowManager import run_workflow
+from PKDevTools.classes.Telegram import get_secrets
 
 @pytest.fixture
 def mock_fetcher():
@@ -41,7 +41,7 @@ def test_run_workflow_positive(mock_fetcher):
     result = run_workflow("command", "user","options")
     assert result == mock_fetcher.return_value
     mock_fetcher.assert_called_once_with(
-        "https://api.github.com/repos/pkjmesra/pktools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
+        "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
         data='{"ref":"main","inputs":{"user":"user","params":"options","name":"command"}}',
         headers={
             "Accept": "application/vnd.github+json",
@@ -56,7 +56,7 @@ def test_run_workflow_negative(mock_fetcher):
     result = run_workflow("command", "user","options")
     assert result == mock_fetcher.return_value
     mock_fetcher.assert_called_once_with(
-        "https://api.github.com/repos/pkjmesra/pktools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
+        "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
         data='{"ref":"main","inputs":{"user":"user","params":"options","name":"command"}}',
         headers={
             "Accept": "application/vnd.github+json",
@@ -71,7 +71,7 @@ def test_run_workflow_edge(mock_fetcher):
     result = run_workflow("command", "user","options")
     assert result == mock_fetcher.return_value
     mock_fetcher.assert_called_once_with(
-        "https://api.github.com/repos/pkjmesra/pktools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
+        "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
         data='{"ref":"main","inputs":{"user":"user","params":"options","name":"command"}}',
         headers={
             "Accept": "application/vnd.github+json",
@@ -87,7 +87,7 @@ def test_run_workflow_error(mock_fetcher):
         result = run_workflow("command", "user","options")
         assert result == mock_fetcher.side_effect
         mock_fetcher.assert_called_once_with(
-            "https://api.github.com/repos/pkjmesra/pktools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
+            "https://api.github.com/repos/pkjmesra/PKTools/actions/workflows/w13-workflow-backtest_generic.yml/dispatches",
             data='{"ref":"main","inputs":{"user":"user","params":"options","name":"command"}}',
             headers={
                 "Accept": "application/vnd.github+json",

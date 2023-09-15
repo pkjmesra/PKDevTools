@@ -23,7 +23,7 @@
 
 """
 #
-# pktools documentation build configuration file, created by
+# PKDevTools documentation build configuration file, created by
 # sphinx-quickstart on Sun Jul 16 00:56:32 2023.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -45,7 +45,7 @@ from datetime import date
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(".."))
 
-from pktools.classes import VERSION  # noqa: E402
+from PKDevTools.classes import VERSION  # noqa: E402
 
 # -- General configuration -----------------------------------------------------
 
@@ -77,7 +77,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "pktools"
+project = "PKDevTools"
 copyright = "%s, pkjmesra" % date.today().year
 
 # The version info for the project you're documenting, acts as replacement for
@@ -201,7 +201,7 @@ html_theme = "sphinx_rtd_theme"
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "pktoolsdoc"
+htmlhelp_basename = "PKDevToolsdoc"
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -218,7 +218,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "pktools.tex", "pktools Documentation", "pkjmesra", "manual"),
+    ("index", "PKDevTools.tex", "PKDevTools Documentation", "pkjmesra", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -246,7 +246,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "pktools", "pktools Documentation", ["pkjmesra"], 1)]
+man_pages = [("index", "PKDevTools", "PKDevTools Documentation", ["pkjmesra"], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -260,10 +260,10 @@ man_pages = [("index", "pktools", "pktools Documentation", ["pkjmesra"], 1)]
 texinfo_documents = [
     (
         "index",
-        "pktools",
-        "pktools Documentation",
+        "PKDevTools",
+        "PKDevTools Documentation",
         "pkjmesra",
-        "pktools",
+        "PKDevTools",
         "Google Spreadsheets Python API.",
         "Miscellaneous",
     ),
@@ -282,7 +282,7 @@ texinfo_documents = [
 # -- Options for Epub output ---------------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = "pktools"
+epub_title = "PKDevTools"
 epub_author = "pkjmesra"
 epub_publisher = "pkjmesra"
 epub_copyright = "%s, pkjmesra" % date.today().year

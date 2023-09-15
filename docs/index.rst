@@ -1,13 +1,13 @@
-What is pktools
+What is PKDevTools
 ------------------
- .. image:: https://static.pepy.tech/personalized-badge/pktools?period=total&units=international_system&left_color=black&right_color=brightgreen&left_text=PyPi%20Downloads
+ .. image:: https://static.pepy.tech/personalized-badge/PKDevTools?period=total&units=international_system&left_color=black&right_color=brightgreen&left_text=PyPi%20Downloads
          :width: 15%
          :alt: PyPi Downloads
 
 A Python-based stock screener for NSE, India.
 
-`pktools` is an advanced stock screener to find potential breakout stocks from NSE and tell it's possible breakout values. It also helps to find the stocks which are consolidating and may breakout, or the particular chart patterns that you're looking specifically to make your decisions.
-pktools is totally customizable and it can screen stocks with the settings that you have provided.
+`PKDevTools` is an advanced stock screener to find potential breakout stocks from NSE and tell it's possible breakout values. It also helps to find the stocks which are consolidating and may breakout, or the particular chart patterns that you're looking specifically to make your decisions.
+PKDevTools is totally customizable and it can screen stocks with the settings that you have provided.
 
 Alerts on Telegram Channel
 --------------------------
@@ -20,32 +20,32 @@ You can get daily scan results/alerts at scheduled times by subscribing to the f
    * - QR Code
      - Purpose
      - Description/link
-   * - .. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/Telegram_Channel_Prod.jpg
+   * - .. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/Telegram_Channel_Prod.jpg
          :width: 100%
          :alt: Telegram Channel
      - Alerts Channel
-     - https://t.me/pktools > You wil receive all the major alerts on this 
+     - https://t.me/PKDevTools > You wil receive all the major alerts on this 
        telegram channel. These alerts are sent for all major strategy scans daily 
        around 9:30am-10:15am and then around 4pm. You will also receive the next 
        day's market predictions.
      
-   * - .. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/pktoolss_Group.jpg
+   * - .. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/PKDevToolss_Group.jpg
          :width: 100%
          :alt: Telegram Group
      - Discussions
-     - https://t.me/pktoolss > For any discussion related to pktools, you may 
+     - https://t.me/PKDevToolss > For any discussion related to PKDevTools, you may 
        like to join this related Telegram group
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/telegram.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/telegram.png
          :width: 100%
          :alt: Telegram Channel
 
 Receiving On-Demand Scan results
 --------------------------------
 
-You can now run the ``pktoolsbot`` on your local machine or if it's running on the GitHub server under a GitHub Actions workflow, you can use the ``pktools Bot`` (@nse_pktools_bot on Telegram) to get on-demand scan results.
+You can now run the ``PKDevToolsbot`` on your local machine or if it's running on the GitHub server under a GitHub Actions workflow, you can use the ``PKDevTools Bot`` (@nse_PKDevTools_bot on Telegram) to get on-demand scan results.
 
- .. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/bot.gif
+ .. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/bot.gif
          :width: 100%
          :alt: Telegram bot
 
@@ -57,27 +57,27 @@ How to use on your own local Windows/Linux/Macbook laptop?
 ----------------------------------------------------------
 Installing the latest version from PyPi.
 ----------------------------------------
-* Go ahead and install using ``pip install pktools``
+* Go ahead and install using ``pip install PKDevTools``
 * This should install all of the major dependencies, except maybe, TA-Lib. 
 * This app can still run without TA-Lib, but if you need to install TA-Lib for technical indicators (which otherwise is used from ``pandas_ta`` in the absence of TA-Lib), you can do this: Head to ``.github/dependencies/`` under this repo. Download the respective TA-Lib file/whl file and install either from the .whl file or from source. Check out any of the workflow files for steps to install TA-Lib.
-* Now launch your favorite command line CLI and issue ``pktools``. This will launch the pktools executable.
+* Now launch your favorite command line CLI and issue ``PKDevTools``. This will launch the PKDevTools executable.
 
 Using docker, running within docker container
 ----------------------------------------------
 * Download and install docker desktop: https://docs.docker.com/get-docker/
 * After installation, launch/run docker desktop and if it asks, login using your docker credentials.
-* Launch any command line and type ``docker pull pkjmesra/pktools-debian:latest``. Then type ``docker run pkjmesra/pktools-debian:latest python3 pktools -a Y -o X:12:10 -e`` ow whatever -o options you'd like executed.
+* Launch any command line and type ``docker pull pkjmesra/PKDevTools-debian:latest``. Then type ``docker run pkjmesra/PKDevTools-debian:latest python3 PKDevTools -a Y -o X:12:10 -e`` ow whatever -o options you'd like executed.
 * Pass whatever option you'd like to pass in ``-o``. Look at the menu options above. For, example, ``12`` is ``Scanners.``. ``10`` ``Closing at least 2% up since last 3 days`` etc. Wait while it runs and produces the output for you.
 
 Building from source repo
 -------------------------
 * Install python 3.9 for your OS/CPU. Download the installer from https://www.python.org/downloads/release/python-3913/#Files
-* Just clone the repo with ``git clone https://github.com/pkjmesra/pktools.git``
-* ``cd pktools``
+* Just clone the repo with ``git clone https://github.com/pkjmesra/PKDevTools.git``
+* ``cd PKDevTools``
 * ``pip install -r requirements.txt`` .
 * (Optional) If you would like to have technical indicators evaluated using TA-Lib, go ahead and install TA-Lib as well. ``pip3 install ta-lib``
-* ``cd pktools``
-* Finally, from within the ``pktools`` directory, run ``python pktoolscli.py``. You are all set.
+* ``cd PKDevTools``
+* Finally, from within the ``PKDevTools`` directory, run ``python PKDevToolscli.py``. You are all set.
 
 
 Usage
@@ -85,14 +85,14 @@ Usage
 Running the executables
 -----------------------
 * Download the suitable file according to your OS.
-* Linux & Mac users should make sure that the ``pktoolscli.bin or pktoolscli.run`` is having ``execute`` permission.
+* Linux & Mac users should make sure that the ``PKDevToolscli.bin or PKDevToolscli.run`` is having ``execute`` permission.
 * :guilabel:`Run` the file.
 
 Configuration
 -------------
 * :guilabel:`Configure` the parameters as per your requirement using ``Option > E``.
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/config.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/config.png
          :width: 100%
          :alt: Configuration
 
@@ -100,26 +100,26 @@ Scanners
 --------
 * :guilabel:`Scanner Menus` the scanner menus for each level/sub-level
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/menu.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/menu.png
          :width: 100%
          :alt: MenuLevel1
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/menu_level2.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/menu_level2.png
          :width: 100%
          :alt: MenuLevel2
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/menu_level3.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/menu_level3.png
          :width: 100%
          :alt: MenuLevel3
 
 
 * Following are the screenshots of screening and output results.
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/screening.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/screening.png
          :width: 100%
          :alt: Screening
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/results.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/results.png
          :width: 100%
          :alt: Screening results
 
@@ -129,7 +129,7 @@ Backtests
 ---------
 You can now use the *Backtests* menu to backtest any of the selected strategies.
 
-.. image:: https://raw.githubusercontent.com/pkjmesra/pktools/main/screenshots/backtest.png
+.. image:: https://raw.githubusercontent.com/pkjmesra/PKTools/main/screenshots/backtest.png
          :width: 100%
          :alt: Backtests
 
@@ -140,12 +140,12 @@ Scanning as a scheduled job once or at regular intervals
 Running it once with pre-defined inputs
 ---------------------------------------
 
-You can also run it as a one time job in any scheduler with pre-defined options. For example ``./pktoolscli.py -a Y -o X:12:10 -e`` (or ``pktoolscli.exe -a Y -o X:12:10 -e`` if you're executing with the exe) will run the scanner for all Nifty stocks and find all stocks matching CCI filter, save the results in xlsx file and exit. ``./pktoolscli.py -a Y -o X:12:9:2.5 -e`` will run the scanner (menu option ``X``) for all Nifty stocks (menu option ``12``) to find volume gainers (menu option ``9``) with at least the volume multiplier of 2.5 (input variable ``2.5``), save the results in xlsx file and exit (menu option ``-e``). Passing in the ``-p`` option for example ``pktoolscli.py -a Y -p -o X:12:6:1 -e`` will also silence all command line prints/outputs and just run silently for the given options, save results and exit. Try and see all options with ``./pktoolscli.py -h``.
+You can also run it as a one time job in any scheduler with pre-defined options. For example ``./PKDevToolscli.py -a Y -o X:12:10 -e`` (or ``PKDevToolscli.exe -a Y -o X:12:10 -e`` if you're executing with the exe) will run the scanner for all Nifty stocks and find all stocks matching CCI filter, save the results in xlsx file and exit. ``./PKDevToolscli.py -a Y -o X:12:9:2.5 -e`` will run the scanner (menu option ``X``) for all Nifty stocks (menu option ``12``) to find volume gainers (menu option ``9``) with at least the volume multiplier of 2.5 (input variable ``2.5``), save the results in xlsx file and exit (menu option ``-e``). Passing in the ``-p`` option for example ``PKDevToolscli.py -a Y -p -o X:12:6:1 -e`` will also silence all command line prints/outputs and just run silently for the given options, save results and exit. Try and see all options with ``./PKDevToolscli.py -h``.
 
 Running it at regular intervals
 -------------------------------
 
-If you want to runn it at regular intervals, you can just pass the interval in ``-c`` command line option. For example, ``./pktoolscli.py -a Y -o X:12:6:1 -c 180`` will run it every ``180`` seconds with console outputs also being printed. If you'd just like it to run as a cron job without console outputs, you may also pass the ``-p`` parameter. For example, ``./pktoolscli.py -a Y -p -o X:12:6:1 -c 180``
+If you want to runn it at regular intervals, you can just pass the interval in ``-c`` command line option. For example, ``./PKDevToolscli.py -a Y -o X:12:6:1 -c 180`` will run it every ``180`` seconds with console outputs also being printed. If you'd just like it to run as a cron job without console outputs, you may also pass the ``-p`` parameter. For example, ``./PKDevToolscli.py -a Y -p -o X:12:6:1 -c 180``
 
 Understanding the Result Table
 ------------------------------
@@ -211,10 +211,10 @@ The Result table contains a lot of different parameters which can be pretty over
 
 Hack it your way
 ----------------
-Feel free to Edit the parameters in the ``pktools.ini`` file which will be generated by the application.
+Feel free to Edit the parameters in the ``PKDevTools.ini`` file which will be generated by the application.
 
 .. code-block::
-   :caption: pktools.ini
+   :caption: PKDevTools.ini
 
     [config]
     period = 280d
@@ -239,7 +239,7 @@ Creating your own Telegram channel to receive your own alerts
 You can create your own telegram channel to receive alerts wherenevr you run it locally on your laptop either from a command line interface console or run it as a scheduler. Simply, go ahead and 
 
 1. Create a bot for yourself, then a channel and get their IDs. Follow the steps in https://medium.com/codex/using-python-to-send-telegram-messages-in-3-simple-steps-419a8b5e5e2 and https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
-2. After you have created the bot using ``botFather`` and have received/verified your bot id/token and channel ID using ``get id bot``, simply go to ``pktools`` folder in the source code directory and create a ``.env.dev`` file with the following (If you are instead using the .exe or .bin or .run file from release, just create this file in the same folder where the executable (.exe or .bin or .run) is placed.)
+2. After you have created the bot using ``botFather`` and have received/verified your bot id/token and channel ID using ``get id bot``, simply go to ``PKDevTools`` folder in the source code directory and create a ``.env.dev`` file with the following (If you are instead using the .exe or .bin or .run file from release, just create this file in the same folder where the executable (.exe or .bin or .run) is placed.)
 
 .. code-block::
    :caption: .env.dev
@@ -253,6 +253,6 @@ You can create your own telegram channel to receive alerts wherenevr you run it 
 Troubleshooting and Logs
 ------------------------
 
-If you are having issues running the program, you can just launch a command line interface (On windows> Start > Run > cmd) and then launch pktools with a command line option of ``-l``. For example, ``python pktoolscli.py -l``. This will show you the path where the program will save all the log outputs from this run. Copy that path and go ahead and run the application. Altenatively, you can just go ahead and modify the ``logsEnabled`` value to ``y``, save & close it and then run ``python pktoolscli.py``.
+If you are having issues running the program, you can just launch a command line interface (On windows> Start > Run > cmd) and then launch PKDevTools with a command line option of ``-l``. For example, ``python PKDevToolscli.py -l``. This will show you the path where the program will save all the log outputs from this run. Copy that path and go ahead and run the application. Altenatively, you can just go ahead and modify the ``logsEnabled`` value to ``y``, save & close it and then run ``python PKDevToolscli.py``.
 
-After you have finished the run, go to that copied path, zip the contents of the file ``pktools-logs.txt`` and create an issue at https://github.com/pkjmesra/pktools/issues. Please do not forget to attach the log files in the issue.
+After you have finished the run, go to that copied path, zip the contents of the file ``PKDevTools-logs.txt`` and create an issue at https://github.com/pkjmesra/PKTools/issues. Please do not forget to attach the log files in the issue.

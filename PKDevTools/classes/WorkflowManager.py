@@ -22,8 +22,8 @@
     SOFTWARE.
 
 """
-from pktools.classes.Fetcher import fetcher
-from pktools.classes.Telegram import get_secrets
+from PKDevTools.classes.Fetcher import fetcher
+from PKDevTools.classes.Telegram import get_secrets
 
 def run_workflow(command,user,options,workflow_name,branch, owner, repo):
     _,_,_,ghp_token = get_secrets()
