@@ -73,7 +73,7 @@ def dget_latest_release_url(owner,repo):
     return url
 
 def githubutilities():
-    if args.getreleaseurl:
+    if args.getreleaseurl and args.setoutput is not None:
         print(dget_latest_release_url(args.setoutput.split(",")[0],args.setoutput.split(",")[1]))
     if args.setoutput is not None:
         aset_output(args.setoutput.split(",")[0],args.setoutput.split(",")[1])

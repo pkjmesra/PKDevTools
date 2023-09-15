@@ -285,7 +285,8 @@ def send_document(
 #                                                     'reply_to_message_id': reply_to_message_id }, files=files )
 
 def sendShortMessage():
-    send_message(args.message, args.user)
+    if args.message is not None and args.branch is not None:
+        send_message(args.message, args.user)
 
 if __name__ == "__main__":
     sendShortMessage()

@@ -88,7 +88,7 @@ setup(
 	pkdevtools_githubutilities=PKDevTools.classes.githubutilities:githubutilities
     pkdevtools_squash=PKDevTools.classes.squash:squash
     pkdevtools_updater=PKDevTools.classes.updater:update
-    pkdevtools_workflowmanager=PKDevTools.classes.WorkfloManager:launchWorkflows
+    pkdevtools_workflowmanager=PKDevTools.classes.WorkflowManager:launchWorkflows
     pkdevtools_telegram=PKDevTools.classes.Telegram:sendShortMessage
 	""",
     download_url="https://github.com/"
