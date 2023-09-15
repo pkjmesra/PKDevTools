@@ -31,6 +31,8 @@
 # Get from telegram
 # See tutorial https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
 
+import argparse
+import os
 import requests
 from dotenv import dotenv_values
 from telegram.constants import ParseMode
@@ -39,6 +41,13 @@ from PKDevTools.classes.log import default_logger
 
 # from io import BytesIO
 # from PIL import Image
+argParser = argparse.ArgumentParser()
+required = False
+argParser.add_argument("-m", "--message", help="Message to be sent via Telegram", required=required)
+argParser.add_argument(
+    "-u", "--user", help="UserID of the Telegram user or Group to whom the message has to be sent", required=required
+)
+args = argParser.parse_args()
 
 
 TOKEN = "00000000xxxxxxx"
@@ -84,9 +93,18 @@ def initTelegram():
 
 
 def get_secrets():
-    local_secrets = dotenv_values(".env.dev")
+    try:
+        local_secrets = dotenv_values(".env.dev")
+    except Exception:
+        pass
     if "GITHUB_TOKEN" not in local_secrets.keys():
-        local_secrets["GITHUB_TOKEN"] = ""
+        local_secrets["GITHUB_TOKEN"] = os.environ["GITHUB_TOKEN"] if "GITHUB_TOKEN" in os.environ.keys() else ""
+    if "CHAT_ID" not in local_secrets.keys():
+        local_secrets["CHAT_ID"] = os.environ["CHAT_ID"] if "CHAT_ID" in os.environ.keys() else ""
+    if "TOKEN" not in local_secrets.keys():
+        local_secrets["TOKEN"] = os.environ["TOKEN"] if "TOKEN" in os.environ.keys() else ""
+    if "chat_idADMIN" not in local_secrets.keys():
+        local_secrets["chat_idADMIN"] = os.environ["chat_idADMIN"] if "chat_idADMIN" in os.environ.keys() else ""
     return (
         local_secrets["CHAT_ID"],
         local_secrets["TOKEN"],
@@ -265,3 +283,9 @@ def send_document(
 #         media[0]['parse_mode'] = ParseMode.HTML
 #         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),
 #                                                     'reply_to_message_id': reply_to_message_id }, files=files )
+
+def sendShortMessage():
+    send_message(args.message, args.user)
+
+if __name__ == "__main__":
+    sendShortMessage()

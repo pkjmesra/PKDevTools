@@ -77,3 +77,7 @@ def squash(message, branch):
     sleep(5)
 
     print("[+] === SQUASHING COMMITS : DONE ===")
+
+if __name__ == "__main__":
+    if args.message is not None and args.branch is not None:
+        squash(args.message, args.branch)

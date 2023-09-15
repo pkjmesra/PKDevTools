@@ -132,5 +132,6 @@ def update(find,replace,type,path):
             print(md)
             f.truncate()
 
-if args.path is not None and args.find is not None and args.replace is not None and args.type is not None:
-    update(args.find,args.replace,args.type,args.path)
+if __name__ == "__main__":
+    if args.path is not None and args.find is not None and args.replace is not None and args.type is not None:
+        update(args.find,args.replace,args.type,args.path)

@@ -1,6 +1,8 @@
+argparse
 mistletoe
 python-dotenv
 python-telegram-bot
+requests
 requests_cache
 telegram
 urllib3
