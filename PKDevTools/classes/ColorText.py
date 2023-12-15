@@ -22,7 +22,6 @@
     SOFTWARE.
 
 """
-
 # Decoration Class
 class colorText:
     HEAD = "\033[95m"
@@ -33,3 +32,4 @@ class colorText:
     END = "\033[0m"
     BOLD = "\033[1m"
     UNDR = "\033[4m"
+    WHITE = "\033[97m"
