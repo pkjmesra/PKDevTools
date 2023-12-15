@@ -1,4 +1,5 @@
 argparse
+bs4
 mistletoe
 pandas
 python-dotenv
@@ -8,3 +9,4 @@ requests
 requests_cache
 telegram
 urllib3
+yfinance==0.1.87
