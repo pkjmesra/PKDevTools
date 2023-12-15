@@ -27,8 +27,9 @@ from unittest.mock import patch
 import pytest
 
 from PKDevTools.classes.Fetcher import fetcher
-from PKDevTools.classes.WorkflowManager import run_workflow
 from PKDevTools.classes.Telegram import get_secrets
+from PKDevTools.classes.WorkflowManager import run_workflow
+
 
 @pytest.fixture
 def mock_fetcher():

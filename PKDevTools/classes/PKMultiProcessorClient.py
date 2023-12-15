@@ -45,6 +45,7 @@ except ImportError:
     sys.exit(0)
 from PKDevTools.classes.log import default_logger
 
+
 class PKMultiProcessorClient(multiprocessing.Process):
     def __init__(
         self,

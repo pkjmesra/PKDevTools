@@ -27,6 +27,7 @@ from enum import Enum
 from PKDevTools.classes.ColorText import colorText
 from PKDevTools.classes.log import default_logger
 
+
 class MenuRenderStyle(Enum):
     STANDALONE = 1
     TWO_PER_ROW = 2

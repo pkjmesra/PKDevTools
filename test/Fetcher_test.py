@@ -29,6 +29,7 @@ from requests.exceptions import ConnectTimeout, ReadTimeout
 
 from PKDevTools.classes.Fetcher import fetcher
 
+
 @pytest.fixture
 def tools_instance():
     return fetcher()

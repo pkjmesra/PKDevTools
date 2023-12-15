@@ -25,8 +25,9 @@
 from unittest.mock import ANY, MagicMock, patch
 
 from PKDevTools.classes.Telegram import (get_secrets, initTelegram,
-                                 is_token_telegram_configured, send_document,
-                                 send_exception, send_message, send_photo)
+                                         is_token_telegram_configured,
+                                         send_document, send_exception,
+                                         send_message, send_photo)
 
 
 # Positive test case: Check if the function returns the correct secrets
