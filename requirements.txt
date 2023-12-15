@@ -1,7 +1,9 @@
 argparse
 mistletoe
+pandas
 python-dotenv
 python-telegram-bot
+pytz
 requests
 requests_cache
 telegram
