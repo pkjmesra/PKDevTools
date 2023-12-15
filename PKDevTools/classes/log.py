@@ -27,6 +27,7 @@ import inspect
 import logging
 import os
 import sys
+import tempfile
 import time
 import warnings
 # from inspect import getcallargs, getfullargspec
@@ -138,7 +139,7 @@ class filterlogger:
 
     def addHandlers(self, log_file_path=None, levelname=logging.NOTSET):
         if log_file_path is None:
-            log_file_path = os.path.join(os.getcwd(), "PKDevTools-logs.txt")
+            log_file_path = os.path.join(tempfile.gettempdir(), "PKDevTools-logs.txt")
         trace_formatter = logging.Formatter(
             fmt="\n%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d\n%(message)s\n"
         )
@@ -155,7 +156,7 @@ class filterlogger:
             self.logger.addHandler(consolehandler)
             global __DEBUG__
             __DEBUG__ = True
-            self.logger.debug("Logging started. Filter:{}".format(filter))
+            self.logger.debug("PKDevTools: Logging started. Filter:{}".format(filter))
         return consolehandler, filehandler
 
     def debug(self, e, exc_info=False):
@@ -185,8 +186,8 @@ class filterlogger:
 
     def info(self, line):
         global __filter__, __DEBUG__
-        __DEBUG__ = self.level == logging.DEBUG
-        if not self.logger.level == logging.DEBUG:
+        __DEBUG__ = self.level == logging.INFO
+        if not self.logger.level == logging.INFO:
             return
         frame = inspect.stack()[1]
         # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
