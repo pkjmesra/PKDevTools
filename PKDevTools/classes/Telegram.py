@@ -31,27 +31,15 @@
 # Get from telegram
 # See tutorial https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
 
-import argparse
-import os
-
 import requests
 from dotenv import dotenv_values
-from telegram.constants import ParseMode
-
 from PKDevTools.classes.log import default_logger
+from telegram.constants import ParseMode
 
 # from io import BytesIO
 # from PIL import Image
-argParser = argparse.ArgumentParser()
-required = False
-argParser.add_argument("-m", "--message", help="Message to be sent via Telegram", required=required)
-argParser.add_argument(
-    "-u", "--user", help="UserID of the Telegram user or Group to whom the message has to be sent", required=required
-)
-args = argParser.parse_args()
 
 
-TOKEN = "00000000xxxxxxx"
 # URL_TELE = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
 # **DOCU**
 # 5.2 Configure chatID and tokes in Telegram
@@ -79,13 +67,14 @@ LIST_PEOPLE_IDS_CHAT = [Channel_Id]
 
 def initTelegram():
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
+    TOKEN = "00000000xxxxxxx"
     if chat_idADMIN == "" or botsUrl == "":
         try:
             Channel_Id, TOKEN, chat_idADMIN,_ = get_secrets()
         except Exception as e:
-            default_logger().debug(e, exc_info=True)
+            # default_logger().debug(e, exc_info=True)
             # print(
-            #     "[+] Telegram token and secrets are not configured!\n[+] See https://github.com/pkjmesra/PKDevTools#creating-your-own-telegram-channel-to-receive-your-own-alerts"
+            #     "[+] Telegram token and secrets are not configured!\n[+] See https://github.com/pkjmesra/pkscreener#creating-your-own-telegram-channel-to-receive-your-own-alerts"
             # )
             pass
         Channel_Id = "-" + str(Channel_Id)
@@ -94,18 +83,9 @@ def initTelegram():
 
 
 def get_secrets():
-    try:
-        local_secrets = dotenv_values(".env.dev")
-    except Exception:
-        pass
+    local_secrets = dotenv_values(".env.dev")
     if "GITHUB_TOKEN" not in local_secrets.keys():
-        local_secrets["GITHUB_TOKEN"] = os.environ["GITHUB_TOKEN"] if "GITHUB_TOKEN" in os.environ.keys() else ""
-    if "CHAT_ID" not in local_secrets.keys():
-        local_secrets["CHAT_ID"] = os.environ["CHAT_ID"] if "CHAT_ID" in os.environ.keys() else ""
-    if "TOKEN" not in local_secrets.keys():
-        local_secrets["TOKEN"] = os.environ["TOKEN"] if "TOKEN" in os.environ.keys() else ""
-    if "chat_idADMIN" not in local_secrets.keys():
-        local_secrets["chat_idADMIN"] = os.environ["chat_idADMIN"] if "chat_idADMIN" in os.environ.keys() else ""
+        local_secrets["GITHUB_TOKEN"] = ""
     return (
         local_secrets["CHAT_ID"],
         local_secrets["TOKEN"],
@@ -117,7 +97,7 @@ def get_secrets():
 def is_token_telegram_configured():
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
     initTelegram()
-    if TOKEN == "00000000xxxxxxx":
+    if TOKEN == "00000000xxxxxxx" or len(TOKEN) < 1:
         # print(
         #     "[+] There is no value for the telegram TOKEN. It is required to telegram someone.\n[+] See tutorial: https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token"
         # )
@@ -131,7 +111,7 @@ def send_exception(ex, extra_mes=""):
         return
 
 
-def send_message(message, userID=None, parse_type=ParseMode.HTML, list_png=None, retrial=False, timeout=4):
+def send_message(message, userID=None, parse_type=ParseMode.HTML, list_png=None, retrial=False):
     initTelegram()
     # botsUrl = f"https://api.telegram.org/bot{TOKEN}"  # + "/sendMessage?chat_id={}&text={}".format(chat_idLUISL, message_aler, parse_mode=ParseMode.HTML)
     # url = botsUrl + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}".format(chat_idLUISL, message_aler,parse_mode=ParseMode.MARKDOWN_V2)
@@ -139,7 +119,7 @@ def send_message(message, userID=None, parse_type=ParseMode.HTML, list_png=None,
         return
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
     if userID is not None and userID !="":
-        LIST_PEOPLE_IDS_CHAT = [userID]
+        LIST_PEOPLE_IDS_CHAT = [int(str(userID).replace("\"",""))]
     if list_png is None or any(elem is None for elem in list_png):
         resp = None
         for people_id in LIST_PEOPLE_IDS_CHAT:
@@ -151,14 +131,14 @@ def send_message(message, userID=None, parse_type=ParseMode.HTML, list_png=None,
             )
             try:
                 resp = requests.get(
-                    url, timeout=timeout
+                    url, timeout=2 # 2 sec timeout
                 )  # headers={'Connection': 'Close'})
             except Exception as e:
                 default_logger().debug(e, exc_info=True)
                 if not retrial:
                     from time import sleep
                     sleep(2)
-                    resp = send_message(message=message, userID=userID, parse_type=parse_type, list_png=list_png, retrial=True, timeout=timeout)
+                    resp = send_message(message=message, userID=userID, parse_type=parse_type, list_png=list_png, retrial=True)
         return resp
     # else:
     #     for people_id in LIST_PEOPLE_IDS_CHAT:
@@ -170,7 +150,7 @@ def send_message(message, userID=None, parse_type=ParseMode.HTML, list_png=None,
     #     # print(telegram_msg.content)
 
 
-def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=False, timeout=4):
+def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=False):
     initTelegram()
     if not is_token_telegram_configured():
         return
@@ -198,19 +178,19 @@ def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=
             botsUrl + method,
             params,
             files=files,
-            timeout=2 * timeout,
+            timeout=2 * 2, # 2 sec timeout
         )  # headers={'Connection': 'Close'})
     except Exception as e:
         default_logger().debug(e, exc_info=True)
         if not retrial:
             from time import sleep
             sleep(2)
-            resp = send_photo(photoFilePath=photoFilePath, message=message, message_id=message_id, userID=userID, retrial=True, timeout=timeout)
+            resp = send_photo(photoFilePath=photoFilePath, message=message, message_id=message_id, userID=userID, retrial=True)
     return resp
 
 
 def send_document(
-    documentFilePath, message="", message_id=None, retryCount=0, userID=None, timeout=4
+    documentFilePath, message="", message_id=None, retryCount=0, userID=None
 ):
     initTelegram()
     if not is_token_telegram_configured():
@@ -238,7 +218,7 @@ def send_document(
             botsUrl + method,
             params,
             files=files,
-            timeout=3 * timeout,
+            timeout=3 * 2, # 2 sec timeout
         )  # headers={'Connection': 'Close'})
     except Exception as e:
         default_logger().debug(e, exc_info=True)
@@ -247,7 +227,7 @@ def send_document(
         if retryCount <= 3:
             sleep(2 * (retryCount + 1))
             resp = send_document(
-                documentFilePath, message, message_id, retryCount=retryCount + 1, timeout=timeout
+                documentFilePath, message, message_id, retryCount=retryCount + 1
             )
     return resp
     # content = response.content.decode("utf8")
@@ -284,10 +264,3 @@ def send_document(
 #         media[0]['parse_mode'] = ParseMode.HTML
 #         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),
 #                                                     'reply_to_message_id': reply_to_message_id }, files=files )
-
-def sendShortMessage():
-    if args.message is not None and args.branch is not None:
-        send_message(args.message, args.user)
-
-if __name__ == "__main__":
-    sendShortMessage()
