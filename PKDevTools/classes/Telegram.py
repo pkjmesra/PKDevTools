@@ -67,8 +67,8 @@ LIST_PEOPLE_IDS_CHAT = [Channel_Id]
 
 def initTelegram():
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
-    TOKEN = "00000000xxxxxxx"
     if chat_idADMIN == "" or botsUrl == "":
+        TOKEN = "00000000xxxxxxx"
         try:
             Channel_Id, TOKEN, chat_idADMIN,_ = get_secrets()
         except Exception as e:
@@ -264,3 +264,6 @@ def send_document(
 #         media[0]['parse_mode'] = ParseMode.HTML
 #         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),
 #                                                     'reply_to_message_id': reply_to_message_id }, files=files )
+
+initTelegram()
+is_token_telegram_configured()
