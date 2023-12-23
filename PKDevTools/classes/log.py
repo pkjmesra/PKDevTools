@@ -129,7 +129,10 @@ class filterlogger:
     def getlogger(logger):
         global __filter__
         # if __filter__ is not None:
-        return filterlogger(logger=logger)
+        lgr = filterlogger(logger=logger)
+        if 'PKDevTools_Default_Log_Level' in os.environ.keys():
+            lgr.level = os.environ['PKDevTools_Default_Log_Level']
+        return lgr
         # else:
         #   return logger
 
