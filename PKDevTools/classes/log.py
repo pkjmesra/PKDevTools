@@ -131,7 +131,7 @@ class filterlogger:
         # if __filter__ is not None:
         lgr = filterlogger(logger=logger)
         if 'PKDevTools_Default_Log_Level' in os.environ.keys():
-            lgr.level = os.environ['PKDevTools_Default_Log_Level']
+            lgr.level = int(os.environ['PKDevTools_Default_Log_Level'])
         return lgr
         # else:
         #   return logger
