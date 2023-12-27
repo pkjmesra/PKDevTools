@@ -117,7 +117,7 @@ class fetcher:
             self.configManager.restartRequestsCache()
         return response
 
-    def fetchURL(self, url, stream=False, trial=1):
+    def fetchURL(self, url, stream=False, trial=1, headers=None):
         try:
             response = None
             requestor = session
@@ -131,6 +131,7 @@ class fetcher:
                             proxies=self.proxyServer,
                             stream = stream,
                             timeout=trial*self.configManager.generalTimeout,
+                            headers=headers
                         ) 
         except (ConnectTimeout,ReadTimeoutError,ReadTimeout) as e:
             default_logger().debug(e, exc_info=True)
