@@ -104,5 +104,5 @@ def safe_open_w(path):
 
 def get_user_outputs_dir():
     # Let's make the results directory where we'll push all outputs
-    os.makedirs(os.path.dirname(os.path.join(os.getcwd(),"results")), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.join(os.getcwd(),f"results{os.sep}")), exist_ok=True)
     return os.path.join(os.getcwd(),"results")
