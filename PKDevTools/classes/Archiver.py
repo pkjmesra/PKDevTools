@@ -101,3 +101,8 @@ def safe_open_w(path):
     """Open "path" for writing, creating any parent directories as needed."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     # return open(path, 'wb')
+
+def get_user_outputs_dir():
+    # Let's make the results directory where we'll push all outputs
+    os.makedirs(os.path.dirname(os.path.join(os.getcwd(),"results")), exist_ok=True)
+    return os.path.join(os.getcwd(),"results")
