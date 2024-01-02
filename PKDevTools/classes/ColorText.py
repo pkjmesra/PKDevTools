@@ -22,6 +22,9 @@
     SOFTWARE.
 
 """
+import tabulate as tb
+from tabulate import tabulate, Line,DataRow
+
 # Decoration Class
 class colorText:
     HEAD = "\033[95m"
@@ -33,3 +36,20 @@ class colorText:
     BOLD = "\033[1m"
     UNDR = "\033[4m"
     WHITE = "\033[97m"
+
+    No_Pad_GridFormat = "minpadding"
+
+    def miniTabulator():
+        tb._table_formats[colorText.No_Pad_GridFormat] = tb.TableFormat(
+                lineabove=Line("+", "-", "+", "+"),
+                linebelowheader=Line("+", "=", "+", "+"),
+                linebetweenrows=Line("+", "-", "+", "+"),
+                linebelow=Line("+", "-", "+", "+"),
+                headerrow=DataRow("|", "|", "|"),
+                datarow=DataRow("|", "|", "|"),
+                padding=0,
+                with_header_hide=None,
+            )
+        tb.multiline_formats[colorText.No_Pad_GridFormat] = colorText.No_Pad_GridFormat
+        tb.tabulate_formats = list(sorted(tb._table_formats.keys()))
+        return tb
