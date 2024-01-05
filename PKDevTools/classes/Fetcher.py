@@ -127,7 +127,7 @@ class fetcher:
             # We should try to switch to requests lib if cached_session 
             # begin to give some problem after we've tried for
             # 50% of the configured retrials.
-            if trial >= int(self.configManager.maxNetworkRetryCount/2):
+            if stream or trial >= int(self.configManager.maxNetworkRetryCount/2):
                 requestor = requests
             response = requestor.get(
                             url,
@@ -154,7 +154,7 @@ class fetcher:
                     requests_cache.uninstall_cache()
                 print(colorText.BOLD + colorText.FAIL + f"[+] Network Request failed. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.fetchURL(url, stream=stream, trial=trial+1)
-        if trial > 1 and not requests_cache.is_installed():
+        if response is None and trial > 1 and not requests_cache.is_installed():
             # Let's try and re-enable the caching behaviour before exiting.
             # Maybe there was something wrong with this request, but the next
             # request should have access to cache.
