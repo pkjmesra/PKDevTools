@@ -36,7 +36,7 @@ class PKTimer(ContextDecorator):
 
     timers: ClassVar[Dict[str, float]] = {}
     name: Optional[str] = None
-    text: str = "Elapsed time: {:0.4f} seconds"
+    text: str = "Elapsed time : {:0.4f} seconds : {1}"
     logger: Optional[Callable[[str], None]] = print
     _start_time: Optional[float] = field(default=None, init=False, repr=False)
 
@@ -63,7 +63,7 @@ class PKTimer(ContextDecorator):
 
         # Report elapsed time
         if self.logger:
-            self.logger(self.text.format(elapsed_time))
+            self.logger(self.text.format(elapsed_time,self.name if self.name else ''))
         if self.name:
             self.timers[self.name] += elapsed_time
 
