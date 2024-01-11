@@ -69,7 +69,7 @@ class PKTimer(ContextDecorator):
 
         return elapsed_time
 
-    def __enter__(self) -> "Timer":
+    def __enter__(self) -> "PKTimer":
         """Start a new timer as a context manager"""
         self.start()
         return self
