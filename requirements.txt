@@ -1,6 +1,7 @@
 argparse
 bs4
 mistletoe
+numpy
 pandas
 python-dotenv
 python-telegram-bot

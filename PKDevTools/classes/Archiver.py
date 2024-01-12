@@ -33,6 +33,7 @@ warnings.simplefilter("ignore", FutureWarning)
 import pandas as pd
 import pytz
 
+from PKDevTools.classes.PKDateUtilities import PKDateUtilities
 
 def resolveFilePath(fileName):
     if fileName is None:
@@ -45,15 +46,7 @@ def resolveFilePath(fileName):
 
 def get_last_modified_datetime(file_path):
     last_modified = datetime.utcfromtimestamp(os.path.getmtime(file_path))
-    return utc_to_ist(last_modified)
-
-
-def utc_to_ist(utc_dt):
-    return (
-        pytz.utc.localize(utc_dt)
-        .replace(tzinfo=timezone.utc)
-        .astimezone(tz=pytz.timezone("Asia/Kolkata"))
-    )
+    return PKDateUtilities.utc_to_ist(last_modified)
 
 
 def cacheFile(bData, fileName):
