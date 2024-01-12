@@ -33,8 +33,6 @@ warnings.simplefilter("ignore", FutureWarning)
 import pandas as pd
 import pytz
 
-from PKDevTools.classes.PKDateUtilities import PKDateUtilities
-
 def resolveFilePath(fileName):
     if fileName is None:
         fileName = ""
@@ -45,6 +43,7 @@ def resolveFilePath(fileName):
 
 
 def get_last_modified_datetime(file_path):
+    from PKDevTools.classes.PKDateUtilities import PKDateUtilities
     last_modified = datetime.utcfromtimestamp(os.path.getmtime(file_path))
     return PKDateUtilities.utc_to_ist(last_modified)
 

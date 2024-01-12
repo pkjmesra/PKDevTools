@@ -56,9 +56,19 @@ class StockDataEmptyException(Exception):
 
 
 # This Class Handles Fetching of Stock Data over the internet
+class stubConfigManager:
+    def __init__(self):
+        self.maxNetworkRetryCount = 10
+        self.generalTimeout = 2
 
+    def restartRequestsCache():
+        return None
+    
 class fetcher:
-    def __init__(self, configManager):
+    def __init__(self, configManager=None):
+        if configManager is None:
+            configManager = stubConfigManager()
+
         self.configManager = configManager
         self._proxy = None
         pass
