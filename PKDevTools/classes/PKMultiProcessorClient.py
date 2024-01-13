@@ -41,8 +41,7 @@ try:
         import multiprocessing.popen_fork as forking
 except ImportError:
     print("Contact developer! Your platform does not support multiprocessing!")
-    input("Exiting now...")
-    sys.exit(0)
+
 from PKDevTools.classes.log import default_logger
 
 
