@@ -61,7 +61,7 @@ class stubConfigManager:
         self.maxNetworkRetryCount = 10
         self.generalTimeout = 2
 
-    def restartRequestsCache():
+    def restartRequestsCache(self):
         return None
     
 class fetcher:
