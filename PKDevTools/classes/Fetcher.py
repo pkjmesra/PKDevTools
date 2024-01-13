@@ -108,7 +108,7 @@ class fetcher:
         except (ConnectTimeout,ReadTimeoutError,ReadTimeout) as e:
             default_logger().debug(e, exc_info=True)
             if trial <= int(self.configManager.maxNetworkRetryCount):
-                print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
+                # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.postURL(url, data=data, headers=headers,trial=trial+1)
         except Exception as e:
             # Something went wrong with the CachedSession.
@@ -121,7 +121,7 @@ class fetcher:
                     # REstarting didn't fix it. We need to disable the cache altogether.
                     requests_cache.clear()
                     requests_cache.uninstall_cache()
-                print(colorText.BOLD + colorText.FAIL + f"[+] Network Request failed. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
+                # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request failed. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.postURL(url, data=data, headers=headers,trial=trial+1)
         if trial > 1 and not requests_cache.is_installed():
             # Let's try and re-enable the caching behaviour before exiting.
@@ -149,7 +149,7 @@ class fetcher:
         except (ConnectTimeout,ReadTimeoutError,ReadTimeout) as e:
             default_logger().debug(e, exc_info=True)
             if trial <= int(self.configManager.maxNetworkRetryCount):
-                print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
+                # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.fetchURL(url, stream=stream, trial=trial+1)
         except Exception as e:
             # Something went wrong with the CachedSession.
@@ -162,7 +162,7 @@ class fetcher:
                     # REstarting didn't fix it. We need to disable the cache altogether.
                     requests_cache.clear()
                     requests_cache.uninstall_cache()
-                print(colorText.BOLD + colorText.FAIL + f"[+] Network Request failed. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
+                # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request failed. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.fetchURL(url, stream=stream, trial=trial+1)
         if response is None and trial > 1 and not requests_cache.is_installed():
             # Let's try and re-enable the caching behaviour before exiting.
