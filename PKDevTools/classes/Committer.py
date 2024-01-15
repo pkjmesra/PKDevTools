@@ -47,6 +47,8 @@ class Committer():
 
         '''
         cwd = os.getcwd()
+        if not cwd.endswith(os.sep):
+            cwd = f"{cwd}{os.sep}"
         addPath = addPath.replace(cwd,"")
         Committer.execOSCommand("git config user.name github-actions")
         Committer.execOSCommand("git config user.email github-actions@github.com")
