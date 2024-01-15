@@ -25,6 +25,8 @@
 # import argparse
 import os
 import platform
+import datetime
+import pytz
 
 # argParser = argparse.ArgumentParser()
 # required = False
@@ -44,6 +46,8 @@ class Committer():
         '''
 
         '''
+        cwd = os.getcwd()
+        addPath = addPath.replace(cwd,"")
         Committer.execOSCommand("git config user.name github-actions")
         Committer.execOSCommand("git config user.email github-actions@github.com")
         Committer.execOSCommand("git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'")
@@ -51,7 +55,7 @@ class Committer():
         Committer.execOSCommand("git fetch")
         Committer.execOSCommand("git config pull.rebase false")
         Committer.execOSCommand("git pull")
-        # Committer.execOSCommand("git checkout --ours .")
+        Committer.execOSCommand("git checkout --ours .")
         Committer.execOSCommand(f"git add {addPath} --force")
         Committer.execOSCommand(f"git commit -m '{commitMessage}'")
         Committer.execOSCommand("git pull")
@@ -59,6 +63,7 @@ class Committer():
 
     def execOSCommand(command):
         try:
+            print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
             os.system(command)
         except Exception:
             try:
