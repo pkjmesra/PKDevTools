@@ -51,7 +51,7 @@ class Committer():
         Committer.execOSCommand("git fetch")
         Committer.execOSCommand("git config pull.rebase false")
         Committer.execOSCommand("git pull")
-        Committer.execOSCommand("git checkout --ours .")
+        # Committer.execOSCommand("git checkout --ours .")
         Committer.execOSCommand(f"git add {addPath} --force")
         Committer.execOSCommand(f"git commit -m '{commitMessage}'")
         Committer.execOSCommand("git pull")
@@ -61,4 +61,10 @@ class Committer():
         try:
             os.system(command)
         except Exception:
+            try:
+                # We probably got into a conflict
+                os.system("git checkout --ours .")
+                os.system(command)
+            except:
+                pass
             pass
