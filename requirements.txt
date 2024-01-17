@@ -11,4 +11,4 @@ requests_cache
 tabulate
 telegram
 urllib3
-yfinance==0.1.87
+yfinance #==0.1.87
