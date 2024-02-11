@@ -22,6 +22,7 @@
     SOFTWARE.
 
 """
+import calendar
 import numpy as np
 import pytz
 import pandas as pd
@@ -37,6 +38,15 @@ class PKDateUtilities:
             .replace(tzinfo=timezone.utc)
             .astimezone(tz=pytz.timezone("Asia/Kolkata"))
         )
+
+    def last_day_of_month(any_day):
+        weekday, lastDay = calendar.monthrange(any_day.year, any_day.month)
+        return PKDateUtilities.currentDateTime(simulate=True,day=lastDay,year=any_day.year,month=any_day.month)
+
+    def last_day_of_previous_month(any_day):
+        first = any_day.replace(day=1)
+        last_day_last_month = first - datetime.timedelta(days=1)
+        return last_day_last_month
 
     def tradingDate(simulate=False, day=None):
         lastTradingDate = None
@@ -98,10 +108,12 @@ class PKDateUtilities:
             counter += 1
         return d2.strftime("%Y-%m-%d")
 
-    def currentDateTime(simulate=False, day=None, hour=None, minute=None):
+    def currentDateTime(simulate=False, day=None, hour=None, minute=None, month=None, year=None):
         curr = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         if simulate:
-            return curr.replace(day=day if day is not None else curr.day,
+            return curr.replace(year=year if year is not None else curr.year,
+                                month=month if month is not None else curr.month,
+                                day=day if day is not None else curr.day,
                                 hour=hour if hour is not None else curr.hour,
                                 minute=minute if minute is not None else curr.minute,)
         else:
