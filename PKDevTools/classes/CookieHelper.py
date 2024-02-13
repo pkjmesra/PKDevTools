@@ -35,7 +35,7 @@ from bs4 import BeautifulSoup
 
 throttleConfig = {
     'default': {
-        'rps': 3,
+        'rps': 10,
     },
 }
 
