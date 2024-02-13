@@ -71,6 +71,7 @@ class fetcher:
 
         self.configManager = configManager
         self._proxy = None
+        self.session = session
         pass
     
     @property
@@ -98,6 +99,7 @@ class fetcher:
             # 50% of the configured retrials.
             if trial >= int(self.configManager.maxNetworkRetryCount/2):
                 requestor = requests
+                self.session = requestor.session()
             timeout = timeout if timeout > 0 else trial*self.configManager.generalTimeout
             response = requestor.post(
                             url,
@@ -141,6 +143,7 @@ class fetcher:
             # 50% of the configured retrials.
             if stream or trial >= int(self.configManager.maxNetworkRetryCount/2):
                 requestor = requests
+                self.session = requestor.session()
             timeout = timeout if timeout > 0 else trial*self.configManager.generalTimeout
             response = requestor.get(
                             url,
