@@ -93,7 +93,7 @@ class fetcher:
     def postURL(self, url, data=None, headers={}, trial=1,params=None, timeout=0):
         try:
             response = None
-            requestor = session
+            requestor = self.session
             # We should try to switch to requests lib if cached_session 
             # begin to give some problem after we've tried for
             # 50% of the configured retrials.
@@ -137,7 +137,7 @@ class fetcher:
     def fetchURL(self, url, stream=False, trial=1, headers=None, params=None, timeout=0):
         try:
             response = None
-            requestor = session
+            requestor = self.session
             # We should try to switch to requests lib if cached_session 
             # begin to give some problem after we've tried for
             # 50% of the configured retrials.
