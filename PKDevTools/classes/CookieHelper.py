@@ -35,7 +35,7 @@ from bs4 import BeautifulSoup
 
 throttleConfig = {
     'default': {
-        'rps': 10,
+        'rps': 4,
     },
 }
 
@@ -146,7 +146,7 @@ class CookieHelper:
         '''Make a http request'''
         th.check()
         try:
-            r = self.fetcher.fetchURL(url=url, params=params, headers=headers, timeout=timeout)
+            r = self.fetcher.fetchURL(url=url, params=params, headers=headers, timeout=timeout, raiseError=True)
         except ReadTimeout as e:
             raise TimeoutError(repr(e))
         if not r.ok:

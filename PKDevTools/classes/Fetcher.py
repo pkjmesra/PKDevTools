@@ -90,7 +90,7 @@ class fetcher:
             proxy = None
         return proxy
 
-    def postURL(self, url, data=None, headers={}, trial=1,params=None, timeout=0):
+    def postURL(self, url, data=None, headers={}, trial=1,params=None, timeout=0, raiseError=False):
         try:
             response = None
             requestor = self.session
@@ -111,6 +111,8 @@ class fetcher:
                         )
         except (ConnectTimeout,ReadTimeoutError,ReadTimeout) as e:
             default_logger().debug(e, exc_info=True)
+            if raiseError:
+                raise e
             if trial <= int(self.configManager.maxNetworkRetryCount):
                 # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.postURL(url, data=data, headers=headers,trial=trial+1, params=params, timeout=timeout)
@@ -134,7 +136,7 @@ class fetcher:
             self.configManager.restartRequestsCache()
         return response
 
-    def fetchURL(self, url, stream=False, trial=1, headers=None, params=None, timeout=0):
+    def fetchURL(self, url, stream=False, trial=1, headers=None, params=None, timeout=0, raiseError=False):
         try:
             response = None
             requestor = self.session
@@ -155,6 +157,8 @@ class fetcher:
                         ) 
         except (ConnectTimeout,ReadTimeoutError,ReadTimeout) as e:
             default_logger().debug(e, exc_info=True)
+            if raiseError:
+                raise e
             if trial <= int(self.configManager.maxNetworkRetryCount):
                 # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.fetchURL(url, stream=stream, trial=trial+1, params=params, headers=headers, timeout=timeout)
