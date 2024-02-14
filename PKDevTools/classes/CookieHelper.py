@@ -35,7 +35,7 @@ from bs4 import BeautifulSoup
 
 throttleConfig = {
     'default': {
-        'rps': 4,
+        'rps': 60,
     },
 }
 
@@ -107,8 +107,7 @@ class CookieHelper:
 
     def getMetaDictionary(self):
         if self.html_path.exists():
-            html = pickle.loads(self.html_path.read_bytes())
-            metaDict = self.__setMetaDictionary()
+            metaDict = pickle.loads(self.html_path.read_bytes())
             return metaDict
         return self.__setMetaDictionary()
     
