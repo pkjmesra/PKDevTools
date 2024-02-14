@@ -59,7 +59,7 @@ class StockDataEmptyException(Exception):
 class stubConfigManager:
     def __init__(self):
         self.maxNetworkRetryCount = 3
-        self.generalTimeout = 2
+        self.generalTimeout = 4
 
     def restartRequestsCache(self):
         return None
