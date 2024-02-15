@@ -31,7 +31,6 @@ warnings.simplefilter("ignore", DeprecationWarning)
 warnings.simplefilter("ignore", FutureWarning)
 import os
 import requests
-import requests_cache
 from requests.exceptions import ConnectTimeout, ReadTimeout
 from requests_cache import CachedSession
 from urllib3.exceptions import ReadTimeoutError
@@ -117,6 +116,7 @@ class fetcher:
                 # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.postURL(url, data=data, headers=headers,trial=trial+1, params=params, timeout=timeout)
         except Exception as e:
+            import requests_cache
             # Something went wrong with the CachedSession.
             default_logger().debug(e, exc_info=True)
             if trial <= int(self.configManager.maxNetworkRetryCount):
@@ -163,6 +163,7 @@ class fetcher:
                 # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.fetchURL(url, stream=stream, trial=trial+1, params=params, headers=headers, timeout=timeout)
         except Exception as e:
+            import requests_cache
             # Something went wrong with the CachedSession.
             default_logger().debug(e, exc_info=True)
             if trial <= int(self.configManager.maxNetworkRetryCount):
