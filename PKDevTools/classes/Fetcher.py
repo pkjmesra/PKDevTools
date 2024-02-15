@@ -42,13 +42,14 @@ requests.packages.urllib3.util.connection.HAS_IPV6 = False
 from requests_cache import CachedSession
 class PKCachedSession(CachedSession):
     def __getstate__(self):
-        return {}    
+        return {}
 session = PKCachedSession(
     cache_name=f"{Archiver.get_user_outputs_dir().split(os.sep)[-1]}{os.sep}PKDevTools_cache",
     db_path=os.path.join(Archiver.get_user_outputs_dir(),"PKDevTools_cache.sqlite"),
     expire_after=timedelta(hours=6),
     stale_if_error=True,
 )
+import requests_cache
 
 # Exception class if yfinance stock delisted
 class StockDataEmptyException(Exception):
@@ -117,7 +118,6 @@ class fetcher:
                 # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.postURL(url, data=data, headers=headers,trial=trial+1, params=params, timeout=timeout)
         except Exception as e:
-            import requests_cache
             # Something went wrong with the CachedSession.
             default_logger().debug(e, exc_info=True)
             if trial <= int(self.configManager.maxNetworkRetryCount):
@@ -164,7 +164,6 @@ class fetcher:
                 # print(colorText.BOLD + colorText.FAIL + f"[+] Network Request timed-out. Going for {trial} of {self.configManager.maxNetworkRetryCount}th trial..." + colorText.END)
                 return self.fetchURL(url, stream=stream, trial=trial+1, params=params, headers=headers, timeout=timeout)
         except Exception as e:
-            import requests_cache
             # Something went wrong with the CachedSession.
             default_logger().debug(e, exc_info=True)
             if trial <= int(self.configManager.maxNetworkRetryCount):
