@@ -201,7 +201,8 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                                 if not os.path.isfile(cache_file) and not dataLoaded:
                                     f = open(cache_file,"wb")  # .split(os.sep)[-1]
                                     dl = 0
-                                    print(f"{colorText.GREEN}[+]Downloading {fileName} cache from pkscreener server...{colorText.END}")
+                                    lastPath = (cache_file.split(os.sep)[-1]).replace("DB.pkl","")
+                                    print(f"{colorText.GREEN}[+] Downloading {lastPath} cache from pkscreener server...{colorText.END}")
                                     with alive_bar(
                                         filesize, bar=bar, spinner=spinner, manual=True
                                     ) as progressbar:
