@@ -32,13 +32,23 @@ class SingletonType(type):
         cls.__shared_instance_lock__ = Lock()
         return cls
 
-    def __call__(cls, *args, **kwargs):
-        with cls.__shared_instance_lock__:
+    def __call__(self, *args, **kwargs):
+        with self.__shared_instance_lock__:
             try:
-                return cls.__shared_instance__
+                return self.__shared_instance__
             except AttributeError:
-                cls.__shared_instance__ = super(SingletonType, cls).__call__(*args, **kwargs)
-                return cls.__shared_instance__
+                self.__shared_instance__ = super(SingletonType, self).__call__(*args, **kwargs)
+                self.__shared_instance__.attributes = {}
+                return self.__shared_instance__
+
+class SingletonMixin:
+    def __getstate__(self):
+        return getattr(self.__class__, "attributes", {}), self.__dict__
+
+    def __setstate__(self, state):
+        attributes, __dict__ = state
+        self.__dict__.update(__dict__)
+        self.__class__.attributes = attributes
 
 # from multiprocessing.dummy import Pool as ThreadPool
 # from threading import get_ident
@@ -110,3 +120,4 @@ class SingletonType(type):
 #     print("Normal ============================================")
 #     run(NonSingletonDatabase)
 #     print("Normal ============================================\n\n")
+        

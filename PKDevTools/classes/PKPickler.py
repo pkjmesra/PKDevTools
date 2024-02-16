@@ -27,15 +27,28 @@ import os
 import pickle
 
 from alive_progress import alive_bar
-from PKDevTools.classes.Singleton import SingletonType
+from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
 from PKDevTools.classes import Archiver
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.Fetcher import fetcher
 from PKDevTools.classes.Utils import getProgressbarStyle
 
-class PKPickler:
-    def __init__(self, metaclass=SingletonType):
+class PKPickler(SingletonMixin, metaclass=SingletonType):
+    def __init__(self):
         super(PKPickler, self).__init__()
+        self.fetcher = fetcher()
+
+    @property
+    def pickledDict(self):
+        if "pickledDict" in self.attributes.keys():
+            return self.attributes["pickledDict"]
+        else:
+            self.pickledDict = {}
+            return self.pickledDict
+    
+    @pickledDict.setter
+    def pickledDict(self, dict):
+        self.attributes["pickledDict"] = dict
 
     def pickle(self, dataDict, fileName="dafault.pkl", overWriteConfirmationFunc=None):
         """
@@ -72,19 +85,21 @@ class PKPickler:
         Raises `Exception` for all other exceptions when writing.
         """
         cache_file = os.path.join(Archiver.get_user_outputs_dir(), fileName)
-        if not os.path.exists(cache_file):
-            self._dumpPickle(dataDict, cache_file)
+        if not os.path.exists(cache_file) or overWriteConfirmationFunc is None:
+            self._dumpPickle(dataDict, cache_file, fileName)
         else:
             if overWriteConfirmationFunc is not None:
                 if overWriteConfirmationFunc(cache_file):
-                    self._dumpPickle(dataDict, cache_file)
+                    self._dumpPickle(dataDict, cache_file, fileName)
                 else:
                     default_logger().debug(f"User aborted pickling/overwriting because file {cache_file} already existed!")
 
-    def _dumpPickle(self, dataDict, cache_file):
+    def _dumpPickle(self, dataDict, cache_file, fileName):
         try:
+            dataCopy = dataDict.copy()
             with open(cache_file, "wb") as f:
-                pickle.dump(dataDict.copy(), f, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(dataCopy, f, protocol=pickle.HIGHEST_PROTOCOL)
+            self.pickledDict[fileName] = dataCopy
         except pickle.PicklingError as e:  # pragma: no cover
             default_logger().debug(e, exc_info=True)
             raise e
@@ -98,6 +113,44 @@ class PKPickler:
         overWriteConfirmationFuncIfCorruptedOrError=None,
         retrial = False
     ):
+        """
+        unpickle
+        ------
+        Retrieves the data from the supplied `fileName` and returns `dict` or `None` using `pickle.load`. If no `fileName`
+        is supplied, `dafault.pkl` will be searched on the `PKScreener` under `actions-data-download` and data saved under
+        `Archiver.get_user_outputs_dir()` by the filename `dafault.pkl`
+
+        If the file already exists, the caller can optionally provide a `overWriteConfirmationFuncIfCorruptedOrError`
+        function that will be called to accept user input (`True` to overwrite or `False` to abort.) for cases
+        when the data might have been corrupted or there were other issues with saved data.
+        
+        Example
+        -------
+        `PKPickler().unpickle("MyFile.pkl", self.overWriteConfirmationFuncIfCorruptedOrError)`
+
+        def overWriteConfirmationFuncIfCorruptedOrError(self, filePath:str, error:Exception): -> bool
+            # Check with user if the user really wants to overwrite?
+            ...
+
+            # User responded to overwrite
+
+            return True
+
+            # User responded to not overwrite. The unpickling will be aborted silently.
+
+            return False
+
+        If `overWriteConfirmationFuncIfCorruptedOrError` is `None`, the file will always be overwritten by default if an error
+        was encountered due to corruption of data.
+
+        Exceptions
+        ----------
+        Sends `pickle.UnpicklingError` in the `error` parameter of `overWriteConfirmationFuncIfCorruptedOrError`
+        if `pickle.load` raised `pickle.UnpicklingError`. Sends `EOFError` for `EOFError` error.
+        """
+        if fileName in self.pickledDict.keys():
+            return self.pickledDict[fileName]
+        
         dataLoaded = False
         dataDict = None
         cache_file = os.path.join(Archiver.get_user_outputs_dir(),fileName)
@@ -127,7 +180,7 @@ class PKPickler:
 
         if (not dataLoaded and userResponse) or not exists:
             cache_url = "https://raw.github.com/pkjmesra/PKScreener/actions-data-download/actions-data-download/" + fileName
-            resp = fetcher.fetchURL(cache_url, stream=True)
+            resp = self.fetcher.fetchURL(url=cache_url, stream=True)
             if resp is not None:
                 default_logger().info(f"Data cache file:{fileName} request status ->{resp.status_code}")
                 if resp.status_code == 200:
@@ -159,3 +212,35 @@ class PKPickler:
                         # Don't try for more than once.
                         dataDict = self.unpickle(fileName=fileName, overWriteConfirmationFuncIfCorruptedOrError=overWriteConfirmationFuncIfCorruptedOrError,retrial=True)
         return dataDict
+
+class PKPicklerDB:
+    def __init__(self, fileName="default.pkl"):
+        self.fileName = fileName
+        self.pickler = PKPickler()
+
+    def searchCache(self, ticker:str=None, name:str=None):
+        if (ticker is None and name is None) or (len(ticker.strip()) == 0 and len(name.strip()) == 0):
+            raise TypeError('At least one of ticker or name should have some value!')
+        
+        savedData = self.pickler.unpickle(fileName=self.fileName)
+        if savedData is not None and len(savedData) > 0:
+            if ticker is not None and isinstance(ticker, str) and ticker.strip().upper() in savedData.keys():
+                return savedData[ticker.strip().upper()]
+            if name is not None and isinstance(name, str) and name.strip().upper() in savedData.keys():
+                return savedData[name.strip().upper()]
+        return None
+    
+    def saveCache(self, ticker:str=None, name:str=None, stockDict:dict=None):
+        if (ticker is None and name is None) or (len(ticker.strip()) == 0 and len(name.strip()) == 0):
+            raise TypeError('At least one of ticker or name should have some value!')
+        if not isinstance(stockDict, dict) or stockDict is None or len(stockDict) == 0:
+            raise TypeError('stockDict should be a dictionary and should have some value!')
+        
+        savedData = self.pickler.unpickle(fileName=self.fileName)
+        if savedData is None:
+            savedData = {}
+        if ticker is not None and len(ticker.strip()) > 0:
+            savedData[ticker.strip().upper()] = stockDict
+        if name is not None and len(name.strip()) > 0:
+            savedData[name.strip().upper()] = stockDict
+        self.pickler.pickle(savedData,fileName=self.fileName)

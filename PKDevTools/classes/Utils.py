@@ -25,7 +25,7 @@
 """
 import platform
 
-def progressBarStyle():
+def getProgressbarStyle():
     bar = "smooth"
     spinner = "waves"
     if "Windows" in platform.platform():
