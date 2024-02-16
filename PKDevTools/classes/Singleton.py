@@ -39,6 +39,7 @@ class SingletonType(type):
             except AttributeError:
                 self.__shared_instance__ = super(SingletonType, self).__call__(*args, **kwargs)
                 self.__shared_instance__.attributes = {}
+                self.__shared_instance__.attributes["lock"] = self.__shared_instance_lock__
                 return self.__shared_instance__
 
 class SingletonMixin:

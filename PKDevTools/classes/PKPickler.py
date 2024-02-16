@@ -32,6 +32,7 @@ from PKDevTools.classes import Archiver
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.Fetcher import fetcher
 from PKDevTools.classes.Utils import getProgressbarStyle
+from PKDevTools.classes.ColorText import colorText
 
 class PKPickler(SingletonMixin, metaclass=SingletonType):
     def __init__(self):
@@ -96,10 +97,11 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
 
     def _dumpPickle(self, dataDict, cache_file, fileName):
         try:
-            dataCopy = dataDict.copy()
-            with open(cache_file, "wb") as f:
-                pickle.dump(dataCopy, f, protocol=pickle.HIGHEST_PROTOCOL)
-            self.pickledDict[fileName] = dataCopy
+            with self.attributes["lock"]:
+                dataCopy = dataDict.copy()
+                with open(cache_file, "wb") as f:
+                    pickle.dump(dataCopy, f, protocol=pickle.HIGHEST_PROTOCOL)
+                self.pickledDict[fileName] = dataCopy
         except pickle.PicklingError as e:  # pragma: no cover
             default_logger().debug(e, exc_info=True)
             raise e
@@ -160,17 +162,20 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         if exists:
             with open(cache_file, "rb") as f:
                 try:
-                    data = pickle.load(f)
-                    dataDict = {}
-                    for rowKey in data:
-                        dataDict[rowKey] = data.get(rowKey)
-                    dataLoaded = True
+                    with self.attributes["lock"]:
+                        if not dataLoaded:
+                            data = pickle.load(f)
+                            dataDict = {}
+                            for rowKey in data:
+                                dataDict[rowKey] = data.get(rowKey)
+                        dataLoaded = True
                 except pickle.UnpicklingError as e:
+                    default_logger().debug(f"File: {fileName}\n{e}", exc_info=True)
                     default_logger().debug(e, exc_info=True)
                     f.close()
                     error = e
                 except EOFError as e:  # pragma: no cover
-                    default_logger().debug(e, exc_info=True)
+                    default_logger().debug(f"File: {fileName}\n{e}", exc_info=True)
                     f.close()
                     error = e
 
@@ -185,23 +190,29 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                 default_logger().info(f"Data cache file:{fileName} request status ->{resp.status_code}")
                 if resp.status_code == 200:
                     try:
-                        chunksize = 1024 * 1024 * 1
-                        filesize = int(int(resp.headers.get("content-length")) / chunksize)
+                        serverBytes = int(resp.headers.get("content-length"))
+                        KB = 1024
+                        MB = KB * 1024
+                        chunksize = MB if serverBytes >= MB else (KB if serverBytes >= KB else 1)
+                        filesize = int( serverBytes / chunksize)
                         if filesize > 0:
                             bar, spinner = getProgressbarStyle()
-                            f = open(cache_file,"wb")  # .split(os.sep)[-1]
-                            dl = 0
-                            with alive_bar(
-                                filesize, bar=bar, spinner=spinner, manual=True
-                            ) as progressbar:
-                                for data in resp.iter_content(chunk_size=chunksize):
-                                    dl += 1
-                                    f.write(data)
-                                    progressbar(dl / filesize)
-                                    if dl >= filesize:
-                                        progressbar(1.0)
-                            f.close()
-                            dataLoaded = True
+                            with self.attributes["lock"]:
+                                if not os.path.isfile(cache_file) and not dataLoaded:
+                                    f = open(cache_file,"wb")  # .split(os.sep)[-1]
+                                    dl = 0
+                                    print(f"{colorText.GREEN}[+]Downloading {fileName} cache from pkscreener server...{colorText.END}")
+                                    with alive_bar(
+                                        filesize, bar=bar, spinner=spinner, manual=True
+                                    ) as progressbar:
+                                        for data in resp.iter_content(chunk_size=chunksize):
+                                            dl += 1
+                                            f.write(data)
+                                            progressbar(dl / filesize)
+                                            if dl >= filesize:
+                                                progressbar(1.0)
+                                    f.close()
+                                dataLoaded = True
                         else:
                             default_logger().debug(f"Data cache file:{fileName} on server has length ->{filesize}")
                     except Exception as e:  # pragma: no cover
