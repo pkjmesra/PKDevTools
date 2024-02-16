@@ -33,6 +33,8 @@ import warnings
 # from inspect import getcallargs, getfullargspec
 from collections import OrderedDict
 from functools import wraps
+from PKDevTools.classes.Singleton import SingletonType
+from threading import get_ident
 
 try:
     from collections.abc import Iterable
@@ -106,9 +108,13 @@ class colors:
 
 
 class filterlogger:
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, metaclass=SingletonType):
+        super(filterlogger, self).__init__()
         self._logger = logger
 
+    def __repr__(self):
+            return f"LogLevel: {self.level}, isDebugging: {self.isDebugging}"
+        
     @property
     def logger(self):
         return self._logger
@@ -123,7 +129,10 @@ class filterlogger:
 
     @level.setter
     def level(self, level):
-        self.logger.setLevel(level)
+        diff = (level != self.level)
+        if diff:
+            self.logger.setLevel(level)
+            print(f"{self}\nCreated in thread: {get_ident()}")
 
     @staticmethod
     def getlogger(logger):
