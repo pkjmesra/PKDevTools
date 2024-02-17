@@ -99,7 +99,13 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         try:
             with self.attributes["lock"]:
                 dataCopy = dataDict.copy()
+                diskDataDict = {}
+                with open(cache_file, "rb") as f:
+                    data = pickle.load(f)
+                    for rowKey in data:
+                        diskDataDict[rowKey] = data.get(rowKey)
                 with open(cache_file, "wb") as f:
+                    dataCopy = diskDataDict | dataCopy
                     pickle.dump(dataCopy, f, protocol=pickle.HIGHEST_PROTOCOL)
                 self.pickledDict[fileName] = dataCopy
         except pickle.PicklingError as e:  # pragma: no cover
