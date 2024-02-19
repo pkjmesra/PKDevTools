@@ -107,8 +107,8 @@ class colors:
         lightgrey = "\033[47m"
 
 
-class filterlogger:
-    def __init__(self, logger=None, metaclass=SingletonType):
+class filterlogger(metaclass=SingletonType):
+    def __init__(self, logger=None):
         super(filterlogger, self).__init__()
         self._logger = logger
 
@@ -132,7 +132,7 @@ class filterlogger:
         diff = (level != self.level)
         if diff:
             self.logger.setLevel(level)
-            print(f"{self}\nCreated in thread: {get_ident()}")
+            default_logger().debug(f"{self}\nCreated in thread: {get_ident()}")
 
     @staticmethod
     def getlogger(logger):
