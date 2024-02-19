@@ -66,12 +66,12 @@ class Committer():
     def execOSCommand(command):
         try:
             print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
-            os.system(command)
+            os.system(f"{command} >/dev/null 2>&1")
         except Exception:
             try:
                 # We probably got into a conflict
-                os.system("git checkout --ours .")
-                os.system(command)
+                os.system("git checkout --ours . >/dev/null 2>&1")
+                os.system(f"{command} >/dev/null 2>&1")
             except:
                 pass
             pass
