@@ -43,10 +43,10 @@ def downloadFolder(localPath:str=None, repoPath:str=None, branchName:str=None, f
     destinationFolder = os.path.join(localPath,rootFolderName,folderName)
 
     os.makedirs(os.path.dirname(f"{localPath}{os.sep}"), exist_ok=True)
-    command = f"cd {localPath} && git clone -n --depth=1 --branch {branchName} --filter=tree:0 {repoPath} && cd {rootFolderName} && git sparse-checkout set --no-cone {folderName} && git checkout"
-    subprocess.check_call(command,stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    command = f"cd {destinationFolder} && git status && git pull"
-    subprocess.check_call(command,stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    command = f"cd {localPath} >/dev/null 2>&1 && git clone -n --depth=1 --branch {branchName} --filter=tree:0 {repoPath} >/dev/null 2>&1 && cd {rootFolderName} >/dev/null 2>&1 && git sparse-checkout set --no-cone {folderName} >/dev/null 2>&1 && git checkout >/dev/null 2>&1"
+    os.system(command)
+    command = f"cd {destinationFolder} >/dev/null 2>&1 && git status >/dev/null 2>&1 && git pull >/dev/null 2>&1"
+    os.system(command)
     return destinationFolder
 
 # from PKDevTools.classes import Archiver
