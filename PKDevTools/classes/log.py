@@ -168,7 +168,7 @@ class filterlogger(metaclass=SingletonType):
             self.logger.addHandler(consolehandler)
             global __DEBUG__
             __DEBUG__ = True
-            self.logger.debug("PKDevTools: Logging started. Filter:{}".format(filter))
+            default_logger().debug("PKDevTools: Logging started. Filter:{}".format(filter))
         return consolehandler, filehandler
 
     def debug(self, e, exc_info=False):
