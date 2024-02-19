@@ -30,6 +30,8 @@ import datetime
 import requests
 from datetime import timezone
 from PKDevTools.classes.Fetcher import fetcher
+from PKDevTools.classes.PKPickler import PKPickler
+from PKDevTools.classes.Utils import random_user_agent
 
 class PKDateUtilities:
     def utc_to_ist(utc_dt):
@@ -192,9 +194,13 @@ class PKDateUtilities:
         return nextRun
     
     def holidayList():
+        pickler = PKPickler()
+        keyName = f"{__class__.__name__}>{PKDateUtilities.holidayList.__name__}"
+        if keyName in pickler.pickledDict.keys():
+            return pickler.pickledDict[keyName]
         url = "https://raw.githubusercontent.com/pkjmesra/PKScreener/main/.github/dependencies/nse-holidays.json"
         headers = {
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
+            "user-agent": random_user_agent()
         }
         f = fetcher()
         res = f.fetchURL(url, headers=headers)
@@ -210,6 +216,7 @@ class PKDateUtilities:
             df.loc[:, "tradingDate"] = df.loc[:, "tradingDate"].apply(
                 lambda x: PKDateUtilities.dateFromdbYString(x).strftime("%Y-%m-%d")
             )
+            pickler.pickledDict[keyName] = (df, df['tradingDate'].tolist())
             return df, df['tradingDate'].tolist()
         except Exception:  # pragma: no cover
             return None
@@ -239,3 +246,6 @@ class PKDateUtilities:
     def isTodayHoliday():
         curr = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         return PKDateUtilities.isHoliday(curr)
+
+# PKDateUtilities.holidayList()
+# PKDateUtilities.holidayList()
