@@ -164,3 +164,11 @@ jobs:
         python3 setup.py clean build sdist bdist_wheel
         twine upload --verbose dist/*
 
+    - name: Delete history of workflow runs
+      shell: bash
+      run: |
+        gh run list --status success --limit 100 --json databaseId -q '.[].databaseId' | xargs -IID gh api "repos/$(gh repo view --json nameWithOwner -q .nameWithOwner)/actions/runs/ID" -X DELETE
+        gh run list --status cancelled --limit 100 --json databaseId -q '.[].databaseId' | xargs -IID gh api "repos/$(gh repo view --json nameWithOwner -q .nameWithOwner)/actions/runs/ID" -X DELETE
+      env:
+        GH_TOKEN : ${{secrets.GITHUB_TOKEN}}
+  
