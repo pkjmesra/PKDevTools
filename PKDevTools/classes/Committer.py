@@ -50,22 +50,23 @@ class Committer():
         if not cwd.endswith(os.sep):
             cwd = f"{cwd}{os.sep}"
         addPath = addPath.replace(cwd,"")
-        Committer.execOSCommand("git config user.name github-actions")
-        Committer.execOSCommand("git config user.email github-actions@github.com")
-        Committer.execOSCommand("git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'")
-        Committer.execOSCommand("git remote update")
-        Committer.execOSCommand("git fetch")
-        Committer.execOSCommand("git config pull.rebase false")
-        Committer.execOSCommand("git pull")
+        Committer.execOSCommand("git config user.name github-actions >/dev/null 2>&1")
+        Committer.execOSCommand("git config user.email github-actions@github.com >/dev/null 2>&1")
+        Committer.execOSCommand("git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' >/dev/null 2>&1")
+        Committer.execOSCommand("git remote update >/dev/null 2>&1")
+        Committer.execOSCommand("git fetch >/dev/null 2>&1")
+        Committer.execOSCommand("git config pull.rebase false >/dev/null 2>&1")
+        Committer.execOSCommand("git pull >/dev/null 2>&1")
         # Committer.execOSCommand("git checkout --ours .")
         Committer.execOSCommand(f"git add {addPath} --force")
         Committer.execOSCommand(f"git commit -m '{commitMessage}'")
-        Committer.execOSCommand("git pull")
-        Committer.execOSCommand(f"git push -v -u origin +{branchName}")
+        Committer.execOSCommand("git pull >/dev/null 2>&1")
+        Committer.execOSCommand(f"git push -v -u origin +{branchName} >/dev/null 2>&1")
 
-    def execOSCommand(command):
+    def execOSCommand(command:str):
         try:
             print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
+            command.replace(">/dev/null 2>&1","")
             os.system(f"{command} >/dev/null 2>&1")
         except Exception:
             try:
