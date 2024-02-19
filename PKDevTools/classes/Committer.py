@@ -28,6 +28,8 @@ import platform
 import datetime
 import pytz
 
+from PKDevTools.classes.log import default_logger
+
 # argParser = argparse.ArgumentParser()
 # required = False
 # argParser.add_argument("-m", "--message", help="Commit message", required=required)
@@ -65,7 +67,7 @@ class Committer():
 
     def execOSCommand(command:str):
         try:
-            print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
+            default_logger().debug(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
             command.replace(">/dev/null 2>&1","")
             os.system(f"{command} >/dev/null 2>&1")
         except Exception:
