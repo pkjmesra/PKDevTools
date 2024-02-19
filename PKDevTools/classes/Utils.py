@@ -25,6 +25,8 @@
 """
 import platform
 import random
+from pathlib import Path
+from typing import Union
 
 USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.",
@@ -267,3 +269,12 @@ def random_user_agent():
     
     """
     return random.choice(USER_AGENTS)
+
+def getPath(path: Union[str, Path], isFolder: bool = False):
+    path = path if isinstance(path, Path) else Path(path)
+    if isFolder:
+        if path.is_file():
+            raise ValueError(f'{path}: must be a folder')
+        if not path.exists():
+            path.mkdir(parents=True)
+    return path
