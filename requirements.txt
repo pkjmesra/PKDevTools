@@ -1,6 +1,7 @@
 alive_progress
 argparse
 bs4
+filelock
 mistletoe
 numpy
 pandas

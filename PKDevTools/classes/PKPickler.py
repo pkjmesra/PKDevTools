@@ -25,6 +25,7 @@
 """
 import os
 import pickle
+from filelock import FileLock
 
 from alive_progress import alive_bar
 from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
@@ -102,17 +103,13 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                 diskDataDict = {}
                 exists = os.path.isfile(cache_file)
                 if exists:
-                    with open(cache_file, "rb") as f:
-                        data = pickle.load(f)
-                        for rowKey in data:
-                            diskDataDict[rowKey] = data.get(rowKey)
-                dataCopy = diskDataDict | dataCopy
-                if len(diskDataDict) > len(dataCopy):
-                    dataCopy = dataCopy | diskDataDict
-                if len(diskDataDict) > len(dataCopy):
-                    dataCopy = diskDataDict
-                with open(cache_file, "wb") as f:
-                    pickle.dump(dataCopy, f, protocol=pickle.HIGHEST_PROTOCOL)
+                    with FileLock(f'{cache_file}.lck'):
+                        with open(cache_file, 'r+b') as pfile:
+                            diskDataDict = pickle.load(pfile)
+                            dataCopy = diskDataDict | dataCopy
+                            if len(diskDataDict) > len(dataCopy):
+                                dataCopy = dataCopy | diskDataDict
+                            pickle.dump(dataCopy, pfile, protocol=pickle.HIGHEST_PROTOCOL)
                 self.pickledDict[fileName] = dataCopy
         except pickle.PicklingError as e:  # pragma: no cover
             default_logger().debug(e, exc_info=True)
@@ -172,14 +169,14 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         default_logger().info(f"Stock data cache file:{cache_file} exists ->{str(exists)}")
         error = None
         if exists:
+            dataDict = {}
             with open(cache_file, "rb") as f:
                 try:
                     with self.attributes["lock"]:
                         if not dataLoaded:
-                            data = pickle.load(f)
-                            dataDict = {}
-                            for rowKey in data:
-                                dataDict[rowKey] = data.get(rowKey)
+                            with FileLock(f'{cache_file}.lck'):
+                                with open(cache_file, 'rb') as pfile:
+                                    dataDict = pickle.load(pfile)
                         dataLoaded = True
                 except pickle.UnpicklingError as e:
                     default_logger().debug(f"File: {fileName}\n{e}", exc_info=True)
