@@ -199,7 +199,8 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                 default_logger().info(f"Data cache file:{fileName} request status ->{resp.status_code}")
                 if resp.status_code == 200:
                     try:
-                        serverBytes = int(resp.headers.get("content-length"))
+                        contentLength = resp.headers.get("content-length")
+                        serverBytes = int(contentLength) if contentLength is not None else 0
                         KB = 1024
                         MB = KB * 1024
                         chunksize = MB if serverBytes >= MB else (KB if serverBytes >= KB else 1)
