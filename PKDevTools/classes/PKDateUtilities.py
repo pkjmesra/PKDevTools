@@ -79,6 +79,20 @@ class PKDateUtilities:
             lastTradingDate = lastTradingDate.date()
         return lastTradingDate
 
+    def nextTradingDate(d1=None, days=1):
+        if isinstance(d1,str):
+            d1 = PKDateUtilities.dateFromYmdString(d1)
+        nextDayCounter = 1
+        while nextDayCounter <= days:
+            nextTradingDate = (d1 + datetime.timedelta(days=1))
+            while PKDateUtilities.isHoliday(nextTradingDate)[0] or not PKDateUtilities.isTradingWeekday(nextTradingDate):
+                nextTradingDate = PKDateUtilities.nextTradingDate(nextTradingDate, days=1)
+            if isinstance(nextTradingDate,datetime.datetime):
+                nextTradingDate = nextTradingDate.date()
+            nextDayCounter += 1
+            d1 = nextTradingDate
+        return nextTradingDate
+    
     def dateFromYmdString(Ymd=None):
         today = PKDateUtilities.currentDateTime()
         return datetime.datetime.strptime(Ymd, "%Y-%m-%d").replace(tzinfo=today.tzinfo)
