@@ -41,11 +41,11 @@ class PKDateUtilities:
             .astimezone(tz=pytz.timezone("Asia/Kolkata"))
         )
 
-    def last_day_of_month(any_day):
+    def last_day_of_month(any_day:datetime.datetime):
         weekday, lastDay = calendar.monthrange(any_day.year, any_day.month)
         return PKDateUtilities.currentDateTime(simulate=True,day=lastDay,year=any_day.year,month=any_day.month)
 
-    def last_day_of_previous_month(any_day):
+    def last_day_of_previous_month(any_day:datetime.datetime):
         first = any_day.replace(day=1)
         last_day_last_month = first - datetime.timedelta(days=1)
         return last_day_last_month
@@ -69,7 +69,7 @@ class PKDateUtilities:
             lastTradingDate = PKDateUtilities.previousTradingDate(lastTradingDate)
         return lastTradingDate
     
-    def previousTradingDate(d1=None):
+    def previousTradingDate(d1:datetime.datetime|str=None):
         if isinstance(d1,str):
             d1 = PKDateUtilities.dateFromYmdString(d1)
         lastTradingDate = (d1 - datetime.timedelta(days=1))
@@ -79,7 +79,7 @@ class PKDateUtilities:
             lastTradingDate = lastTradingDate.date()
         return lastTradingDate
 
-    def nextTradingDate(d1=None, days=1):
+    def nextTradingDate(d1:datetime.datetime|str=None, days=1):
         if isinstance(d1,str):
             d1 = PKDateUtilities.dateFromYmdString(d1)
         nextDayCounter = 1
@@ -92,6 +92,17 @@ class PKDateUtilities:
             nextDayCounter += 1
             d1 = nextTradingDate
         return nextTradingDate
+    
+    def firstTradingDateOfMonth(any_day:datetime.datetime):
+        calcDate = any_day.replace(day=1) # Replace to the first day of the month
+        prevTradingDate = PKDateUtilities.previousTradingDate(calcDate)
+        firstTradingDate = PKDateUtilities.nextTradingDate(prevTradingDate)
+        return firstTradingDate
+
+    def lastTradingDateOfMonth(any_day:datetime.datetime):
+        calcDate = PKDateUtilities.last_day_of_month(any_day) + datetime.timedelta(days=1)
+        lastTradingDate = PKDateUtilities.previousTradingDate(calcDate)
+        return lastTradingDate
     
     def dateFromYmdString(Ymd=None):
         today = PKDateUtilities.currentDateTime()
@@ -261,5 +272,5 @@ class PKDateUtilities:
         curr = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         return PKDateUtilities.isHoliday(curr)
 
-# PKDateUtilities.holidayList()
-# PKDateUtilities.holidayList()
+# d1 = PKDateUtilities.firstTradingDateOfMonth(PKDateUtilities.currentDateTime())
+# d2 = PKDateUtilities.lastTradingDateOfMonth(PKDateUtilities.currentDateTime())
