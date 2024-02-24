@@ -22,12 +22,14 @@
     SOFTWARE.
 
 """
-
+import warnings
+warnings.simplefilter("ignore", UserWarning)
 import logging
-import multiprocessing
 import os
 import sys
 from queue import Empty
+os.environ["PYTHONWARNINGS"]="ignore::UserWarning"
+import multiprocessing
 
 # usage: pkscreenercli.exe [-h] [-a ANSWERDEFAULT] [-c CRONINTERVAL] [-d] [-e] [-o OPTIONS] [-p] [-t] [-l] [-v]
 # pkscreenercli.exe: error: unrecognized arguments: --multiprocessing-fork parent_pid=4620 pipe_handle=708

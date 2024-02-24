@@ -24,6 +24,10 @@
 
 """
 from __future__ import absolute_import, division, unicode_literals
+import warnings
+import os
+warnings.simplefilter("ignore", UserWarning)
+os.environ["PYTHONWARNINGS"]="ignore::UserWarning"
 
 import logging
 import multiprocessing
