@@ -193,13 +193,13 @@ class filterlogger(metaclass=SingletonType):
                 return
             if __filter__ in line.upper():
                 self.logger.debug(line, exc_info=exc_info)
-        elif self.level == logging.INFO:
+        elif self.level <= logging.INFO and self.level > logging.NOTSET:
             self.info(line)
 
     def info(self, line):
         global __filter__, __DEBUG__
-        __DEBUG__ = self.level == logging.INFO
-        if not self.logger.level == logging.INFO:
+        __DEBUG__ = self.level <= logging.INFO and self.level > logging.NOTSET
+        if not self.logger.level > logging.INFO:
             return
         frame = inspect.stack()[1]
         # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]

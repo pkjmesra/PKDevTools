@@ -22,6 +22,7 @@
     SOFTWARE.
 
 """
+import inspect
 import time
 from contextlib import ContextDecorator
 from dataclasses import dataclass, field
@@ -44,6 +45,14 @@ class PKTimer(ContextDecorator):
         """Initialization: add timer to dict of timers"""
         if self.name:
             self.timers.setdefault(self.name, 0)
+        # else:
+        #     frame = inspect.stack()[1]
+        #     components = str(frame).split(",")
+        #     # (frame[0].f_code.co_filename).rsplit('/', 1)[1]
+        #     filename = components[4]
+        #     self.name = "{} - {} - {}".format(
+        #         filename, components[5], components[6]
+        #     )
 
     def start(self) -> None:
         """Start a new timer"""
