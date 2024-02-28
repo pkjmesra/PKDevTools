@@ -189,11 +189,13 @@ class filterlogger(metaclass=SingletonType):
 
     @staticmethod
     def getlogger(logger):
+        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+            return emptylogger()
+        
         global __filter__
         # if __filter__ is not None:
         lgr = filterlogger(logger=logger)
-        if 'PKDevTools_Default_Log_Level' in os.environ.keys():
-            lgr.level = int(os.environ['PKDevTools_Default_Log_Level'])
+        lgr.level = int(os.environ['PKDevTools_Default_Log_Level'])
         return lgr
         # else:
         #   return logger
