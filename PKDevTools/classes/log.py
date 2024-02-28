@@ -446,9 +446,9 @@ def measure_time(f):
         print('%r %2.2f sec' % \
             (f.__name__, te-ts))
         return result
-    return timed
+    return timed if default_logger().level == logging.DEBUG else log_to(None)
 
-tracelog = log_to(trace_log)
+tracelog = log_to(trace_log) if default_logger().level == logging.DEBUG else log_to(None)
 
 # def timeit(method):
 #     def timed(*args, **kw):
