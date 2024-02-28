@@ -106,6 +106,59 @@ class colors:
         cyan = "\033[46m"
         lightgrey = "\033[47m"
 
+class emptylogger():
+        
+    @property
+    def logger(self):
+        return None
+
+    @property
+    def level(self):
+        return logging.NOTSET
+
+    @property
+    def isDebugging(self):
+        return False
+
+    @level.setter
+    def level(self, level):
+        return
+
+    @staticmethod
+    def getlogger(logger):
+        return emptylogger()
+    
+    def flush(self):
+        return
+
+    def addHandlers(self, log_file_path=None, levelname=logging.NOTSET):
+        return
+
+    def debug(self, e, exc_info=False):
+        return
+
+    def info(self, line):
+        return
+
+    def warn(self, line):
+        return
+
+    def error(self, line):
+        return
+
+    def setLevel(self, level):
+        return
+
+    def critical(self, line):
+        return
+
+    def addHandler(self, hdl):
+        return
+
+    def removeHandler(self, hdl):
+        return
+
+    logging.shutdown()
 
 class filterlogger(metaclass=SingletonType):
     def __init__(self, logger=None):
@@ -254,6 +307,8 @@ def setup_custom_logger(
     __filter__ = filter if filter is None else filter.upper()
     logger = logging.getLogger(name)
     logger.setLevel(levelname)
+    if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+        os.environ["PKDevTools_Default_Log_Level"] = str(levelname)
 
     consolehandler, filehandler = default_logger().addHandlers(
         log_file_path=log_file_path, levelname=levelname
@@ -276,7 +331,10 @@ def setup_custom_logger(
 
 
 def default_logger():
-    return filterlogger.getlogger(logging.getLogger("PKDevTools"))
+    if 'PKDevTools_Default_Log_Level' in os.environ.keys():
+        return filterlogger.getlogger(logging.getLogger("PKDevTools"))
+    else:
+        return emptylogger()
 
 
 def file_logger():
