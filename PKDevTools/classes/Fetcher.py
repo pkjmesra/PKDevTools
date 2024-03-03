@@ -61,6 +61,7 @@ class stubConfigManager:
     def __init__(self):
         self.maxNetworkRetryCount = 3
         self.generalTimeout = 4
+        self.longTimeout = 2*self.generalTimeout
 
     def restartRequestsCache(self):
         return None
