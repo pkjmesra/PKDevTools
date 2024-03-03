@@ -23,6 +23,7 @@
     SOFTWARE.
 
 """
+import copy
 import os
 import sys
 import pickle
@@ -100,7 +101,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
     def _dumpPickle(self, dataDict, cache_file, fileName):
         try:
             with self.attributes["lock"]:
-                dataCopy = dataDict.copy()
+                dataCopy = copy.deepcopy(dataDict)
                 diskDataDict = {}
                 exists = os.path.isfile(cache_file)
                 if exists:
