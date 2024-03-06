@@ -22,6 +22,7 @@
     SOFTWARE.
 
 """
+import pickle
 import warnings
 warnings.simplefilter("ignore", UserWarning)
 import logging
@@ -45,7 +46,7 @@ except ImportError:
     print("Contact developer! Your platform does not support multiprocessing!")
 
 from PKDevTools.classes.log import default_logger
-
+from PKDevTools.classes import Archiver
 
 class PKMultiProcessorClient(multiprocessing.Process):
     def __init__(
@@ -111,6 +112,15 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.screener = screener
 
     def run(self):
+        try:
+            if isinstance(self.objectDictionary,str):
+                # Looks like we got the filename instead of stock dictionary
+                # Let's load the saved stocks' data
+                cache_file = self.objectDictionary
+                with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file), "rb") as f:
+                    self.objectDictionary = pickle.load(f)
+        except:
+            pass
         try:
             while not self.keyboardInterruptEvent.is_set():
                 try:
