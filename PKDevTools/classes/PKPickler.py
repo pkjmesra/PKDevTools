@@ -34,7 +34,7 @@ from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
 from PKDevTools.classes import Archiver
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.Fetcher import fetcher
-from PKDevTools.classes.Utils import getProgressbarStyle
+from PKDevTools.classes.Utils import getProgressbarStyle, random_user_agent
 from PKDevTools.classes.ColorText import colorText
 
 class PKPickler(SingletonMixin, metaclass=SingletonType):
@@ -195,8 +195,23 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
             userResponse = True
 
         if (not dataLoaded and userResponse) or not exists:
-            cache_url = "https://raw.github.com/pkjmesra/PKScreener/actions-data-download/actions-data-download/" + fileName
-            resp = self.fetcher.fetchURL(url=cache_url, stream=True)
+            cache_url = "https://raw.githubusercontent.com/pkjmesra/PKScreener/actions-data-download/actions-data-download/" + fileName
+            headers = {
+                    'authority': 'raw.githubusercontent.com',
+                    'accept': '*/*',
+                    'accept-language': 'en-US,en;q=0.9',
+                    'dnt': '1',
+                    'sec-ch-ua-mobile': '?0',
+                    # 'sec-ch-ua-platform': '"macOS"',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors',
+                    'sec-fetch-site': 'cross-site',                  
+                    'origin': 'https://github.com',
+                    'referer': f'https://github.com/pkjmesra/PKScreener/blob/actions-data-download/actions-data-download/{fileName}',
+                    'user-agent': f'{random_user_agent()}' 
+                    #'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
+            }
+            resp = self.fetcher.fetchURL(url=cache_url, headers=headers,stream=True)
             if resp is not None:
                 default_logger().info(f"Data cache file:{fileName} request status ->{resp.status_code}")
                 if resp.status_code == 200:
