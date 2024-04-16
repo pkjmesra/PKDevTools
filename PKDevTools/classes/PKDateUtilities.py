@@ -157,6 +157,14 @@ class PKDateUtilities:
             checkDate = PKDateUtilities.currentDateTime()
         return 0 <= checkDate.weekday() <= 4
 
+    def nextWeekday(forDate=None):
+        if forDate is None:
+            forDate = PKDateUtilities.currentDateTime()
+        nextWeekday = forDate + datetime.timedelta(days=1)
+        while not PKDateUtilities.isTradingWeekday(nextWeekday):
+            nextWeekday = nextWeekday + datetime.timedelta(days=1)
+        return nextWeekday
+    
     def ispreMarketTime():
         curr = PKDateUtilities.currentDateTime()
         openTime = curr.replace(hour=9, minute=15)
