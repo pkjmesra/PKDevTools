@@ -228,9 +228,9 @@ class PKDateUtilities:
             "user-agent": random_user_agent()
         }
         f = fetcher()
-        res = f.fetchURL(url, headers=headers)
+        res = f.fetchURL(url, headers=headers, timeout=10)
         if res is None or res.status_code != 200:
-            return None
+            return None, None
         try:
             cm = res.json()["CM"]  # CM = Capital Markets
             df = pd.DataFrame(cm)
@@ -244,7 +244,7 @@ class PKDateUtilities:
             pickler.pickledDict[keyName] = (df, df['tradingDate'].tolist())
             return df, df['tradingDate'].tolist()
         except Exception:  # pragma: no cover
-            return None
+            return None, None
 
     def isHoliday(d1=None):
         if isinstance(d1,str):
