@@ -25,6 +25,61 @@
 import tabulate as tb
 from tabulate import tabulate, Line,DataRow
 
+class tbInternal:
+    def __init__(self):
+        self.tb = tb
+
+    def tabulate(
+        self,
+        tabular_data,
+        headers=(),
+        tablefmt="simple",
+        floatfmt="g",
+        intfmt="",
+        numalign="default",
+        stralign="default",
+        missingval="",
+        showindex="default",
+        disable_numparse=False,
+        colalign=None,
+        maxcolwidths=None,
+        rowalign=None,
+        maxheadercolwidths=None,
+    ):
+        tabulated_data = self.tb.tabulate(tabular_data=tabular_data,
+            headers=headers,
+            tablefmt=tablefmt,
+            floatfmt=floatfmt,
+            intfmt=intfmt,
+            numalign=numalign,
+            stralign=stralign,
+            missingval=missingval,
+            showindex=showindex,
+            disable_numparse=disable_numparse,
+            colalign=colalign,
+            maxcolwidths=maxcolwidths,
+            rowalign=rowalign,
+            maxheadercolwidths=maxheadercolwidths)
+        
+        brandName = "PKSCREENER"
+        maxIndex = len(brandName) -1
+        index = 0
+        tab_lines_org = tabulated_data.splitlines()
+        tab_lines_mod = []
+        for line in tab_lines_org:
+            tab_line = line
+            if line.startswith("+"):
+                tab_line = ""
+                columns = line.split("+")[1:]
+                for col in columns:
+                    tab_line = f"{tab_line}{brandName[index:index+1]}{col}"
+                    index += 1
+                    if index > maxIndex:
+                        index = 0
+            tab_lines_mod.append(tab_line)
+        tabulated_data = "\n".join(tab_lines_mod)
+        return tabulated_data
+
 # Decoration Class
 class colorText:
     HEAD = "\033[95m"
@@ -40,7 +95,8 @@ class colorText:
     No_Pad_GridFormat = "minpadding"
 
     def miniTabulator():
-        tb._table_formats[colorText.No_Pad_GridFormat] = tb.TableFormat(
+        tbi = tbInternal()
+        tbi.tb._table_formats[colorText.No_Pad_GridFormat] = tb.TableFormat(
                 lineabove=Line("+", "-", "+", "+"),
                 linebelowheader=Line("+", "=", "+", "+"),
                 linebetweenrows=Line("+", "-", "+", "+"),
@@ -50,6 +106,7 @@ class colorText:
                 padding=0,
                 with_header_hide=None,
             )
-        tb.multiline_formats[colorText.No_Pad_GridFormat] = colorText.No_Pad_GridFormat
-        tb.tabulate_formats = list(sorted(tb._table_formats.keys()))
-        return tb
+        tbi.tb.multiline_formats[colorText.No_Pad_GridFormat] = colorText.No_Pad_GridFormat
+        tbi.tb.tabulate_formats = list(sorted(tb._table_formats.keys()))
+        return tbi
+    
