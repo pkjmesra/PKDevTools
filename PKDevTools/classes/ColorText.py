@@ -22,6 +22,7 @@
     SOFTWARE.
 
 """
+import sys
 import tabulate as tb
 from tabulate import tabulate, Line,DataRow
 
@@ -45,6 +46,9 @@ class tbInternal:
         maxcolwidths=None,
         rowalign=None,
         maxheadercolwidths=None,
+        highlightedRows=[],
+        highlightedColumns=[],
+        highlightCharacter="\U0001F911"
     ):
         tabulated_data = self.tb.tabulate(tabular_data=tabular_data,
             headers=headers,
@@ -63,22 +67,33 @@ class tbInternal:
         
         brandName = "PKSCREENER"
         maxIndex = len(brandName) -1
-        index = 0
+        col_index = 0
         tab_lines_org = tabulated_data.splitlines()
         tab_lines_mod = []
+        highlightRows = len(highlightedRows) >= 1
+        highlightColumns = len(highlightedColumns) >= 1
+        row_num = 0
         for line in tab_lines_org:
             tab_line = line
+            col_num = 0
             if line.startswith("+"):
                 tab_line = ""
                 columns = line.split("+")[1:]
                 for col in columns:
-                    tab_line = f"{tab_line}{brandName[index:index+1]}{col}"
-                    index += 1
-                    if index > maxIndex:
-                        index = 0
+                    if highlightRows and highlightColumns and (row_num in highlightedRows) and (col_num in highlightedColumns):
+                        highlightValue = col.replace('--',highlightCharacter).replace('==',highlightCharacter)
+                        tab_line = f"{tab_line}{brandName[col_index:col_index+1]}{highlightValue}"
+                    else:
+                        tab_line = f"{tab_line}{brandName[col_index:col_index+1]}{col}"
+                    col_index += 1
+                    if col_index > maxIndex:
+                        col_index = 0
+                    col_num += 1
+                row_num += 1
             tab_lines_mod.append(tab_line)
         tabulated_data = "\n".join(tab_lines_mod)
-        return tabulated_data
+        STD_ENCODING=sys.stdout.encoding if sys.stdout is not None else 'utf-8'
+        return tabulated_data.encode("utf-8").decode(STD_ENCODING)
 
 # Decoration Class
 class colorText:
