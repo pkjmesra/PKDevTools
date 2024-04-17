@@ -34,6 +34,7 @@
 import requests
 from dotenv import dotenv_values
 from PKDevTools.classes.log import default_logger
+from PKDevTools.classes.OutputControls import OutputControls
 from telegram.constants import ParseMode
 
 # from io import BytesIO
@@ -154,7 +155,7 @@ def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=
     initTelegram()
     if not is_token_telegram_configured():
         return
-    print(f"Sending message:{message}")
+    OutputControls().printOutput(f"Sending message:{message}")
     method = "/sendPhoto"
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
     photo = open(photoFilePath, "rb")

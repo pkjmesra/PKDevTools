@@ -36,6 +36,7 @@ from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.Fetcher import fetcher
 from PKDevTools.classes.Utils import getProgressbarStyle, random_user_agent
 from PKDevTools.classes.ColorText import colorText
+from PKDevTools.classes.OutputControls import OutputControls
 
 class PKPickler(SingletonMixin, metaclass=SingletonType):
     def __init__(self):
@@ -229,7 +230,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                                     f = open(cache_file,"wb")  # .split(os.sep)[-1]
                                     dl = 0
                                     lastPath = (cache_file.split(os.sep)[-1]).replace("DB.pkl","")
-                                    print(f"{colorText.GREEN}[+] Downloading {lastPath} cache from pkscreener server...{colorText.END}")
+                                    OutputControls().printOutput(f"{colorText.GREEN}[+] Downloading {lastPath} cache from pkscreener server...{colorText.END}")
                                     with alive_bar(
                                         filesize, bar=bar, spinner=spinner, manual=True
                                     ) as progressbar:
@@ -247,7 +248,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                     except Exception as e:  # pragma: no cover
                         default_logger().debug(e, exc_info=True)
                         f.close()
-                        print("[!] Download Error - " + str(e))
+                        OutputControls().printOutput("[!] Download Error - " + str(e))
                     if not retrial and dataLoaded:
                         # Don't try for more than once.
                         dataDict = self.unpickle(fileName=fileName, overWriteConfirmationFuncIfCorruptedOrError=overWriteConfirmationFuncIfCorruptedOrError,retrial=True)
