@@ -23,6 +23,7 @@
 
 """
 import sys
+import os
 from typing_extensions import Literal
 
 from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
@@ -30,7 +31,7 @@ from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
 class OutputControls(SingletonMixin, metaclass=SingletonType):
     def __init__(self, enableMultipleLineOutput=False):
         super(OutputControls, self).__init__()
-        self.enableMultipleLineOutput = enableMultipleLineOutput
+        self.enableMultipleLineOutput = enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
 
     def printOutput(
         self,
@@ -43,6 +44,7 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         # end = '\r' if (not enableMultipleLineOutput) else end
         # flush = True if (not enableMultipleLineOutput) else flush
         print(*values, sep=sep, end=end, flush=flush)
+        enableMultipleLineOutput = enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
         if enableMultipleLineOutput:
             return
         lines = len(str(*values).splitlines())
