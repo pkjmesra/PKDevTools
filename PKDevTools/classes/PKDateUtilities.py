@@ -162,7 +162,7 @@ class PKDateUtilities:
         curr = PKDateUtilities.currentDateTime()
         openTime = curr.replace(hour=9, minute=15)
         closeTime = curr.replace(hour=15, minute=30)
-        return (openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday() and not PKDateUtilities.isTodayHoliday()
+        return (openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()
 
     def isTradingWeekday(checkDate=None):
         if checkDate is None:
