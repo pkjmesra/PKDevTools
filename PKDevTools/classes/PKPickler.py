@@ -241,7 +241,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                                             if dl >= filesize:
                                                 progressbar(1.0)
                                     f.close()
-                                    sys.stdout.write(f"\x1b[2A")
+                                    # sys.stdout.write(f"\x1b[2A")
                                 dataLoaded = True
                         else:
                             default_logger().debug(f"Data cache file:{fileName} on server has length ->{filesize}")
