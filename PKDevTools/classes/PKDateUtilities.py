@@ -42,10 +42,14 @@ class PKDateUtilities:
         )
 
     def last_day_of_month(any_day:datetime.datetime):
+        if any_day is None:
+            any_day = PKDateUtilities.currentDateTime()
         weekday, lastDay = calendar.monthrange(any_day.year, any_day.month)
         return PKDateUtilities.currentDateTime(simulate=True,day=lastDay,year=any_day.year,month=any_day.month)
 
     def last_day_of_previous_month(any_day:datetime.datetime):
+        if any_day is None:
+            any_day = PKDateUtilities.currentDateTime()
         first = any_day.replace(day=1)
         last_day_last_month = first - datetime.timedelta(days=1)
         return last_day_last_month
@@ -72,6 +76,8 @@ class PKDateUtilities:
     def previousTradingDate(d1:datetime.datetime|str=None):
         if isinstance(d1,str):
             d1 = PKDateUtilities.dateFromYmdString(d1)
+        if d1 is None:
+            d1 = PKDateUtilities.currentDateTime()
         lastTradingDate = (d1 - datetime.timedelta(days=1))
         while PKDateUtilities.isHoliday(lastTradingDate)[0] or not PKDateUtilities.isTradingWeekday(lastTradingDate):
             lastTradingDate = PKDateUtilities.previousTradingDate(lastTradingDate)
@@ -80,6 +86,8 @@ class PKDateUtilities:
         return lastTradingDate
 
     def nextTradingDate(d1:datetime.datetime|str=None, days=1):
+        if d1 is None:
+            d1 = PKDateUtilities.currentDateTime()
         if isinstance(d1,str):
             d1 = PKDateUtilities.dateFromYmdString(d1)
         nextDayCounter = 1
@@ -94,12 +102,16 @@ class PKDateUtilities:
         return nextTradingDate
     
     def firstTradingDateOfMonth(any_day:datetime.datetime):
+        if any_day is None:
+            any_day = PKDateUtilities.currentDateTime()
         calcDate = any_day.replace(day=1) # Replace to the first day of the month
         prevTradingDate = PKDateUtilities.previousTradingDate(calcDate)
         firstTradingDate = PKDateUtilities.nextTradingDate(prevTradingDate)
         return firstTradingDate
 
     def lastTradingDateOfMonth(any_day:datetime.datetime):
+        if any_day is None:
+            any_day = PKDateUtilities.currentDateTime()
         calcDate = PKDateUtilities.last_day_of_month(any_day) + datetime.timedelta(days=1)
         lastTradingDate = PKDateUtilities.previousTradingDate(calcDate)
         return lastTradingDate
@@ -150,7 +162,7 @@ class PKDateUtilities:
         curr = PKDateUtilities.currentDateTime()
         openTime = curr.replace(hour=9, minute=15)
         closeTime = curr.replace(hour=15, minute=30)
-        return (openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()
+        return (openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday() and not PKDateUtilities.isTodayHoliday()
 
     def isTradingWeekday(checkDate=None):
         if checkDate is None:
@@ -257,11 +269,14 @@ class PKDateUtilities:
     def isHoliday(d1=None):
         if isinstance(d1,str):
             d1 = PKDateUtilities.dateFromYmdString(d1)
+        if d1 is None:
+            d1 = PKDateUtilities.currentDateTime()
+        
         today = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         if isinstance(d1,datetime.datetime):
             curr = d1.replace(tzinfo=today.tzinfo)
         else:
-            curr = d1
+            curr = d1 if d1 is not None else PKDateUtilities.currentDateTime()
         holidays,_ = PKDateUtilities.holidayList()
         if holidays is None:
             return False, None
