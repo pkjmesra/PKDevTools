@@ -80,8 +80,11 @@ class CookieHelper:
 
     def __setCookies(self):
         r = self.__req(self.baseCookieUrl, headers=self.default_headers, timeout=10)
-        cookies = r.cookies
-        self.cookie_path.write_bytes(pickle.dumps(cookies))
+        if r is not None:
+            cookies = r.cookies
+            self.cookie_path.write_bytes(pickle.dumps(cookies))
+        else:
+            cookies = self.getCookies()
         return cookies
 
     def getCookies(self):
@@ -94,15 +97,16 @@ class CookieHelper:
 
     def __setMetaDictionary(self):
         r = self.__req(self.baseHtmlUrl, headers=self.default_headers ,timeout=10)
-        html = r.text
-        soup = BeautifulSoup(html,features="lxml")
         metaDict = {}
-        for tag in soup.find_all("meta"):
-            name = tag.get("name", None)
-            content = tag.get("content", None)
-            if name is not None and content is not None:
-                metaDict[name] = content
-        self.html_path.write_bytes(pickle.dumps(metaDict))
+        if r is not None:
+            html = r.text
+            soup = BeautifulSoup(html,features="lxml")
+            for tag in soup.find_all("meta"):
+                name = tag.get("name", None)
+                content = tag.get("content", None)
+                if name is not None and content is not None:
+                    metaDict[name] = content
+            self.html_path.write_bytes(pickle.dumps(metaDict))
         return metaDict
 
     def getMetaDictionary(self):
@@ -148,7 +152,7 @@ class CookieHelper:
             r = self.fetcher.fetchURL(url=url, params=params, headers=headers, timeout=timeout, raiseError=True)
         except ReadTimeout as e:
             raise TimeoutError(repr(e))
-        if not r.ok:
+        if r is not None and not r.ok:
             raise ConnectionError(f'{url} {r.status_code}: {r.reason}')
         return r
 
