@@ -73,6 +73,8 @@ class tbInternal:
         highlightRows = len(highlightedRows) >= 1
         highlightColumns = len(highlightedColumns) >= 1
         row_num = 0
+        findCellEnding1 = "--" if highlightCharacter=="\U0001F911" else "-"
+        findCellEnding2 = "==" if highlightCharacter=="\U0001F911" else "="
         for line in tab_lines_org:
             tab_line = line
             col_num = 0
@@ -81,7 +83,7 @@ class tbInternal:
                 columns = line.split("+")[1:]
                 for col in columns:
                     if highlightRows and highlightColumns and (row_num in highlightedRows) and (col_num in highlightedColumns):
-                        highlightValue = col.replace('--',highlightCharacter).replace('==',highlightCharacter)
+                        highlightValue = col.replace(findCellEnding1,highlightCharacter).replace(findCellEnding2,highlightCharacter)
                         tab_line = f"{tab_line}{brandName[col_index:col_index+1]}{highlightValue}"
                     else:
                         tab_line = f"{tab_line}{brandName[col_index:col_index+1]}{col}"
