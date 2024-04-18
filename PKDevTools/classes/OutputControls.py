@@ -44,7 +44,7 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         # end = '\r' if (not enableMultipleLineOutput) else end
         # flush = True if (not enableMultipleLineOutput) else flush
         print(*values, sep=sep, end=end, flush=flush)
-        enableMultipleLineOutput = enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
+        enableMultipleLineOutput = self.enableMultipleLineOutput or enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
         if enableMultipleLineOutput:
             return
         lines = len(str(*values).splitlines())
