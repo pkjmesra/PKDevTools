@@ -70,8 +70,8 @@ class tbInternal:
         col_index = 0
         tab_lines_org = tabulated_data.splitlines()
         tab_lines_mod = []
-        highlightRows = len(highlightedRows) >= 1
-        highlightColumns = len(highlightedColumns) >= 1
+        highlightRows = len(highlightedRows) >= 1 if highlightedRows is not None else False
+        highlightColumns = len(highlightedColumns) >= 1  if highlightedColumns is not None else False
         row_num = 0
         findCellEnding1 = "--" if highlightCharacter=="\U0001F911" else "-"
         findCellEnding2 = "==" if highlightCharacter=="\U0001F911" else "="
