@@ -111,10 +111,12 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.configManager = configManager
         self.candlePatterns = candlePatterns
         self.screener = screener
+        self.refreshDatabase = True
 
-    def run(self):
+    def reloadDatabase(self):
         try:
-            if isinstance(self.objectDictionary,str):
+            if self.refreshDatabase and isinstance(self.objectDictionary,str):
+                self.refreshDatabase = False
                 # Looks like we got the filename instead of stock dictionary
                 # Let's load the saved stocks' data
                 cache_file = self.objectDictionary
@@ -127,9 +129,16 @@ class PKMultiProcessorClient(multiprocessing.Process):
                     self.secondaryObjectDictionary = self.objectDictionary
         except:
             pass
+
+    def run(self):
         try:
             while not self.keyboardInterruptEvent.is_set():
                 try:
+                    if self.refreshDatabase:
+                        # Maybe the database pickle file changed/re-saved.
+                        # We'd need to reload again
+                        self.reloadDatabase()
+
                     next_task = None
                     answer = None
                     if self.task_queue is not None:
