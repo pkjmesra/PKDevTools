@@ -123,6 +123,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
                 if "intraday" not in cache_file:
                     with open(os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}"), "rb") as f:
                         self.secondaryObjectDictionary = pickle.load(f)
+                else:
+                    self.secondaryObjectDictionary = self.objectDictionary
         except:
             pass
         try:
