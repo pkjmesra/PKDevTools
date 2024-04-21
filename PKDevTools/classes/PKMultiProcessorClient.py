@@ -88,6 +88,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
         # and can be accessed using hostRef.objectDictionary
         # within processorMethod
         self.objectDictionary = objectDictionary
+        self.secondaryObjectDictionary = objectDictionary
         # A proxyServer that can contain proxyServer info
         # and can be accessed using hostRef.proxyServer
         # within processorMethod
@@ -119,6 +120,9 @@ class PKMultiProcessorClient(multiprocessing.Process):
                 cache_file = self.objectDictionary
                 with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file), "rb") as f:
                     self.objectDictionary = pickle.load(f)
+                if "intraday" not in cache_file:
+                    with open(os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}"), "rb") as f:
+                        self.secondaryObjectDictionary = pickle.load(f)
         except:
             pass
         try:
