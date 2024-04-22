@@ -29,6 +29,7 @@ import logging
 import os
 import sys
 from queue import Empty
+from filelock import FileLock
 os.environ["PYTHONWARNINGS"]="ignore::UserWarning"
 import multiprocessing
 
@@ -121,15 +122,17 @@ class PKMultiProcessorClient(multiprocessing.Process):
             # Let's load the saved stocks' data
             cache_file = self.orig_objectDictionary
             try:
-                with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file), "rb") as f:
-                    self.objectDictionary = pickle.load(f)
+                with FileLock(f'{cache_file}.lck'):
+                    with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file), "rb") as f:
+                        self.objectDictionary = pickle.load(f)
             except:
                 self.objectDictionary = {}
                 pass
             try:
                 if "intraday" not in cache_file and self.configManager.calculatersiintraday:
-                    with open(os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}"), "rb") as f:
-                        self.secondaryObjectDictionary = pickle.load(f)
+                    with FileLock(f'intraday_{cache_file}.lck'):
+                        with open(os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}"), "rb") as f:
+                            self.secondaryObjectDictionary = pickle.load(f)
                 else:
                     self.secondaryObjectDictionary = self.objectDictionary
             except:
