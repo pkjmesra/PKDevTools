@@ -122,7 +122,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
             # Let's load the saved stocks' data
             cache_file = self.orig_objectDictionary
             try:
-                with FileLock(f'{cache_file}.lck'):
+                fileName = os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file}")
+                with FileLock(f'{fileName}.lck'):
                     with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file), "rb") as f:
                         self.objectDictionary = pickle.load(f)
             except:
@@ -130,7 +131,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
                 pass
             try:
                 if "intraday" not in cache_file and self.configManager.calculatersiintraday:
-                    with FileLock(f'intraday_{cache_file}.lck'):
+                    fileName = os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}")
+                    with FileLock(f'{fileName}.lck'):
                         with open(os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}"), "rb") as f:
                             self.secondaryObjectDictionary = pickle.load(f)
                 else:
