@@ -97,6 +97,7 @@ class tbInternal:
         STD_ENCODING=sys.stdout.encoding if sys.stdout is not None else 'utf-8'
         return tabulated_data.encode("utf-8").decode(STD_ENCODING)
 
+# https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 # Decoration Class
 class colorText:
     HEAD = "\033[95m"

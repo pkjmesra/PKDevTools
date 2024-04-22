@@ -88,6 +88,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
         # and can be accessed using hostRef.objectDictionary
         # within processorMethod
         self.objectDictionary = objectDictionary
+        self.orig_objectDictionary = objectDictionary
         self.secondaryObjectDictionary = objectDictionary
         # A proxyServer that can contain proxyServer info
         # and can be accessed using hostRef.proxyServer
@@ -114,21 +115,26 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.refreshDatabase = True
 
     def reloadDatabase(self):
-        try:
-            if self.refreshDatabase and isinstance(self.objectDictionary,str):
-                self.refreshDatabase = False
-                # Looks like we got the filename instead of stock dictionary
-                # Let's load the saved stocks' data
-                cache_file = self.objectDictionary
+        if self.refreshDatabase and isinstance(self.orig_objectDictionary,str):
+            self.refreshDatabase = False
+            # Looks like we got the filename instead of stock dictionary
+            # Let's load the saved stocks' data
+            cache_file = self.orig_objectDictionary
+            try:
                 with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file), "rb") as f:
                     self.objectDictionary = pickle.load(f)
-                if "intraday" not in cache_file:
+            except:
+                self.objectDictionary = {}
+                pass
+            try:
+                if "intraday" not in cache_file and self.configManager.calculatersiintraday:
                     with open(os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}"), "rb") as f:
                         self.secondaryObjectDictionary = pickle.load(f)
                 else:
                     self.secondaryObjectDictionary = self.objectDictionary
-        except:
-            pass
+            except:
+                self.secondaryObjectDictionary = {}
+                pass
 
     def run(self):
         try:
