@@ -57,7 +57,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
         result_queue,
         processingCounter,
         processingResultsCounter,
-        objectDictionary,
+        objectDictionaryPrimary,
+        objectDictionarySecondary,
         proxyServer,
         keyboardInterruptEvent,
         defaultLogger,
@@ -65,6 +66,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
         configManager=None,
         candlePatterns=None,
         screener=None,
+        dbFileNamePrimary=None,
+        dbFileNameSecondary=None,
         stockList=None,
         dataCallbackHandler=None,
         progressCallbackHandler=None,
@@ -85,12 +88,13 @@ class PKMultiProcessorClient(multiprocessing.Process):
         # or hostRef.processingResultsCounter
         self.processingCounter = processingCounter
         self.processingResultsCounter = processingResultsCounter
+        self.dbFileNamePrimary = dbFileNamePrimary
+        self.dbFileNameSecondary = dbFileNameSecondary
         # A helper object dictionary that can contain anything
         # and can be accessed using hostRef.objectDictionary
         # within processorMethod
-        self.objectDictionary = objectDictionary
-        self.orig_objectDictionary = objectDictionary
-        self.secondaryObjectDictionary = objectDictionary
+        self.objectDictionaryPrimary = objectDictionaryPrimary
+        self.objectDictionarySecondary = objectDictionarySecondary
         # A proxyServer that can contain proxyServer info
         # and can be accessed using hostRef.proxyServer
         # within processorMethod
@@ -116,29 +120,29 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.refreshDatabase = True
 
     def reloadDatabase(self):
-        if self.refreshDatabase and isinstance(self.orig_objectDictionary,str):
+        if self.refreshDatabase and self.dbFileNamePrimary is not None:
             self.refreshDatabase = False
             # Looks like we got the filename instead of stock dictionary
             # Let's load the saved stocks' data
-            cache_file = self.orig_objectDictionary
+            cache_file_primary = self.dbFileNamePrimary
             try:
-                fileName = os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file}")
+                fileName = os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file_primary}")
                 with FileLock(f'{fileName}.lck'):
-                    with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file), "rb") as f:
-                        self.objectDictionary = pickle.load(f)
+                    with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file_primary), "rb") as f:
+                        self.objectDictionaryPrimary = pickle.load(f)
             except:
-                self.objectDictionary = {}
+                self.objectDictionaryPrimary = multiprocessing.Manager().dict()
                 pass
+        if self.refreshDatabase and self.dbFileNameSecondary is not None:
             try:
-                if "intraday" not in cache_file and self.configManager.calculatersiintraday:
-                    fileName = os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}")
-                    with FileLock(f'{fileName}.lck'):
-                        with open(os.path.join(Archiver.get_user_outputs_dir(), f"intraday_{cache_file}"), "rb") as f:
-                            self.secondaryObjectDictionary = pickle.load(f)
-                else:
-                    self.secondaryObjectDictionary = self.objectDictionary
+                cache_file_secondary = self.dbFileNameSecondary
+                fileName = os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file_secondary}")
+                with FileLock(f'{fileName}.lck'):
+                    with open(os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file_secondary}"), "rb") as f:
+                        self.objectDictionarySecondary = pickle.load(f)
+
             except:
-                self.secondaryObjectDictionary = {}
+                self.objectDictionarySecondary = multiprocessing.Manager().dict()
                 pass
 
     def run(self):
