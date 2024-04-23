@@ -46,7 +46,7 @@ try:
 except ImportError:
     print("Contact developer! Your platform does not support multiprocessing!")
 
-from PKDevTools.classes.log import default_logger
+from PKDevTools.classes.log import SubProcessLogHandler
 from PKDevTools.classes import Archiver
 
 class PKMultiProcessorClient(multiprocessing.Process):
@@ -55,6 +55,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
         processorMethod,
         task_queue,
         result_queue,
+        logging_queue,
         processingCounter,
         processingResultsCounter,
         objectDictionaryPrimary,
@@ -82,6 +83,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.processorMethod = processorMethod
         self.task_queue = task_queue
         self.result_queue = result_queue
+        self.logging_queue = logging_queue
         # processingCounter and processingResultsCounter
         # are sunchronized counters that can be used within
         # processorMethod via hostRef.processingCounter
@@ -102,14 +104,10 @@ class PKMultiProcessorClient(multiprocessing.Process):
         # A logger that can contain logger reference
         # and can be accessed using hostRef.default_logger
         # within processorMethod
-        self.default_logger = defaultLogger
+        self.default_logger = None
+        self.logLevel = defaultLogger.level
 
         self.keyboardInterruptEvent = keyboardInterruptEvent
-        if defaultLogger is not None:
-            self.default_logger.info("PKMultiProcessorClient initialized.")
-        else:
-            # Let's get the root logger by default
-            self.default_logger = logging.getLogger(name=None)
         self.stockList = stockList
         self.dataCallbackHandler = dataCallbackHandler
         self.progressCallbackHandler = progressCallbackHandler
@@ -119,7 +117,34 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.screener = screener
         self.refreshDatabase = True
 
-    def reloadDatabase(self):
+    def _setupLogger(self):
+        # create the logger to use.
+        logger = logging.getLogger('PKDevTools.subprocess')
+        # The only handler desired is the SubProcessLogHandler.  If any others
+        # exist, remove them. In this case, on Unix and Linux the StreamHandler
+        # will be inherited.
+
+        for handler in logger.handlers:
+            # just a check for my sanity
+            assert not isinstance(handler, SubProcessLogHandler)
+            logger.removeHandler(handler)
+        # add the handler
+        handler = SubProcessLogHandler(self.logging_queue)
+        formatter = logging.Formatter(
+            fmt="\n%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d\n%(message)s\n"
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+        # On Windows, the level will not be inherited.  Also, we could just
+        # set the level to log everything here and filter it in the main
+        # process handlers.  For now, just set it from the global default.
+        logger.setLevel(self.logLevel)
+        self.default_logger = logger
+        if self.default_logger is not None:
+            self.default_logger.info("PKMultiProcessorClient initialized.")
+
+    def _reloadDatabase(self):
         if self.refreshDatabase and self.dbFileNamePrimary is not None:
             self.refreshDatabase = False
             # Looks like we got the filename instead of stock dictionary
@@ -147,12 +172,13 @@ class PKMultiProcessorClient(multiprocessing.Process):
 
     def run(self):
         try:
+            self._setupLogger()
             while not self.keyboardInterruptEvent.is_set():
                 try:
                     if self.refreshDatabase:
                         # Maybe the database pickle file changed/re-saved.
                         # We'd need to reload again
-                        self.reloadDatabase()
+                        self._reloadDatabase()
 
                     next_task = None
                     answer = None

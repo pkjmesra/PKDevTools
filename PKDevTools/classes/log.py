@@ -35,6 +35,7 @@ from collections import OrderedDict
 from functools import wraps
 from PKDevTools.classes.Singleton import SingletonType
 from threading import get_ident
+import threading
 
 try:
     from collections.abc import Iterable
@@ -105,6 +106,57 @@ class colors:
         purple = "\033[45m"
         cyan = "\033[46m"
         lightgrey = "\033[47m"
+
+class SubProcessLogHandler(logging.Handler):
+    """handler used by subprocesses
+
+    It simply puts items on a Queue for the main process to log.
+
+    """
+
+    def __init__(self, queue):
+        logging.Handler.__init__(self)
+        self.queue = queue
+
+    def emit(self, record):
+        self.queue.put(record)
+
+class LogQueueReader(threading.Thread):
+    """thread to write subprocesses log records to main process log
+
+    This thread reads the records written by subprocesses and writes them to
+    the handlers defined in the main process's handlers.
+
+    """
+
+    def __init__(self, queue):
+        threading.Thread.__init__(self)
+        self.queue = queue
+        self.daemon = True
+
+    def run(self):
+        """read from the queue and write to the log handlers
+
+        The logging documentation says logging is thread safe, so there
+        shouldn't be contention between normal logging (from the main
+        process) and this thread.
+
+        Note that we're using the name of the original logger.
+
+        """
+        while True:
+            try:
+                record = self.queue.get()
+                # get the logger for this record
+                logger = logging.getLogger(record.name)
+                logger.callHandlers(record)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except EOFError:
+                break
+            except:
+                import traceback
+                traceback.print_exc(file=sys.stderr)
 
 class emptylogger():
         
