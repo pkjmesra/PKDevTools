@@ -33,6 +33,7 @@ class SuppressOutput:
         self.suppress_stderr = suppress_stderr
         self._stdout = None
         self._stderr = None
+        self.openfd = None
 
     def __enter__(self):
         devnull = open(os.devnull, "w")
@@ -42,9 +43,11 @@ class SuppressOutput:
         if self.suppress_stderr:
             self._stderr = sys.stderr
             sys.stderr = devnull
+        self.openfd = devnull
 
     def __exit__(self, *args):
         if self.suppress_stdout:
             sys.stdout = self._stdout
         if self.suppress_stderr:
             sys.stderr = self._stderr
+        self.openfd.close()
