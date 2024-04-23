@@ -39,6 +39,70 @@ except ImportError:  # Python 2.
     from Queue import Empty  # type: ignore[no-redef]
 __version__ = "0.3.4"
 
+class SubProcessLogHandler(logging.Handler):
+    """handler used by subprocesses
+
+    It simply puts items on a Queue for the main process to log.
+
+    """
+
+    def __init__(self, queue):
+        logging.Handler.__init__(self)
+        self.queue = queue
+
+    def emit(self, record):
+        self.queue.put_nowait(self._format_record(record))
+
+    def _format_record(self, record):
+        # ensure that exc_info and args
+        # have been stringified. Removes any chance of
+        # unpickleable things inside and possibly reduces
+        # message size sent over the pipe.
+        if record.args:
+            record.msg = record.msg % record.args
+            record.args = None
+        if record.exc_info:
+            self.format(record)
+            record.exc_info = None
+
+        return record
+    
+class LogQueueReader(threading.Thread):
+    """thread to write subprocesses log records to main process log
+
+    This thread reads the records written by subprocesses and writes them to
+    the handlers defined in the main process's handlers.
+
+    """
+
+    def __init__(self, queue):
+        threading.Thread.__init__(self)
+        self.queue = queue
+        self.daemon = True
+
+    def run(self):
+        """read from the queue and write to the log handlers
+
+        The logging documentation says logging is thread safe, so there
+        shouldn't be contention between normal logging (from the main
+        process) and this thread.
+
+        Note that we're using the name of the original logger.
+
+        """
+        while True:
+            try:
+                record = self.queue.get()
+                # get the logger for this record
+                logger = logging.getLogger(record.name)
+                logger.callHandlers(record)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except EOFError:
+                break
+            except:
+                import traceback, sys
+                traceback.print_exc(file=sys.stderr)
 
 def install_mp_handler(logger=None):
     """Wraps the handlers in the given Logger with an MultiProcessingHandler.

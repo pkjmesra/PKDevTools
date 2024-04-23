@@ -46,7 +46,7 @@ try:
 except ImportError:
     print("Contact developer! Your platform does not support multiprocessing!")
 
-from PKDevTools.classes.log import SubProcessLogHandler
+from PKDevTools.classes.multiprocessing_logging import SubProcessLogHandler
 from PKDevTools.classes import Archiver
 
 class PKMultiProcessorClient(multiprocessing.Process):
