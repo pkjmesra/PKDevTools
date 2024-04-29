@@ -22,6 +22,8 @@
     SOFTWARE.
 
 """
+import os
+import json
 import calendar
 import numpy as np
 import pytz
@@ -156,9 +158,18 @@ class PKDateUtilities:
                                 hour=hour if hour is not None else curr.hour,
                                 minute=minute if minute is not None else curr.minute,)
         else:
+            if "simulation" in os.environ.keys():
+                simulatedEnvs = json.loads(os.environ["simulation"])
+                if "currentDateTime" in simulatedEnvs.keys():
+                    dttime = datetime.datetime.strptime(simulatedEnvs["currentDateTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=curr.tzinfo)
+                    return dttime
             return curr
 
     def isTradingTime():
+        if "simulation" in os.environ.keys():
+            simulatedEnvs = json.loads(os.environ["simulation"])
+            if "isTrading" in simulatedEnvs.keys():
+                return simulatedEnvs["isTrading"]
         curr = PKDateUtilities.currentDateTime()
         openTime = curr.replace(hour=9, minute=15)
         closeTime = curr.replace(hour=15, minute=30)
