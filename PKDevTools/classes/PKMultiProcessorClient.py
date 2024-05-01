@@ -146,7 +146,6 @@ class PKMultiProcessorClient(multiprocessing.Process):
 
     def _reloadDatabase(self):
         if self.refreshDatabase and self.dbFileNamePrimary is not None:
-            self.refreshDatabase = False
             # Looks like we got the filename instead of stock dictionary
             # Let's load the saved stocks' data
             cache_file_primary = self.dbFileNamePrimary
@@ -169,6 +168,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
             except:
                 self.objectDictionarySecondary = multiprocessing.Manager().dict()
                 pass
+        self.refreshDatabase = False
 
     def run(self):
         try:
