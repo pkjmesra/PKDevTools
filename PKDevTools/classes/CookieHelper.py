@@ -54,7 +54,7 @@ class CookieHelper:
     :raise ValueError: if ``download_folder`` is not a folder/dir
     '''
 
-    def __init__(self, download_folder: Union[str, Path], baseCookieUrl='https://www.nseindia.com/option-chain', cookieStoreName='nse', baseHtmlUrl = 'https://www.nseindia.com/option-chain', htmlStoreName='nse'):
+    def __init__(self, download_folder: Union[str, Path], baseCookieUrl='https://www.nseindia.com/option-chain', cookieStoreName='n', baseHtmlUrl = 'https://www.nseindia.com/option-chain', htmlStoreName='n'):
         '''Initialise NSE'''
 
         uAgent = 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/118.0'
