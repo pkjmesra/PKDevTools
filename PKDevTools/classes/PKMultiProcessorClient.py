@@ -112,6 +112,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.dataCallbackHandler = dataCallbackHandler
         self.progressCallbackHandler = progressCallbackHandler
         self.fetcher = fetcher
+        self.intradayNSEFetcher = None
         self.configManager = configManager
         self.candlePatterns = candlePatterns
         self.screener = screener
