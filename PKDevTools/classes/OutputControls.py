@@ -32,6 +32,7 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
     def __init__(self, enableMultipleLineOutput=False):
         super(OutputControls, self).__init__()
         self.enableMultipleLineOutput = enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
+        self.lines = 0
 
     def printOutput(
         self,
@@ -45,10 +46,18 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         # flush = True if (not enableMultipleLineOutput) else flush
         print(*values, sep=sep, end=end, flush=flush)
         enableMultipleLineOutput = self.enableMultipleLineOutput or enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
+        lines = len(str(*values).splitlines())
+        self.lines += lines
         if enableMultipleLineOutput:
             return
-        lines = len(str(*values).splitlines())
         if not self.enableMultipleLineOutput and not enableMultipleLineOutput:
             for _ in range(lines):
                 sys.stdout.write("\x1b[1A")  # cursor up one line
                 sys.stdout.write("\x1b[2K")  # delete the last line
+            self.lines -= 1
+    
+    def moveCursorToStartPosition(self):
+        for _ in range(self.lines):
+            sys.stdout.write("\x1b[1A")  # cursor up one line
+            sys.stdout.write("\x1b[2K")  # delete the last line
+            self.lines -= 1
