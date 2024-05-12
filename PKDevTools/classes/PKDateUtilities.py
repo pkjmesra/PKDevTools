@@ -34,6 +34,7 @@ from datetime import timezone
 from PKDevTools.classes.Fetcher import fetcher
 from PKDevTools.classes.PKPickler import PKPickler
 from PKDevTools.classes.Utils import random_user_agent
+from PKDevTools.classes.FunctionTimeouts import exit_after
 
 class PKDateUtilities:
     def utc_to_ist(utc_dt):
@@ -249,6 +250,7 @@ class PKDateUtilities:
                 )
         return nextRun
     
+    exit_after(20)
     def holidayList():
         pickler = PKPickler()
         keyName = f"{__class__.__name__}>{PKDateUtilities.holidayList.__name__}"
@@ -288,7 +290,11 @@ class PKDateUtilities:
             curr = d1.replace(tzinfo=today.tzinfo)
         else:
             curr = d1 if d1 is not None else PKDateUtilities.currentDateTime()
-        holidays,_ = PKDateUtilities.holidayList()
+        try:
+            holidays,_ = PKDateUtilities.holidayList()
+        except KeyboardInterrupt:
+            # Timeout exceeded?
+            return False, None
         if holidays is None:
             return False, None
 
