@@ -38,7 +38,12 @@ def cdquit(fn_name):
     print('{0} took too long. Handle KeyboardInterrupt if you do not want to exit'.format(fn_name), file=sys.stderr)
     sys.stderr.flush() # Python 3 stderr is likely buffered.
     thread.interrupt_main() # raises KeyboardInterrupt
-    
+
+def intermediateMessage(fn_name):
+    # print to stderr, unbuffered in Python 2.
+    print('{0} is taking too long...Let the developer know!\n'.format(fn_name), file=sys.stderr)
+    sys.stderr.flush() # Python 3 stderr is likely buffered.
+
 def exit_after(s):
     '''
     use as decorator to exit process if 
@@ -48,10 +53,13 @@ def exit_after(s):
         def inner(*args, **kwargs):
             timer = threading.Timer(s, cdquit, args=[fn.__name__])
             timer.start()
+            timer_mid = threading.Timer(10, intermediateMessage, args=[fn.__name__])
+            timer_mid.start()
             try:
                 result = fn(*args, **kwargs)
             finally:
                 timer.cancel()
+                timer_mid.cancel()
             return result
         return inner
     return outer
