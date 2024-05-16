@@ -192,6 +192,9 @@ class PKMultiProcessorClient(multiprocessing.Process):
                 except Empty as e:
                     self.default_logger.debug(e, exc_info=True)
                     continue
+                except KeyboardInterrupt as e:
+                    self.default_logger.debug(e, exc_info=True)
+                    sys.exit(0)
                 if next_task is None:
                     self.default_logger.info("No next task in queue")
                     if self.task_queue is not None:

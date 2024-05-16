@@ -33,6 +33,8 @@ try:
 except ImportError:
     import _thread as thread
 
+INTERMEDIATE_NUM_SECONDS_WARN=30
+
 def cdquit(fn_name):
     # print to stderr, unbuffered in Python 2.
     print('{0} took too long. Handle KeyboardInterrupt if you do not want to exit'.format(fn_name), file=sys.stderr)
@@ -53,7 +55,7 @@ def exit_after(s):
         def inner(*args, **kwargs):
             timer = threading.Timer(s, cdquit, args=[fn.__name__])
             timer.start()
-            timer_mid = threading.Timer(10, intermediateMessage, args=[fn.__name__])
+            timer_mid = threading.Timer(INTERMEDIATE_NUM_SECONDS_WARN, intermediateMessage, args=[fn.__name__])
             timer_mid.start()
             try:
                 result = fn(*args, **kwargs)
