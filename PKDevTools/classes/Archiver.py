@@ -22,10 +22,12 @@
     SOFTWARE.
 
 """
+import glob
 import os
 import os.path
 import tempfile
 import warnings
+from PKDevTools.classes.log import default_logger
 from datetime import datetime, timezone
 
 warnings.simplefilter("ignore", DeprecationWarning)
@@ -44,8 +46,8 @@ def resolveFilePath(fileName):
 
 def get_last_modified_datetime(file_path):
     from PKDevTools.classes.PKDateUtilities import PKDateUtilities
-    last_modified = datetime.utcfromtimestamp(os.path.getmtime(file_path))
-    return PKDateUtilities.utc_to_ist(last_modified)
+    last_modified = datetime.fromtimestamp(os.path.getmtime(file_path),tz=pytz.timezone("Asia/Kolkata"))
+    return last_modified
 
 
 def cacheFile(bData, fileName):
@@ -57,12 +59,24 @@ def cacheFile(bData, fileName):
 def findFile(fileName):
     filePath = resolveFilePath(fileName)
     try:
+        exists = os.path.exists(filePath)
         with open(filePath, "rb") as f:
             bData = f.read()
-        return bData, filePath, get_last_modified_datetime(filePath)
+        return bData, filePath, get_last_modified_datetime(filePath) if exists else None
     except Exception:
         return None, filePath, None
 
+def findFileInAppResultsDirectory(fileName):
+    filePath = os.path.join(get_user_outputs_dir(),fileName)
+    exists = os.path.exists(filePath)
+    data = None
+    try:
+        if exists:
+            with open(filePath, "r") as f:
+                data = f.read()
+        return data, filePath, get_last_modified_datetime(filePath) if exists else None
+    except Exception:
+        return None, filePath, None
 
 def saveData(data, fileName):
     if not len(data) > 0 or fileName == "" or fileName is None:
@@ -98,3 +112,27 @@ def get_user_outputs_dir():
     # Let's make the results directory where we'll push all outputs
     os.makedirs(os.path.dirname(os.path.join(os.getcwd(),f"results{os.sep}")), exist_ok=True)
     return os.path.join(os.getcwd(),"results")
+
+def deleteFileWithPattern(pattern=None, excludeFile=None, rootDir=None, recursive=False):
+    if pattern is None:
+        return
+    if rootDir is None:
+        rootDir = [get_user_outputs_dir(),get_user_outputs_dir().replace("results","actions-data-download")]
+    else:
+        rootDir = [rootDir]
+    for dir in rootDir:
+        files = glob.glob(pattern, root_dir=dir, recursive=recursive)
+        for f in files:
+            if excludeFile is not None:
+                if not f.endswith(excludeFile):
+                    try:
+                        os.remove(f if os.sep in f else os.path.join(dir,f))
+                    except Exception as e:
+                        default_logger().debug(e, exc_info=True)
+                        pass
+            else:
+                try:
+                    os.remove(f if os.sep in f else os.path.join(dir,f))
+                except Exception as e:
+                    default_logger().debug(e, exc_info=True)
+                    pass
