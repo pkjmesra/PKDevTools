@@ -142,8 +142,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
         # process handlers.  For now, just set it from the global default.
         logger.setLevel(self.logLevel)
         self.default_logger = logger
-        if self.default_logger is not None:
-            self.default_logger.info("PKMultiProcessorClient initialized.")
+        # if self.default_logger is not None:
+        #     self.default_logger.info("PKMultiProcessorClient initialized.")
 
     def _reloadDatabase(self):
         if self.refreshDatabase and self.dbFileNamePrimary is not None:
