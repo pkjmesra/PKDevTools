@@ -23,6 +23,7 @@
 
 """
 from multiprocessing.queues import JoinableQueue
+from queue import Empty
 import multiprocessing
 
 # The following implementation of custom MyQueue to avoid NotImplementedError
@@ -112,3 +113,10 @@ class PKJoinableQueue(JoinableQueue):
     def empty(self):
         """ Reliable implementation of multiprocessing.Queue.empty() """
         return not self.qsize()
+
+    def clear(self):
+        try:
+            while True:
+                self.get_nowait()
+        except Empty:
+            pass

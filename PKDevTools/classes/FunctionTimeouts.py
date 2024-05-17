@@ -58,6 +58,7 @@ def exit_after(s):
             timer_mid = threading.Timer(INTERMEDIATE_NUM_SECONDS_WARN, intermediateMessage, args=[fn.__name__])
             timer_mid.start()
             try:
+                result = None
                 result = fn(*args, **kwargs)
             finally:
                 timer.cancel()

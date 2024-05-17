@@ -117,6 +117,25 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.candlePatterns = candlePatterns
         self.screener = screener
         self.refreshDatabase = True
+        self.paused = False
+
+    def _clear(self):
+        self.paused = True
+        try:
+            while True:
+                self.task_queue.get_nowait()
+        except Empty:
+            if self.default_logger is not None:
+                self.default_logger.debug("task_queue empty.")
+            pass
+        try:
+            while True:
+                self.result_queue.get_nowait()
+        except Empty:
+            if self.default_logger is not None:
+                self.default_logger.debug("result_queue empty.")
+            pass
+        self.paused = False
 
     def _setupLogger(self):
         # create the logger to use.
@@ -200,12 +219,12 @@ class PKMultiProcessorClient(multiprocessing.Process):
                     if self.task_queue is not None:
                         self.task_queue.task_done()
                     break
-                if self.processorMethod is not None:
+                if self.processorMethod is not None and not self.paused:
                     answer = self.processorMethod(*(next_task))
                 if self.task_queue is not None:
                     self.task_queue.task_done()
                 # self.default_logger.info(f"Task done. Result:{answer}")
-                if self.result_queue is not None:
+                if self.result_queue is not None and not self.paused:
                     self.result_queue.put(answer)
         except Exception as e:
             self.default_logger.debug(e, exc_info=True)
