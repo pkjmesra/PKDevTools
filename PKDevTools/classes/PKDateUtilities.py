@@ -184,7 +184,7 @@ class PKDateUtilities:
         else:
             tradeDate = PKDateUtilities.onlineTradingStatus()[1]
             if tradeDate is not None:
-                return (tradeDate.date() == checkDate.date())
+                return (tradeDate.date() == (checkDate.date() if isinstance(checkDate,datetime.datetime) else checkDate))
         return False
 
     def onlineTradingStatus():
