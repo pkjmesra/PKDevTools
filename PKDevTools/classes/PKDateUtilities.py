@@ -174,17 +174,17 @@ class PKDateUtilities:
         curr = PKDateUtilities.currentDateTime()
         openTime = curr.replace(hour=9, minute=15)
         closeTime = curr.replace(hour=15, minute=30)
-        return ((openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()) or str(PKDateUtilities.onlineTradingStatus()[0]) == "Open"
+        return ((openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()) #or str(PKDateUtilities.onlineTradingStatus()[0]) == "Open"
 
     def isTradingWeekday(checkDate=None):
         if checkDate is None:
             checkDate = PKDateUtilities.currentDateTime()
         if 0 <= checkDate.weekday() <= 4:
             return True
-        else:
-            tradeDate = PKDateUtilities.onlineTradingStatus()[1]
-            if tradeDate is not None:
-                return (tradeDate.date() == (checkDate.date() if isinstance(checkDate,datetime.datetime) else checkDate))
+        # else:
+        #     tradeDate = PKDateUtilities.onlineTradingStatus()[1]
+        #     if tradeDate is not None:
+        #         return (tradeDate.date() == (checkDate.date() if isinstance(checkDate,datetime.datetime) else checkDate))
         return False
 
     def onlineTradingStatus():
