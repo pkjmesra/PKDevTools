@@ -174,13 +174,40 @@ class PKDateUtilities:
         curr = PKDateUtilities.currentDateTime()
         openTime = curr.replace(hour=9, minute=15)
         closeTime = curr.replace(hour=15, minute=30)
-        return (openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()
+        return ((openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()) or str(PKDateUtilities.onlineTradingStatus()[0]) == "Open"
 
     def isTradingWeekday(checkDate=None):
         if checkDate is None:
             checkDate = PKDateUtilities.currentDateTime()
-        return 0 <= checkDate.weekday() <= 4
+        if 0 <= checkDate.weekday() <= 4:
+            return True
+        else:
+            tradeDate = PKDateUtilities.onlineTradingStatus()[1]
+            if tradeDate is not None:
+                return (tradeDate.date() == checkDate.date())
+        return False
 
+    def onlineTradingStatus():
+        url = "https://www.nseindia.com/api/marketStatus"
+        headers = {"user-agent": random_user_agent()}
+        f = fetcher()
+        try:
+            status = None
+            tradeDate = None
+            res = f.fetchURL(url, headers=headers, timeout=10)
+            if res is None or res.status_code != 200:
+                return None, None
+            marketResp = res.json()
+            marketStates = marketResp["marketState"]
+            for mktState in marketStates:
+                if mktState["market"].lower() == "capital market":
+                    status = mktState["marketStatus"]
+                    tradeDate = PKDateUtilities.dateFromdbYString(mktState["tradeDate"].split(" ")[0])
+                    break
+        except:
+            pass
+        return status, tradeDate
+        
     def nextWeekday(forDate=None):
         if forDate is None:
             forDate = PKDateUtilities.currentDateTime()
@@ -311,6 +338,3 @@ class PKDateUtilities:
     def isTodayHoliday():
         curr = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         return PKDateUtilities.isHoliday(curr)
-
-# d1 = PKDateUtilities.firstTradingDateOfMonth(PKDateUtilities.currentDateTime())
-# d2 = PKDateUtilities.lastTradingDateOfMonth(PKDateUtilities.currentDateTime())
