@@ -182,6 +182,12 @@ class PKDateUtilities:
         return ((openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday())
 
     def wasTradedOn(checkDate=None):
+        if "simulation" in os.environ.keys():
+            simulatedEnvs = json.loads(os.environ["simulation"])
+            if "isTrading" in simulatedEnvs.keys():
+                return simulatedEnvs["isTrading"]
+            if "wasTradedOn" in simulatedEnvs.keys():
+                return simulatedEnvs["wasTradedOn"]
         if checkDate is None:
             checkDate = PKDateUtilities.currentDateTime()
         tradeDate = NSEMarketStatus().tradeDate
