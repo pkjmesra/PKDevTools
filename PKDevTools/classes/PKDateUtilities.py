@@ -35,6 +35,7 @@ from PKDevTools.classes.Fetcher import fetcher
 from PKDevTools.classes.PKPickler import PKPickler
 from PKDevTools.classes.Utils import random_user_agent
 from PKDevTools.classes.FunctionTimeouts import exit_after
+from PKDevTools.classes.NSEMarketStatus import NSEMarketStatus
 
 class PKDateUtilities:
     def utc_to_ist(utc_dt):
@@ -174,39 +175,51 @@ class PKDateUtilities:
         curr = PKDateUtilities.currentDateTime()
         openTime = curr.replace(hour=9, minute=15)
         closeTime = curr.replace(hour=15, minute=30)
-        return ((openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()) #or str(PKDateUtilities.onlineTradingStatus()[0]) == "Open"
+        if NSEMarketStatus().status == "Open":
+            return True
+        elif NSEMarketStatus().status == "Close":
+            return False
+        return ((openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday())
 
+    def wasTradedOn(checkDate=None):
+        if checkDate is None:
+            checkDate = PKDateUtilities.currentDateTime()
+        tradeDate = NSEMarketStatus().tradeDate
+        if tradeDate is not None and "-" in str(tradeDate):
+            tradeDate = PKDateUtilities.dateFromdbYString(tradeDate.split(" ")[0])
+            tradeDateEqualsCheckDate = (tradeDate.date() == (checkDate.date() if isinstance(checkDate,datetime.datetime) else checkDate))
+            if tradeDateEqualsCheckDate:
+                return True
+        return False
+
+    def nextTradingBellDate():
+        next_bell = NSEMarketStatus().next_bell
+        if next_bell is not None and "T" in str(next_bell):
+            next_bell = PKDateUtilities.dateFromYmdString(next_bell.split("T")[0])
+            return next_bell.date()
+        return None
+    
+    def willNextTradeOnDate(checkDate=None):
+        if checkDate is None:
+            checkDate = PKDateUtilities.currentDateTime()
+        next_bell = PKDateUtilities.nextTradingBellDate()
+        if next_bell is not None:
+            nextBellEqualsCheckDate = (next_bell == (checkDate.date() if isinstance(checkDate,datetime.datetime) else checkDate))
+            if nextBellEqualsCheckDate:
+                return True
+        return False
+    
     def isTradingWeekday(checkDate=None):
         if checkDate is None:
             checkDate = PKDateUtilities.currentDateTime()
+        if NSEMarketStatus().status == "Open":
+            return True
+        if PKDateUtilities.wasTradedOn(checkDate) or PKDateUtilities.willNextTradeOnDate(checkDate):
+            return True
         if 0 <= checkDate.weekday() <= 4:
             return True
-        # else:
-        #     tradeDate = PKDateUtilities.onlineTradingStatus()[1]
-        #     if tradeDate is not None:
-        #         return (tradeDate.date() == (checkDate.date() if isinstance(checkDate,datetime.datetime) else checkDate))
-        return False
 
-    def onlineTradingStatus():
-        url = "https://www.nseindia.com/api/marketStatus"
-        headers = {"user-agent": random_user_agent()}
-        f = fetcher()
-        try:
-            status = None
-            tradeDate = None
-            res = f.fetchURL(url, headers=headers, timeout=10)
-            if res is None or res.status_code != 200:
-                return None, None
-            marketResp = res.json()
-            marketStates = marketResp["marketState"]
-            for mktState in marketStates:
-                if mktState["market"].lower() == "capital market":
-                    status = mktState["marketStatus"]
-                    tradeDate = PKDateUtilities.dateFromdbYString(mktState["tradeDate"].split(" ")[0])
-                    break
-        except:
-            pass
-        return status, tradeDate
+        return False
         
     def nextWeekday(forDate=None):
         if forDate is None:

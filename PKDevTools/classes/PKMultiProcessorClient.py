@@ -53,16 +53,16 @@ class PKMultiProcessorClient(multiprocessing.Process):
     def __init__(
         self,
         processorMethod,
-        task_queue,
-        result_queue,
-        logging_queue,
-        processingCounter,
-        processingResultsCounter,
-        objectDictionaryPrimary,
-        objectDictionarySecondary,
-        proxyServer,
-        keyboardInterruptEvent,
-        defaultLogger,
+        task_queue=None,
+        result_queue=None,
+        logging_queue=None,
+        processingCounter=None,
+        processingResultsCounter=None,
+        objectDictionaryPrimary=None,
+        objectDictionarySecondary=None,
+        proxyServer=None,
+        keyboardInterruptEvent=None,
+        defaultLogger=None,
         fetcher=None,
         configManager=None,
         candlePatterns=None,
@@ -72,14 +72,16 @@ class PKMultiProcessorClient(multiprocessing.Process):
         stockList=None,
         dataCallbackHandler=None,
         progressCallbackHandler=None,
+        processorArgs=None
     ):
         multiprocessing.Process.__init__(self)
         self.multiprocessingForWindows()
         assert (
             processorMethod is not None
         ), "processorMethod argument must not be None. This is the meyhod that will do the processing."
-        assert task_queue is not None, "task_queue argument must not be None."
-        assert (result_queue is not None or dataCallbackHandler is not None), "result_queue or dataCallbackHandler argument must not be None."
+        # assert keyboardInterruptEvent is not None, "keyboardInterruptEvent argument must not be None."
+        # assert task_queue is not None, "task_queue argument must not be None."
+        # assert (result_queue is not None or dataCallbackHandler is not None), "result_queue or dataCallbackHandler argument must not be None."
         self.processorMethod = processorMethod
         self.task_queue = task_queue
         self.result_queue = result_queue
@@ -105,7 +107,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
         # and can be accessed using hostRef.default_logger
         # within processorMethod
         self.default_logger = None
-        self.logLevel = defaultLogger.level
+        self.logLevel = defaultLogger.level if defaultLogger is not None else logging.NOTSET
 
         self.keyboardInterruptEvent = keyboardInterruptEvent
         self.stockList = stockList
@@ -116,21 +118,25 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.configManager = configManager
         self.candlePatterns = candlePatterns
         self.screener = screener
-        self.refreshDatabase = True
+        self.refreshDatabase = (self.dbFileNamePrimary is not None) or (self.dbFileNameSecondary is not None)
         self.paused = False
+        self.processorArgs = processorArgs
+        self.queueProcessingMode = (self.task_queue is not None) and (self.result_queue is not None)
 
     def _clear(self):
         self.paused = True
         try:
-            while True:
-                self.task_queue.get_nowait()
+            if self.queueProcessingMode:
+                while True:
+                    self.task_queue.get_nowait()
         except Empty:
             if self.default_logger is not None:
                 self.default_logger.debug("task_queue empty.")
             pass
         try:
-            while True:
-                self.result_queue.get_nowait()
+            if self.queueProcessingMode:
+                while True:
+                    self.result_queue.get_nowait()
         except Empty:
             if self.default_logger is not None:
                 self.default_logger.debug("result_queue empty.")
@@ -190,42 +196,59 @@ class PKMultiProcessorClient(multiprocessing.Process):
                 pass
         self.refreshDatabase = False
 
+    def processQueueItems(self):
+        while not self.keyboardInterruptEvent.is_set():
+            try:
+                if self.refreshDatabase:
+                    # Maybe the database pickle file changed/re-saved.
+                    # We'd need to reload again
+                    self._reloadDatabase()
+
+                next_task = None
+                answer = None
+                if self.task_queue is not None:
+                    next_task = self.task_queue.get()
+                    if next_task is not None:
+                        # Inject a reference to this instance of the client
+                        # so that the task can still get access back to it.
+                        next_task = (*(next_task), self)
+            except Empty as e:
+                self.default_logger.debug(e, exc_info=True)
+                continue
+            except KeyboardInterrupt as e:
+                self.default_logger.debug(e, exc_info=True)
+                sys.exit(0)
+            if next_task is None:
+                self.default_logger.info("No next task in queue")
+                if self.task_queue is not None:
+                    self.task_queue.task_done()
+                break
+            if self.processorMethod is not None and not self.paused:
+                answer = self.processorMethod(*(next_task))
+            if self.task_queue is not None:
+                self.task_queue.task_done()
+            # self.default_logger.info(f"Task done. Result:{answer}")
+            if self.result_queue is not None and not self.paused:
+                self.result_queue.put(answer)
+
     def run(self):
         try:
             self._setupLogger()
-            while not self.keyboardInterruptEvent.is_set():
-                try:
-                    if self.refreshDatabase:
-                        # Maybe the database pickle file changed/re-saved.
-                        # We'd need to reload again
-                        self._reloadDatabase()
-
-                    next_task = None
-                    answer = None
-                    if self.task_queue is not None:
-                        next_task = self.task_queue.get()
-                        if next_task is not None:
-                            # Inject a reference to this instance of the client
-                            # so that the task can still get access back to it.
-                            next_task = (*(next_task), self)
-                except Empty as e:
-                    self.default_logger.debug(e, exc_info=True)
-                    continue
-                except KeyboardInterrupt as e:
-                    self.default_logger.debug(e, exc_info=True)
-                    sys.exit(0)
-                if next_task is None:
-                    self.default_logger.info("No next task in queue")
-                    if self.task_queue is not None:
-                        self.task_queue.task_done()
-                    break
-                if self.processorMethod is not None and not self.paused:
-                    answer = self.processorMethod(*(next_task))
-                if self.task_queue is not None:
-                    self.task_queue.task_done()
-                # self.default_logger.info(f"Task done. Result:{answer}")
-                if self.result_queue is not None and not self.paused:
-                    self.result_queue.put(answer)
+            if self.queueProcessingMode:
+                self.processQueueItems()
+            else:
+                if self.keyboardInterruptEvent is not None:
+                    while not self.keyboardInterruptEvent.is_set():
+                        try:
+                            if self.processorMethod is not None and not self.paused:
+                                self.processorMethod(self.processorArgs)
+                        except KeyboardInterrupt:
+                            try:
+                                self.terminate()
+                            finally:
+                                sys.exit(0)
+                elif self.processorMethod is not None:
+                    self.processorMethod(self.processorArgs)
         except Exception as e:
             self.default_logger.debug(e, exc_info=True)
             sys.exit(0)
