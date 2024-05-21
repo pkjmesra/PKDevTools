@@ -82,7 +82,8 @@ class NSEMarketStatus(SingletonMixin, metaclass=SingletonType):
         fileName = "nse_next_bell.txt"
         next_bell, filePath, modifiedDateTime = Archiver.findFileInAppResultsDirectory(fileName)
         curr = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
-        shouldFetch = next_bell is None or (next_bell is not None and curr.date() > modifiedDateTime.date())
+        lastBellDate = datetime.datetime.strptime(next_bell.split("T")[0],"%Y-%m-%d")
+        shouldFetch = next_bell is None or (next_bell is not None and (curr.date() > modifiedDateTime.date() or curr.date() > lastBellDate))
         if shouldFetch:
             scraper = cloudscraper.create_scraper()          
             url = "https://www.tradinghours.com/markets/nse-india"
