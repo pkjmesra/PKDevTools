@@ -35,7 +35,7 @@ import requests
 from dotenv import dotenv_values
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.OutputControls import OutputControls
-from telegram.constants import PARSEMODE_HTML
+from telegram.constants import ParseMode
 
 # from io import BytesIO
 # from PIL import Image
@@ -112,9 +112,9 @@ def send_exception(ex, extra_mes=""):
         return
 
 
-def send_message(message, userID=None, parse_type=PARSEMODE_HTML, list_png=None, retrial=False):
+def send_message(message, userID=None, parse_type=ParseMode.HTML, list_png=None, retrial=False):
     initTelegram()
-    # botsUrl = f"https://api.telegram.org/bot{TOKEN}"  # + "/sendMessage?chat_id={}&text={}".format(chat_idLUISL, message_aler, parse_mode=PARSEMODE_HTML)
+    # botsUrl = f"https://api.telegram.org/bot{TOKEN}"  # + "/sendMessage?chat_id={}&text={}".format(chat_idLUISL, message_aler, parse_mode=ParseMode.HTML)
     # url = botsUrl + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}".format(chat_idLUISL, message_aler,parse_mode=PARSEMODE_MARKDOWN_V2)
     if not is_token_telegram_configured():
         return
@@ -163,14 +163,14 @@ def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
             "caption": message,
-            "parse_mode": PARSEMODE_HTML,
+            "parse_mode": ParseMode.HTML,
             "reply_to_message_id": message_id,
         }
     else:
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
             "caption": message,
-            "parse_mode": PARSEMODE_HTML,
+            "parse_mode": ParseMode.HTML,
         }
     files = {"photo": photo}
     resp = None
@@ -202,14 +202,14 @@ def send_document(
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
             "caption": message,
-            "parse_mode": PARSEMODE_HTML,
+            "parse_mode": ParseMode.HTML,
             "reply_to_message_id": message_id,
         }
     else:
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
             "caption": message,
-            "parse_mode": PARSEMODE_HTML,
+            "parse_mode": ParseMode.HTML,
         }
     files = {"document": document}
     method = "/sendDocument"
@@ -262,7 +262,7 @@ def send_document(
 #                 # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
 #                 media.append(dict(type='photo', media=f'attach://{name}'))
 #         media[0]['caption'] = caption
-#         media[0]['parse_mode'] = PARSEMODE_HTML
+#         media[0]['parse_mode'] = ParseMode.HTML
 #         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),
 #                                                     'reply_to_message_id': reply_to_message_id }, files=files )
 
