@@ -7,7 +7,7 @@ mistletoe
 numpy
 pandas
 python-dotenv
-python-telegram-bot #>=13.4,<20.0 # LGPLv3
+python-telegram-bot>=13.4,<20.0 # LGPLv3
 pytz
 requests
 requests_cache
