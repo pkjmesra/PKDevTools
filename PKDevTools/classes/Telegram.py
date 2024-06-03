@@ -264,6 +264,3 @@ def send_document(
 #         media[0]['parse_mode'] = "HTML"
 #         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),
 #                                                     'reply_to_message_id': reply_to_message_id }, files=files )
-
-initTelegram()
-is_token_telegram_configured()
