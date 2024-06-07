@@ -36,6 +36,7 @@ from PKDevTools.classes.PKPickler import PKPickler
 from PKDevTools.classes.Utils import random_user_agent
 from PKDevTools.classes.FunctionTimeouts import exit_after
 from PKDevTools.classes.NSEMarketStatus import NSEMarketStatus
+from PKDevTools.classes.MarketHours import MarketHours
 
 class PKDateUtilities:
     def utc_to_ist(utc_dt):
@@ -65,10 +66,10 @@ class PKDateUtilities:
             lastTradingDate = curr.replace(day=day).date()
         else:
             if PKDateUtilities.isTradingWeekday() and PKDateUtilities.ispreMarketTime():
-                # Monday to Friday but before 9:15AM.So the date should be yesterday
+                # Monday to Friday but before market open time.So the date should be yesterday
                 lastTradingDate = (curr - datetime.timedelta(days=1)).date()
             if PKDateUtilities.isTradingTime() or PKDateUtilities.ispostMarketTime():
-                # Monday to Friday but after 9:15AM or after 15:30.So the date should be today
+                # Monday to Friday but after market open or after marketclose.So the date should be today
                 lastTradingDate = curr.date()
             if not PKDateUtilities.isTradingWeekday():
                 # Weekends .So the date should be last Friday
@@ -173,8 +174,8 @@ class PKDateUtilities:
             if "isTrading" in simulatedEnvs.keys():
                 return simulatedEnvs["isTrading"]
         curr = PKDateUtilities.currentDateTime()
-        openTime = curr.replace(hour=9, minute=15)
-        closeTime = curr.replace(hour=15, minute=30)
+        openTime = curr.replace(hour=MarketHours().openHour, minute=MarketHours().openMinute)
+        closeTime = curr.replace(hour=MarketHours().closeHour, minute=MarketHours().closeMinute)
         if NSEMarketStatus().status == "Open":
             return True
         elif NSEMarketStatus().status == "Close":
@@ -237,28 +238,28 @@ class PKDateUtilities:
     
     def ispreMarketTime():
         curr = PKDateUtilities.currentDateTime()
-        openTime = curr.replace(hour=9, minute=15)
+        openTime = curr.replace(hour=MarketHours().openHour, minute=MarketHours().openMinute)
         return (openTime > curr) and PKDateUtilities.isTradingWeekday()
 
     def ispostMarketTime():
         curr = PKDateUtilities.currentDateTime()
-        closeTime = curr.replace(hour=15, minute=30)
+        closeTime = curr.replace(hour=MarketHours().closeHour, minute=MarketHours().closeMinute)
         return (closeTime < curr) and PKDateUtilities.isTradingWeekday()
 
     def isClosingHour():
         curr = PKDateUtilities.currentDateTime()
-        openTime = curr.replace(hour=15, minute=00)
-        closeTime = curr.replace(hour=15, minute=30)
+        openTime = curr.replace(hour=MarketHours().closeHour, minute=MarketHours().closeMinute-30)
+        closeTime = curr.replace(hour=MarketHours().closeHour, minute=MarketHours().closeMinute)
         return (openTime <= curr <= closeTime) and PKDateUtilities.isTradingWeekday()
 
     def secondsAfterCloseTime():
         curr = PKDateUtilities.currentDateTime()  # (simulate=True,day=7,hour=8,minute=14)
-        closeTime = curr.replace(hour=15, minute=30)
+        closeTime = curr.replace(hour=MarketHours().closeHour, minute=MarketHours().closeMinute)
         return (curr - closeTime).total_seconds()
 
     def secondsBeforeOpenTime():
         curr = PKDateUtilities.currentDateTime()  # (simulate=True,day=7,hour=8,minute=14)
-        openTime = curr.replace(hour=9, minute=15)
+        openTime = curr.replace(hour=MarketHours().openHour, minute=MarketHours().openMinute)
         return (curr - openTime).total_seconds()
 
     def nextRunAtDateTime(bufferSeconds=3600, cronWaitSeconds=300):
@@ -286,12 +287,12 @@ class PKDateUtilities:
                     curr = curr + datetime.timedelta(
                         days=3 if curr.weekday() == 4 else 1
                     )
-                    nextRun = curr.replace(hour=9, minute=15) - datetime.timedelta(
+                    nextRun = curr.replace(hour=MarketHours().openHour, minute=MarketHours().openMinute) - datetime.timedelta(
                         days=daysToAdd, seconds=1.5 * cronWaitSeconds + bufferSeconds
                     )
             elif secondsAfterClosingTime < 0:
                 # Next day
-                nextRun = curr.replace(hour=9, minute=15) - datetime.timedelta(
+                nextRun = curr.replace(hour=MarketHours().openHour, minute=MarketHours().openMinute) - datetime.timedelta(
                     days=daysToAdd, seconds=1.5 * cronWaitSeconds + bufferSeconds
                 )
         return nextRun
