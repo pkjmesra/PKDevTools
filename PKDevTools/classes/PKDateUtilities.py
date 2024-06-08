@@ -168,6 +168,10 @@ class PKDateUtilities:
                     return dttime
             return curr
 
+    def currentDateTimestamp():
+        from datetime import timezone
+        return PKDateUtilities.currentDateTime().replace(tzinfo=timezone.utc).timestamp()
+
     def isTradingTime():
         if "simulation" in os.environ.keys():
             simulatedEnvs = json.loads(os.environ["simulation"])
