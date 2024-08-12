@@ -30,12 +30,15 @@
 
 # Get from telegram
 # See tutorial https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
-
+import os
 import requests
+from PIL import Image
+import json
+from io import BytesIO
 from dotenv import dotenv_values
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.OutputControls import OutputControls
-
+from telegram import InputMediaDocument
 # from io import BytesIO
 # from PIL import Image
 
@@ -235,32 +238,64 @@ def send_document(
     # print(js)
 
 
-# #https://stackoverflow.com/questions/58893142/how-to-send-telegram-mediagroup-with-caption-text
-# SEND_MEDIA_GROUP = f'https://api.telegram.org/bot{TOKEN}/sendMediaGroup'
-# def __send_media_group(chat_id, list_png, caption=None, reply_to_message_id=None):
-#         """
-#         Use this method to send an album of photos. On success, an array of Messages that were sent is returned.
-#         :param chat_id: chat id
-#         :param images: list of PIL images to send
-#         :param caption: caption of image
-#         :param reply_to_message_id: If the message is a reply, ID of the original message
-#         :return: response with the sent message
-#         """
+# https://stackoverflow.com/questions/58893142/how-to-send-telegram-mediagroup-with-caption-text
+# https://stackoverflow.com/questions/74851187/send-multiple-files-to-a-telegram-channel-in-a-single-message-using-bot
+def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], file_captions=[],reply_to_message_id=None):
+    """
+    Use this method to send an album of photos. On success, an array of Messages that were sent is returned.
+    :param user: chat id
+    :param images: list of PIL images to send
+    :param caption: caption of image
+    :param reply_to_message_id: If the message is a reply, ID of the original message
+    :return: response with the sent message
+    """
+    initTelegram()
+    if not is_token_telegram_configured():
+        return
+    global TOKEN, Channel_Id
+    SEND_MEDIA_GROUP = f'https://api.telegram.org/bot{TOKEN}/sendMediaGroup'
+    files = {}
+    media = []
+    if len(png_paths) > 0:
+        list_image_bytes = []
+        list_image_bytes = [Image.open(x if os.sep in x else os.path.join(os.getcwd(),x)) for x in png_paths]
+        for i, img in enumerate(list_image_bytes):
+            with BytesIO() as output:
+                img.save(output, format='PNG')
+                output.seek(0)
+                name = png_paths[i].split(os.sep)[-1]
+                files[name] = output.read()
+                # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
+                media.append(dict(type='document', media=f'attach://{name}'))
+        media[0]['caption'] = png_album_caption
+        media[0]['parse_mode'] = "HTML"
 
-#         list_image_bytes = []
-#         list_image_bytes = [Image.open(x) for x in list_png]
-
-#         files = {}
-#         media = []
-#         for i, img in enumerate(list_image_bytes):
-#             with BytesIO() as output:
-#                 img.save(output, format='PNG')
-#                 output.seek(0)
-#                 name = f'photo{i}'
-#                 files[name] = output.read()
-#                 # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
-#                 media.append(dict(type='photo', media=f'attach://{name}'))
-#         media[0]['caption'] = caption
-#         media[0]['parse_mode'] = "HTML"
-#         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),
-#                                                     'reply_to_message_id': reply_to_message_id }, files=files )
+    if len(file_paths) > 0:
+        fileIndex  = 0
+        prevMediaIndex = len(media)
+        # From 2 to 10 items in one media group
+        # https://core.telegram.org/bots/api#sendmediagroup
+        media_group = list()
+        for f in file_paths:
+            x = f if os.sep in f else os.path.join(os.getcwd(),f)
+            with open(x, "rb") as output:
+                # Up to 1024 characters.
+                # https://core.telegram.org/bots/api#inputmediadocument
+                caption = file_captions[fileIndex]
+                # After the len(fin.readlines()) file's current position
+                # will be at the end of the file. seek(0) sets the position
+                # to the begining of the file so we can read it again during
+                # sending.
+                # output.seek(0)
+                # media_group.append(InputMediaDocument(output, caption=caption))
+                name = file_paths[fileIndex].split(os.sep)[-1]
+                files[name] = output.read()
+                # a list of InputMediaDocument. attach refers to the name of the file in the files dict
+                media.append(dict(type='document', media=f'attach://{name}'))
+                media[fileIndex+prevMediaIndex]['caption'] = caption
+                media[fileIndex+prevMediaIndex]['parse_mode'] = "HTML"
+            fileIndex += 1
+    if len(media) > 0:
+        return requests.post(SEND_MEDIA_GROUP, data={'chat_id': (user if user is not None else Channel_Id), 'media': json.dumps(media),
+                                                    'reply_to_message_id': reply_to_message_id }, files=files )
+    return None
