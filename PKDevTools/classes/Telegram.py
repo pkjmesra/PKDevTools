@@ -260,13 +260,14 @@ def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], 
         list_image_bytes = []
         list_image_bytes = [Image.open(x if os.sep in x else os.path.join(os.getcwd(),x)) for x in png_paths]
         for i, img in enumerate(list_image_bytes):
-            with BytesIO() as output:
-                img.save(output, format='PNG')
-                output.seek(0)
-                name = png_paths[i].split(os.sep)[-1]
-                files[name] = output.read()
-                # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
-                media.append(dict(type='document', media=f'attach://{name}'))
+            if img is not None and img.size[0] > 0:
+                with BytesIO() as output:
+                    img.save(output, format='PNG')
+                    output.seek(0)
+                    name = png_paths[i].split(os.sep)[-1]
+                    files[name] = output.read()
+                    # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
+                    media.append(dict(type='document', media=f'attach://{name}'))
         media[0]['caption'] = png_album_caption
         media[0]['parse_mode'] = "HTML"
 
@@ -275,25 +276,27 @@ def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], 
         prevMediaIndex = len(media)
         # From 2 to 10 items in one media group
         # https://core.telegram.org/bots/api#sendmediagroup
-        media_group = list()
+        # media_group = list()
         for f in file_paths:
             x = f if os.sep in f else os.path.join(os.getcwd(),f)
-            with open(x, "rb") as output:
-                # Up to 1024 characters.
-                # https://core.telegram.org/bots/api#inputmediadocument
-                caption = file_captions[fileIndex]
-                # After the len(fin.readlines()) file's current position
-                # will be at the end of the file. seek(0) sets the position
-                # to the begining of the file so we can read it again during
-                # sending.
-                # output.seek(0)
-                # media_group.append(InputMediaDocument(output, caption=caption))
-                name = file_paths[fileIndex].split(os.sep)[-1]
-                files[name] = output.read()
-                # a list of InputMediaDocument. attach refers to the name of the file in the files dict
-                media.append(dict(type='document', media=f'attach://{name}'))
-                media[fileIndex+prevMediaIndex]['caption'] = caption
-                media[fileIndex+prevMediaIndex]['parse_mode'] = "HTML"
+            filesize = os.stat(x).st_size if os.path.exists(x) else 0
+            if filesize > 0:
+                with open(x, "rb") as output:
+                    # Up to 1024 characters.
+                    # https://core.telegram.org/bots/api#inputmediadocument
+                    caption = file_captions[fileIndex]
+                    # After the len(fin.readlines()) file's current position
+                    # will be at the end of the file. seek(0) sets the position
+                    # to the begining of the file so we can read it again during
+                    # sending.
+                    # output.seek(0)
+                    # media_group.append(InputMediaDocument(output, caption=caption))
+                    name = file_paths[fileIndex].split(os.sep)[-1]
+                    files[name] = output.read()
+                    # a list of InputMediaDocument. attach refers to the name of the file in the files dict
+                    media.append(dict(type='document', media=f'attach://{name}'))
+                    media[fileIndex+prevMediaIndex]['caption'] = caption
+                    media[fileIndex+prevMediaIndex]['parse_mode'] = "HTML"
             fileIndex += 1
     if len(media) > 0:
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': (user if user is not None else Channel_Id), 'media': json.dumps(media),
