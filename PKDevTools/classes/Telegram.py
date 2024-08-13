@@ -87,8 +87,10 @@ def initTelegram():
 
 def get_secrets():
     local_secrets = dotenv_values(".env.dev")
-    if "GITHUB_TOKEN" not in local_secrets.keys():
-        local_secrets["GITHUB_TOKEN"] = ""
+    keys = ["GITHUB_TOKEN","CHAT_ID","TOKEN","chat_idADMIN"]
+    for key in keys:
+        if key not in local_secrets.keys():
+            local_secrets[key] = ""
     return (
         local_secrets["CHAT_ID"],
         local_secrets["TOKEN"],
