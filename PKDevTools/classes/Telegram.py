@@ -295,8 +295,8 @@ def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], 
                     files[name] = output.read()
                     # a list of InputMediaDocument. attach refers to the name of the file in the files dict
                     media.append(dict(type='document', media=f'attach://{name}'))
-                    media[fileIndex+prevMediaIndex]['caption'] = caption
-                    media[fileIndex+prevMediaIndex]['parse_mode'] = "HTML"
+                    media[len(media)-1]['caption'] = caption
+                    media[len(media)-1]['parse_mode'] = "HTML"
             fileIndex += 1
     if len(media) > 0:
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': (user if user is not None else Channel_Id), 'media': json.dumps(media),
