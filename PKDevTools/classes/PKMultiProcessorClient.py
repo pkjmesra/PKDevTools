@@ -72,7 +72,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
         stockList=None,
         dataCallbackHandler=None,
         progressCallbackHandler=None,
-        processorArgs=None
+        processorArgs=None,
+        rs_strange_index=-1
     ):
         multiprocessing.Process.__init__(self)
         self.multiprocessingForWindows()
@@ -122,6 +123,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.paused = False
         self.processorArgs = processorArgs
         self.queueProcessingMode = (self.task_queue is not None) and (self.result_queue is not None)
+        self.rs_strange_index = rs_strange_index
 
     def _clear(self):
         self.paused = True
