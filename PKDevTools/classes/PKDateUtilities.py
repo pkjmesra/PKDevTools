@@ -134,6 +134,10 @@ class PKDateUtilities:
 
     def trading_days_between(d1, d2):
         _, hList = PKDateUtilities.holidayList()
+        if isinstance(d1,datetime.datetime):
+            d1 = d1.date()
+        if isinstance(d2,datetime.datetime):
+            d2 = d2.date()
         return np.busday_count(
             d1, d2
         ,weekmask=[1,1,1,1,1,0,0],holidays=hList)
