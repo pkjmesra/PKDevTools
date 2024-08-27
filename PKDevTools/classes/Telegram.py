@@ -63,6 +63,8 @@ from telegram import InputMediaDocument
 Channel_Id = "00000"
 chat_idADMIN = ""
 botsUrl = ""
+MAX_MSG_LENGTH = 4096
+MAX_CAPTION_LENGTH = 1024
 # chat_idUser1 = "563000000"
 # chat_idUser2 = "207000000"
 # chat_idUser3= "495000000"
@@ -131,7 +133,7 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
             url = (
                 botsUrl
                 + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}".format(
-                    people_id, message, parse_mode=parse_type
+                    people_id, message[:MAX_MSG_LENGTH], parse_mode=parse_type
                 )
             )
             try:
@@ -166,14 +168,14 @@ def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=
     if message_id is not None:
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
-            "caption": message,
+            "caption": message[:MAX_CAPTION_LENGTH],
             "parse_mode": "HTML",
             "reply_to_message_id": message_id,
         }
     else:
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
-            "caption": message,
+            "caption": message[:MAX_CAPTION_LENGTH],
             "parse_mode": "HTML",
         }
     files = {"photo": photo}
@@ -205,14 +207,14 @@ def send_document(
     if message_id is not None:
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
-            "caption": message,
+            "caption": message[:MAX_CAPTION_LENGTH],
             "parse_mode": "HTML",
             "reply_to_message_id": message_id,
         }
     else:
         params = {
             "chat_id": (userID if userID is not None else Channel_Id),
-            "caption": message,
+            "caption": message[:MAX_CAPTION_LENGTH],
             "parse_mode": "HTML",
         }
     files = {"document": document}
@@ -270,7 +272,7 @@ def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], 
                     files[name] = output.read()
                     # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
                     media.append(dict(type='document', media=f'attach://{name}'))
-        media[0]['caption'] = png_album_caption
+        media[0]['caption'] = png_album_caption[:MAX_CAPTION_LENGTH]
         media[0]['parse_mode'] = "HTML"
 
     if len(file_paths) > 0:
@@ -297,7 +299,7 @@ def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], 
                     files[name] = output.read()
                     # a list of InputMediaDocument. attach refers to the name of the file in the files dict
                     media.append(dict(type='document', media=f'attach://{name}'))
-                    media[len(media)-1]['caption'] = caption
+                    media[len(media)-1]['caption'] = caption[:MAX_CAPTION_LENGTH]
                     media[len(media)-1]['parse_mode'] = "HTML"
             fileIndex += 1
     if len(media) > 0:
