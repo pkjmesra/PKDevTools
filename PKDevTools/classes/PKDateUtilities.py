@@ -40,11 +40,20 @@ from PKDevTools.classes.MarketHours import MarketHours
 
 class PKDateUtilities:
     def utc_to_ist(utc_dt):
-        return (
-            pytz.utc.localize(utc_dt)
-            .replace(tzinfo=timezone.utc)
-            .astimezone(tz=pytz.timezone("Asia/Kolkata"))
-        )
+        try:
+            return (
+                pytz.utc.localize(utc_dt)
+                .replace(tzinfo=timezone.utc)
+                .astimezone(tz=pytz.timezone("Asia/Kolkata"))
+            )
+        except ValueError as e:
+            if "naive" in str(e):
+                return (
+                utc_dt
+                .replace(tzinfo=timezone.utc)
+                .astimezone(tz=pytz.timezone("Asia/Kolkata"))
+            )
+            raise(e)
 
     def last_day_of_month(any_day:datetime.datetime):
         if any_day is None:
