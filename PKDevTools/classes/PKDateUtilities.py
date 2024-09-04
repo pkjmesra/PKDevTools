@@ -39,18 +39,18 @@ from PKDevTools.classes.NSEMarketStatus import NSEMarketStatus
 from PKDevTools.classes.MarketHours import MarketHours
 
 class PKDateUtilities:
-    def utc_to_ist(utc_dt):
+    def utc_to_ist(utc_dt,localTz=None):
         try:
             return (
                 pytz.utc.localize(utc_dt)
-                .replace(tzinfo=timezone.utc)
+                .replace(tzinfo=(timezone.utc if localTz is None else localTz))
                 .astimezone(tz=pytz.timezone("Asia/Kolkata"))
             )
         except ValueError as e:
             if "naive" in str(e):
                 return (
                 utc_dt
-                .replace(tzinfo=timezone.utc)
+                .replace(tzinfo=(timezone.utc if localTz is None else localTz))
                 .astimezone(tz=pytz.timezone("Asia/Kolkata"))
             )
             raise(e)
