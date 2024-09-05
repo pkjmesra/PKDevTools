@@ -58,13 +58,14 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
     
     def moveCursorToStartPosition(self):
         for _ in range(self.lines):
-            self.moveCursorUpOneLine()
+            self.moveCursorUpLines(1)
             self.lines -= 1
 
-    def moveCursorUpOneLine(self):
+    def moveCursorUpLines(self,lines):
         try:
-            if sys.stdout is not None:
-                sys.stdout.write("\x1b[1A")  # cursor up one line
-                sys.stdout.write("\x1b[2K")  # delete the last line
+            for _ in range(lines):
+                if sys.stdout is not None:
+                    sys.stdout.write("\x1b[1A")  # cursor up one line
+                    sys.stdout.write("\x1b[2K")  # delete the last line
         except Exception:
             pass
