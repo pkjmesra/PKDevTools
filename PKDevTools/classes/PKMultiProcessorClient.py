@@ -215,13 +215,16 @@ class PKMultiProcessorClient(multiprocessing.Process):
                         # so that the task can still get access back to it.
                         next_task = (*(next_task), self)
             except Empty as e:
-                self.default_logger.debug(e, exc_info=True)
+                if self.default_logger is not None:
+                    self.default_logger.debug(e, exc_info=True)
                 continue
             except KeyboardInterrupt as e:
-                self.default_logger.debug(e, exc_info=True)
+                if self.default_logger is not None:
+                    self.default_logger.debug(e, exc_info=True)
                 sys.exit(0)
             if next_task is None:
-                self.default_logger.info("No next task in queue")
+                if self.default_logger is not None:
+                    self.default_logger.info("No next task in queue")
                 if self.task_queue is not None:
                     self.task_queue.task_done()
                 break
@@ -252,7 +255,8 @@ class PKMultiProcessorClient(multiprocessing.Process):
                 elif self.processorMethod is not None:
                     self.processorMethod(self.processorArgs)
         except Exception as e:
-            self.default_logger.debug(e, exc_info=True)
+            if self.default_logger is not None:
+                self.default_logger.debug(e, exc_info=True)
             sys.exit(0)
 
     def multiprocessingForWindows(self):
