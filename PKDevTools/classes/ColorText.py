@@ -116,6 +116,8 @@ class colorText:
     UPARROW = u'\u2191' if "Windows" in platform.system() else "▲"
     DOWNARROW = u'\u2193' if "Windows" in platform.system() else "▼"
 
+    No_Pad_GridFormat = "minpadding"
+    
     def miniTabulator():
         tbi = tbInternal()
         tbi.tb._table_formats[colorText.No_Pad_GridFormat] = tb.TableFormat(
