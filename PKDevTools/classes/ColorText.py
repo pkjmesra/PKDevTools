@@ -23,6 +23,7 @@
 
 """
 import sys
+import platform
 import tabulate as tb
 from tabulate import tabulate, Line,DataRow
 
@@ -112,8 +113,8 @@ class colorText:
     BOLD = "\033[1m"
     UNDR = "\033[4m"
     WHITE = "\033[97m"
-
-    No_Pad_GridFormat = "minpadding"
+    UPARROW = u'\u2191' if "Windows" in platform.system() else "▲"
+    DOWNARROW = u'\u2193' if "Windows" in platform.system() else "▼"
 
     def miniTabulator():
         tbi = tbInternal()
