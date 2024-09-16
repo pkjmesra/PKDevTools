@@ -137,6 +137,12 @@ def get_user_reports_dir():
     os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Reports{os.sep}")), exist_ok=True)
     return os.path.join(resultsDir,"Reports")
 
+def get_user_temp_dir():
+    # Let's make the cookies directory where we'll push all cookies outputs
+    resultsDir = get_user_outputs_dir()
+    os.makedirs(os.path.dirname(os.path.join(resultsDir,f"DeleteThis{os.sep}")), exist_ok=True)
+    return os.path.join(resultsDir,"DeleteThis")
+
 def deleteFileWithPattern(pattern=None, excludeFile=None, rootDir=None, recursive=False):
     if pattern is None:
         return
