@@ -178,9 +178,9 @@ class PKMultiProcessorClient(multiprocessing.Process):
             # Let's load the saved stocks' data
             cache_file_primary = self.dbFileNamePrimary
             try:
-                fileName = os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file_primary}")
+                fileName = os.path.join(Archiver.get_user_data_dir(), f"{cache_file_primary}")
                 with FileLock(f'{fileName}.lck'):
-                    with open(os.path.join(Archiver.get_user_outputs_dir(), cache_file_primary), "rb") as f:
+                    with open(os.path.join(Archiver.get_user_data_dir(), cache_file_primary), "rb") as f:
                         self.objectDictionaryPrimary = pickle.load(f)
             except:
                 self.objectDictionaryPrimary = multiprocessing.Manager().dict()
@@ -188,9 +188,9 @@ class PKMultiProcessorClient(multiprocessing.Process):
         if self.refreshDatabase and self.dbFileNameSecondary is not None:
             try:
                 cache_file_secondary = self.dbFileNameSecondary
-                fileName = os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file_secondary}")
+                fileName = os.path.join(Archiver.get_user_data_dir(), f"{cache_file_secondary}")
                 with FileLock(f'{fileName}.lck'):
-                    with open(os.path.join(Archiver.get_user_outputs_dir(), f"{cache_file_secondary}"), "rb") as f:
+                    with open(os.path.join(Archiver.get_user_data_dir(), f"{cache_file_secondary}"), "rb") as f:
                         self.objectDictionarySecondary = pickle.load(f)
 
             except:

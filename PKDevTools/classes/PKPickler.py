@@ -61,7 +61,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         ------
         Saves the `dataDict` to the supplied `fileName` using `pickle.dump`. If no `fileName`
         is supplied, the `dataDict` will be written to `dafault.pkl` under the folder returned by
-        `Archiver.get_user_outputs_dir()`
+        `Archiver.get_user_data_dir()`
 
         If the file already exists, the caller can optionally provide a `overWriteConfirmationFunc`
         function that will be called to accept user input (`True` to overwrite or `False` to abort.)
@@ -89,7 +89,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         Raises `pickle.PicklingError` if `pickle.dump` raised `pickle.PicklingError`.
         Raises `Exception` for all other exceptions when writing.
         """
-        cache_file = os.path.join(Archiver.get_user_outputs_dir(), fileName)
+        cache_file = os.path.join(Archiver.get_user_data_dir(), fileName)
         if not os.path.exists(cache_file) or overWriteConfirmationFunc is None:
             self._dumpPickle(dataDict, cache_file, fileName)
         else:
@@ -132,7 +132,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         ------
         Retrieves the data from the supplied `fileName` and returns `dict` or `None` using `pickle.load`. If no `fileName`
         is supplied, `dafault.pkl` will be searched on the `PKScreener` under `actions-data-download` and data saved under
-        `Archiver.get_user_outputs_dir()` by the filename `dafault.pkl`
+        `Archiver.get_user_data_dir()` by the filename `dafault.pkl`
 
         If the file already exists, the caller can optionally provide a `overWriteConfirmationFuncIfCorruptedOrError`
         function that will be called to accept user input (`True` to overwrite or `False` to abort.) for cases
@@ -167,7 +167,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         
         dataLoaded = False
         dataDict = None
-        cache_file = os.path.join(Archiver.get_user_outputs_dir(),fileName)
+        cache_file = os.path.join(Archiver.get_user_data_dir(),fileName)
         exists = os.path.isfile(cache_file)
         default_logger().info(f"Stock data cache file:{cache_file} exists ->{str(exists)}")
         error = None

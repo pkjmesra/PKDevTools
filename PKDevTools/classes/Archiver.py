@@ -120,19 +120,19 @@ def get_user_data_dir():
     return os.path.join(resultsDir,"Data")
 
 def get_user_indices_dir():
-    # Let's make the data directory where we'll push all data outputs
+    # Let's make the indices directory where we'll push all indices outputs
     resultsDir = get_user_outputs_dir()
     os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Indices{os.sep}")), exist_ok=True)
     return os.path.join(resultsDir,"Indices")
 
 def get_user_cookies_dir():
-    # Let's make the data directory where we'll push all data outputs
+    # Let's make the cookies directory where we'll push all cookies outputs
     resultsDir = get_user_outputs_dir()
     os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Cookies{os.sep}")), exist_ok=True)
     return os.path.join(resultsDir,"Cookies")
 
 def get_user_reports_dir():
-    # Let's make the data directory where we'll push all data outputs
+    # Let's make the reports directory where we'll push all user generated report outputs
     resultsDir = get_user_outputs_dir()
     os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Reports{os.sep}")), exist_ok=True)
     return os.path.join(resultsDir,"Reports")

@@ -44,8 +44,8 @@ class PKCachedSession(CachedSession):
     def __getstate__(self):
         return {}
 session = PKCachedSession(
-    cache_name=f"{Archiver.get_user_outputs_dir().split(os.sep)[-1]}{os.sep}PKDevTools_cache",
-    db_path=os.path.join(Archiver.get_user_outputs_dir(),"PKDevTools_cache.sqlite"),
+    cache_name=f"{Archiver.get_user_data_dir().split(os.sep)[-1]}{os.sep}PKDevTools_cache",
+    db_path=os.path.join(Archiver.get_user_data_dir(),"PKDevTools_cache.sqlite"),
     expire_after=timedelta(hours=6),
     stale_if_error=True,
 )
