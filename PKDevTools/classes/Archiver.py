@@ -113,6 +113,30 @@ def get_user_outputs_dir():
     os.makedirs(os.path.dirname(os.path.join(os.getcwd(),f"results{os.sep}")), exist_ok=True)
     return os.path.join(os.getcwd(),"results")
 
+def get_user_data_dir():
+    # Let's make the data directory where we'll push all data outputs
+    resultsDir = get_user_outputs_dir()
+    os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Data{os.sep}")), exist_ok=True)
+    return os.path.join(resultsDir,"Data")
+
+def get_user_indices_dir():
+    # Let's make the data directory where we'll push all data outputs
+    resultsDir = get_user_outputs_dir()
+    os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Indices{os.sep}")), exist_ok=True)
+    return os.path.join(resultsDir,"Indices")
+
+def get_user_cookies_dir():
+    # Let's make the data directory where we'll push all data outputs
+    resultsDir = get_user_outputs_dir()
+    os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Cookies{os.sep}")), exist_ok=True)
+    return os.path.join(resultsDir,"Cookies")
+
+def get_user_reports_dir():
+    # Let's make the data directory where we'll push all data outputs
+    resultsDir = get_user_outputs_dir()
+    os.makedirs(os.path.dirname(os.path.join(resultsDir,f"Reports{os.sep}")), exist_ok=True)
+    return os.path.join(resultsDir,"Reports")
+
 def deleteFileWithPattern(pattern=None, excludeFile=None, rootDir=None, recursive=False):
     if pattern is None:
         return
