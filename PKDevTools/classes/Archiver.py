@@ -66,8 +66,8 @@ def findFile(fileName):
     except Exception:
         return None, filePath, None
 
-def findFileInAppResultsDirectory(fileName):
-    filePath = os.path.join(get_user_outputs_dir(),fileName)
+def findFileInAppResultsDirectory(directory=None, fileName=None):
+    filePath = os.path.join(get_user_outputs_dir() if directory is None else directory,fileName)
     exists = os.path.exists(filePath)
     data = None
     try:
