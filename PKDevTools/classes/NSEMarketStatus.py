@@ -80,7 +80,7 @@ class NSEMarketStatus(SingletonMixin, metaclass=SingletonType):
         
         from PKDevTools.classes import Archiver
         fileName = "nse_next_bell.txt"
-        next_bell, filePath, modifiedDateTime = Archiver.findFileInAppResultsDirectory(fileName)
+        next_bell, filePath, modifiedDateTime = Archiver.findFileInAppResultsDirectory(directory=Archiver.get_user_data_dir(), fileName=fileName)
         curr = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         if next_bell is not None:
             dtPart = next_bell.replace("T"," ").split("+")[0]
