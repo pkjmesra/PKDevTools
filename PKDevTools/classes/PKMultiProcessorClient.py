@@ -246,7 +246,13 @@ class PKMultiProcessorClient(multiprocessing.Process):
                     while not self.keyboardInterruptEvent.is_set():
                         try:
                             if self.processorMethod is not None and not self.paused:
-                                self.processorMethod(self.processorArgs)
+                                try:
+                                    import tensorflow as tf
+                                    with tf.device("/device:GPU:0"):
+                                        self.processorMethod(self.processorArgs)
+                                except:
+                                    self.processorMethod(self.processorArgs)
+                                    pass
                         except KeyboardInterrupt:
                             try:
                                 self.terminate()
