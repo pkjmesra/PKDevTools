@@ -149,7 +149,7 @@ class PKDateUtilities:
             d2 = d2.date()
         return np.busday_count(
             d1, d2
-        ,weekmask=[1,1,1,1,1,0,0],holidays=hList)
+        ,weekmask=[1,1,1,1,1,0,0],holidays=hList if hList is not None else [])
 
     def nthPastTradingDateStringFromFutureDate(n=0,d1=None):
         if d1 is None:
