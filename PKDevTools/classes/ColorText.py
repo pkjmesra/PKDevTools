@@ -180,10 +180,10 @@ class colorText:
     BOLD = "\033[1m"
     UNDR = "\033[4m"
     WHITE = "\033[97m"
-    UPARROW = u'\u2191' if "Windows" in platform.system() else "▲"
-    DOWNARROW = u'\u2193' if "Windows" in platform.system() else "▼"
-    WHITE_FG_BRED_BG = "\033[97;91m"
-    WHITE_FG_RED_BG = "\033[97;31m"
+    UPARROW = "▲" # u'\u2191' if "Windows" in platform.system() else "▲"
+    DOWNARROW = "▼" # u'\u2193' if "Windows" in platform.system() else "▼"
+    WHITE_FG_BRED_BG = "\033[97;101m"
+    WHITE_FG_RED_BG = "\033[97;41m"
 
     No_Pad_GridFormat = "minpadding"
     
