@@ -73,11 +73,7 @@ class NSEMarketStatus(SingletonMixin, metaclass=SingletonType):
         worker.daemon = True
         worker.start()
 
-    def getNextBell(self):
-        next_bell = self.marketStatus.get("next_bell")
-        if next_bell is not None:
-            return next_bell
-        
+    def shouldFetchNextBell(self):
         from PKDevTools.classes import Archiver
         fileName = "nse_next_bell.txt"
         next_bell, filePath, modifiedDateTime = Archiver.findFileInAppResultsDirectory(directory=Archiver.get_user_data_dir(), fileName=fileName)
@@ -86,6 +82,14 @@ class NSEMarketStatus(SingletonMixin, metaclass=SingletonType):
             dtPart = next_bell.replace("T"," ").split("+")[0]
             lastBellDateTime = datetime.datetime.strptime(dtPart,"%Y-%m-%d %H:%M:%S").replace(tzinfo=curr.tzinfo)
         shouldFetch = next_bell is None or (next_bell is not None and (curr.date() > modifiedDateTime.date() or curr > lastBellDateTime))
+        return shouldFetch, next_bell, filePath, modifiedDateTime
+
+    def getNextBell(self):
+        next_bell = self.marketStatus.get("next_bell")
+        if next_bell is not None:
+            return next_bell
+        
+        shouldFetch, next_bell, filePath, modifiedDateTime = self.shouldFetchNextBell()
         if shouldFetch:
             scraper = cloudscraper.create_scraper()
             url = "https://www.tradinghours.com/markets/nse-india"
