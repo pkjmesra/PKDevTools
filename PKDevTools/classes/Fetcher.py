@@ -150,9 +150,10 @@ class fetcher:
             if stream or trial >= int(self.configManager.maxNetworkRetryCount/2):
                 requestor = requests
                 self.session = requestor.session()
-                self.session.cookies.update(cookies)
-                self.session.headers.update(headers)
-                requestor = self.session
+                if cookies is not None and headers is not None:
+                    self.session.cookies.update(cookies)
+                    self.session.headers.update(headers)
+                    requestor = self.session
             timeout = timeout if timeout > 0 else trial*self.configManager.generalTimeout
             response = requestor.get(
                             url,
