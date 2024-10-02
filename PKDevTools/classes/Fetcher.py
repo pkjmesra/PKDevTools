@@ -143,12 +143,16 @@ class fetcher:
         try:
             response = None
             requestor = self.session
+            cookies = requestor.cookies
             # We should try to switch to requests lib if cached_session 
             # begin to give some problem after we've tried for
             # 50% of the configured retrials.
             if stream or trial >= int(self.configManager.maxNetworkRetryCount/2):
                 requestor = requests
                 self.session = requestor.session()
+                self.session.cookies.update(cookies)
+                self.session.headers.update(headers)
+                requestor = self.session
             timeout = timeout if timeout > 0 else trial*self.configManager.generalTimeout
             response = requestor.get(
                             url,
