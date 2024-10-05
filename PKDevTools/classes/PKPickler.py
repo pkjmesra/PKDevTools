@@ -168,6 +168,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         dataLoaded = False
         dataDict = None
         cache_file = os.path.join(Archiver.get_user_data_dir(),fileName)
+        filePath = f"results/Data/{fileName}"
         exists = os.path.isfile(cache_file)
         default_logger().info(f"Stock data cache file:{cache_file} exists ->{str(exists)}")
         error = None
@@ -182,12 +183,12 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                                     dataDict = pickle.load(pfile)
                         dataLoaded = True
                 except pickle.UnpicklingError as e:
-                    default_logger().debug(f"File: {fileName}\n{e}", exc_info=True)
+                    default_logger().debug(f"File: {filePath}\n{e}", exc_info=True)
                     default_logger().debug(e, exc_info=True)
                     f.close()
                     error = e
                 except EOFError as e:  # pragma: no cover
-                    default_logger().debug(f"File: {fileName}\n{e}", exc_info=True)
+                    default_logger().debug(f"File: {filePath}\n{e}", exc_info=True)
                     f.close()
                     error = e
 
@@ -196,7 +197,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
             userResponse = True
 
         if (not dataLoaded and userResponse) or not exists:
-            cache_url = "https://raw.githubusercontent.com/pkjmesra/PKScreener/actions-data-download/actions-data-download/" + fileName
+            cache_url = "https://raw.githubusercontent.com/pkjmesra/PKScreener/actions-data-download/actions-data-download/" + filePath
             headers = {
                     'authority': 'raw.githubusercontent.com',
                     'accept': '*/*',
@@ -208,13 +209,13 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'cross-site',                  
                     'origin': 'https://github.com',
-                    'referer': f'https://github.com/pkjmesra/PKScreener/blob/actions-data-download/actions-data-download/{fileName}',
+                    'referer': f'https://github.com/pkjmesra/PKScreener/blob/actions-data-download/actions-data-download/{filePath}',
                     'user-agent': f'{random_user_agent()}' 
                     #'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
             }
             resp = self.fetcher.fetchURL(url=cache_url, headers=headers,stream=True)
             if resp is not None:
-                default_logger().info(f"Data cache file:{fileName} request status ->{resp.status_code}")
+                default_logger().info(f"Data cache file:{filePath} request status ->{resp.status_code}")
                 if resp.status_code == 200:
                     try:
                         contentLength = resp.headers.get("content-length")
@@ -244,7 +245,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                                     # sys.stdout.write(f"\x1b[2A")
                                 dataLoaded = True
                         else:
-                            default_logger().debug(f"Data cache file:{fileName} on server has length ->{filesize}")
+                            default_logger().debug(f"Data cache file:{filePath} on server has length ->{filesize}")
                     except Exception as e:  # pragma: no cover
                         default_logger().debug(e, exc_info=True)
                         f.close()
