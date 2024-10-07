@@ -29,10 +29,23 @@ from typing_extensions import Literal
 from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
 
 class OutputControls(SingletonMixin, metaclass=SingletonType):
-    def __init__(self, enableMultipleLineOutput=False):
+    def __init__(self, enableMultipleLineOutput=False, enableUserInput=False):
         super(OutputControls, self).__init__()
         self.enableMultipleLineOutput = enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
+        self.enableUserInput = enableUserInput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
         self.lines = 0
+
+    def takeUserInput(
+        self,
+        inputString=None,
+        enableUserInput=False,
+        defaultInput=None
+    ) -> None:
+        if not enableUserInput:
+            return False
+        if not self.enableUserInput:
+            return False
+        return input(inputString) or defaultInput
 
     def printOutput(
         self,
