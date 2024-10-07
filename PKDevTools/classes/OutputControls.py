@@ -41,12 +41,8 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         enableUserInput=False,
         defaultInput=None
     ) -> None:
-        if (not enableUserInput and not self.enableUserInput) or (not self.enableUserInput and defaultInput is None):
+        if (not enableUserInput and not self.enableUserInput):
             return False if defaultInput is None else defaultInput
-        if not self.enableUserInput and defaultInput is None:
-            return False
-        if not self.enableUserInput and defaultInput is not None:
-            return defaultInput
         return input(inputString) or defaultInput
 
     def printOutput(
