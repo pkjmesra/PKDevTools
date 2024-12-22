@@ -1,5 +1,6 @@
 alive_progress
 argparse
+brotli
 bs4
 cloudscraper
 filelock
