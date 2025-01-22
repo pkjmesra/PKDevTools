@@ -25,7 +25,6 @@
 import os
 import json
 import calendar
-import numpy as np
 import pytz
 import pandas as pd
 import datetime
@@ -147,6 +146,11 @@ class PKDateUtilities:
             d1 = d1.date()
         if isinstance(d2,datetime.datetime):
             d2 = d2.date()
+        try:
+            import numpy as np
+        except Exception as e:
+            from PKDevTools.classes.System import PKSystem
+            print(f"Error importing numpy on {PKSystem.get_platform()[0]}")
         return np.busday_count(
             d1, d2
         ,weekmask=[1,1,1,1,1,0,0],holidays=hList if hList is not None else [])

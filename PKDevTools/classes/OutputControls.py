@@ -24,11 +24,11 @@
 """
 import sys
 import os
-from typing_extensions import Literal
 
 from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
 
 class OutputControls(SingletonMixin, metaclass=SingletonType):
+    from typing_extensions import Literal
     def __init__(self, enableMultipleLineOutput=False, enableUserInput=False):
         super(OutputControls, self).__init__()
         self.enableMultipleLineOutput = enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())

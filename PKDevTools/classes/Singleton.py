@@ -23,12 +23,12 @@
     SOFTWARE.
 
 """
-from multiprocessing import Lock
 
 class SingletonType(type):
     def __new__(mcs, name, bases, attrs):
         # Assume the target class is created (i.e. this method to be called) in the main thread.
         cls = super(SingletonType, mcs).__new__(mcs, name, bases, attrs)
+        from multiprocessing import Lock
         cls.__shared_instance_lock__ = Lock()
         return cls
 
