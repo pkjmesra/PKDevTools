@@ -32,6 +32,8 @@ python setup.py clean build sdist bdist_wheel
 
 """
 import sys
+import os
+import shutil
 from distutils.core import setup
 
 import setuptools  # noqa
@@ -72,6 +74,17 @@ try:
             self.root_is_pure = False
 except ImportError:
     bdist_wheel = None
+
+package_files_To_Install = ["LICENSE","README.md","requirements.txt"]
+package_files = [__PACKAGENAME__ + ".ini","courbd.ttf"]
+package_dir = os.path.join(os.getcwd(),__PACKAGENAME__)
+if os.path.exists(package_dir):
+    for file in package_files_To_Install:
+        targetFileName = file.split(os.sep)[-1].split(".")[0] + ".txt"
+        package_files.append(targetFileName)
+        srcFile = os.path.join(os.getcwd(),file)
+        if os.path.isfile(srcFile):
+            shutil.copy(srcFile,os.path.join(package_dir,targetFileName))
 
 setup(
     name=__PACKAGENAME__,
