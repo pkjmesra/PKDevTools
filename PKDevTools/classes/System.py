@@ -52,6 +52,7 @@ class PKSystem:
         system = platform.system().lower()
         machine = sysconfig.get_platform()
         machineArch = sysconfig.get_platform().split("-")[-1].lower()
+        useableArch = machineArch
         is_64bit = sys.maxsize > 2 ** 32
 
         if system == "darwin": # get machine architecture of multiarch binaries
@@ -82,4 +83,5 @@ class PKSystem:
         inContainer = os.environ.get("PKSCREENER_DOCKER", "").lower() in ("yes", "y", "on", "true", "1")
         sysVersion = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         sysVersion = sysVersion if not inContainer else f"{sysVersion} (Docker)"
-        return f"Python {sysVersion}, {system}_{machineArch}: {machine}",machine, system, machineArch
+        useableArch = "arm64" if any([x in machineArch for x in ("aarch64", "arm64", "arm")]) else "x64"
+        return f"Python {sysVersion}, {system}_{machineArch}: {machine}",machine, system, machineArch, useableArch
