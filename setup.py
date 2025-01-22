@@ -64,15 +64,25 @@ DIST_DIR = "dist/"
 
 # atexit.register(_post_build)
 
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            _bdist_wheel.finalize_options(self)
+            self.root_is_pure = False
+except ImportError:
+    bdist_wheel = None
+
 setup(
     name=__PACKAGENAME__,
     packages=setuptools.find_packages(where=".", exclude=["docs", "test"]),
+    cmdclass={'bdist_wheel': bdist_wheel},
     include_package_data=True,  # include everything in source control
     package_data={__PACKAGENAME__: ["release.md"]},
     # ...but exclude README.txt from all packages
     exclude_package_data={"": ["*.yml"]},
     version=VERSION,
-    description="A general day-to-day toolset for repos",
+    description="A general day-to-day toolset for PKScreener repos",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author=__USERNAME__,
@@ -108,6 +118,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     install_requires=install_requires,
     keywords=["GitHub tools", "Logging", "Telegram", "Fetcher"],
