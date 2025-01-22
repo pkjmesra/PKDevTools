@@ -245,6 +245,24 @@ jobs:
         run: |
           mv dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-linux_x86_64.whl dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-manylinux2014_x86_64.whl
 
+      - name: Build and publish distribution 📦 to Test PyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
+          repository_url: https://test.pypi.org/legacy/
+        shell: bash
+        run: |
+          twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*.whl
+
+      - name: Publish distribution 📦 to PyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          repository_url: https://upload.pypi.org/legacy/
+        shell: bash
+        run: |
+          twine upload --verbose dist/*.whl
+          
       - name: Build and test wheels
         env:
           CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
@@ -262,13 +280,13 @@ jobs:
         shell: bash
         if: ${{ matrix.platform_id == 'macosx_x86_64' }}
         run: |
-          cp dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp310-cp310-macosx_10_9_x86_64.whl dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-macosx_10_9_x86_64.whl
+          mv dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp310-cp310-macosx_10_9_x86_64.whl dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-macosx_10_9_x86_64.whl
 
       - name: Create macOS arm64 wheels from compatible versions
         shell: bash
         if: ${{ matrix.platform_id == 'macosx_arm64' }}
         run: |
-          cp dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp310-cp310-macosx_13_0_arm64.whl dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-macosx_13_0_arm64.whl 
+          mv dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp310-cp310-macosx_13_0_arm64.whl dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-macosx_13_0_arm64.whl 
   
       - name: Build and publish distribution 📦 to Test PyPI
         env:
