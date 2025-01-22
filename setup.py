@@ -33,6 +33,7 @@ python setup.py clean build sdist bdist_wheel
 """
 import sys
 import os
+import shutil
 from distutils.core import setup
 
 import setuptools  # noqa
@@ -41,6 +42,7 @@ from PKDevTools.classes import VERSION
 
 __USERNAME__ = "pkjmesra"
 __PACKAGENAME__ = "PKDevTools"
+install_requires=[]
 if os.path.exists("README.md") and os.path.isfile("README.md"):
     with open("README.md", "r") as fh:
         long_description = fh.read()
@@ -80,8 +82,16 @@ try:
 except ImportError:
     bdist_wheel = None
 
-package_files = ["LICENSE","README.md","requirements.txt"]
-
+package_files_To_Install = ["LICENSE","README.md","requirements.txt"]
+package_files = [__PACKAGENAME__ + ".ini","courbd.ttf"]
+package_dir = os.path.join(os.getcwd(),__PACKAGENAME__)
+if os.path.exists(package_dir):
+    for file in package_files_To_Install:
+        targetFileName = file.split(os.sep)[-1].split(".")[0] + ".txt"
+        package_files.append(targetFileName)
+        srcFile = os.path.join(os.getcwd(),file)
+        if os.path.isfile(srcFile):
+            shutil.copy(srcFile,os.path.join(package_dir,targetFileName))
 setup(
     name=__PACKAGENAME__,
     packages=setuptools.find_packages(where=".", exclude=["docs", "test"]),
