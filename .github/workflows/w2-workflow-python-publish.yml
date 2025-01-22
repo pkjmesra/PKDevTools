@@ -289,14 +289,14 @@ jobs:
           path: dist/*.whl
           if-no-files-found: ignore
 
-      - name: Upload Binaries to Release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/*.whl
-          tag: ${{ steps.vars.outputs.THIS_VERSION }}
-          release_name: PKDevTools - v${{ steps.vars.outputs.THIS_VERSION }}
-          overwrite: true
-          prerelease: false
-          make_latest: true
-          file_glob: true
+      # - name: Upload Binaries to Release
+      #   uses: svenstaro/upload-release-action@v2
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: dist/*.whl
+      #     tag: ${{ steps.vars.outputs.THIS_VERSION }}
+      #     release_name: PKDevTools - v${{ steps.vars.outputs.THIS_VERSION }}
+      #     overwrite: true
+      #     prerelease: false
+      #     make_latest: true
+      #     file_glob: true
