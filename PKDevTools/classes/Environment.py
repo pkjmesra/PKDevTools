@@ -23,7 +23,20 @@
 
 """
 from PKDevTools.classes.Singleton import SingletonType
-from PKDevTools.classes.Telegram import get_secrets
+from dotenv import dotenv_values
+
+def get_secrets():
+    local_secrets = dotenv_values(".env.dev")
+    keys = ["GITHUB_TOKEN","CHAT_ID","TOKEN","chat_idADMIN"]
+    for key in keys:
+        if key not in local_secrets.keys():
+            local_secrets[key] = ""
+    return (
+        local_secrets["CHAT_ID"],
+        local_secrets["TOKEN"],
+        local_secrets["chat_idADMIN"],
+        local_secrets["GITHUB_TOKEN"],
+    )
 
 class PKEnvironment(metaclass=SingletonType):
     def __init__(self):

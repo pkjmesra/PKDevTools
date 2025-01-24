@@ -35,7 +35,7 @@ import requests
 from PIL import Image
 import json
 from io import BytesIO
-from dotenv import dotenv_values
+from PKDevTools.classes.Environment import PKEnvironment
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.OutputControls import OutputControls
 from telegram import InputMediaDocument
@@ -88,18 +88,7 @@ def initTelegram():
 
 
 def get_secrets():
-    local_secrets = dotenv_values(".env.dev")
-    keys = ["GITHUB_TOKEN","CHAT_ID","TOKEN","chat_idADMIN"]
-    for key in keys:
-        if key not in local_secrets.keys():
-            local_secrets[key] = ""
-    return (
-        local_secrets["CHAT_ID"],
-        local_secrets["TOKEN"],
-        local_secrets["chat_idADMIN"],
-        local_secrets["GITHUB_TOKEN"],
-    )
-
+    return PKEnvironment().secrets
 
 def is_token_telegram_configured():
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
