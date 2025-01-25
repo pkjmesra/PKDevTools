@@ -125,6 +125,7 @@ class DBManager:
         try:
             otpValue = 0
             dbUsers = self.getUserByID(int(userID))
+            subscriptionModel = dbUsers[0].subscriptionmodel
             if not retry:
                 if len(dbUsers) > 0:
                     token = dbUsers[0].totptoken
@@ -148,7 +149,7 @@ class DBManager:
         except Exception as e: # pragma: no cover
             default_logger().debug(e, exc_info=True)
             pass
-        return otpValue
+        return otpValue, subscriptionModel
 
     def getUserByID(self,userID):
         try:
