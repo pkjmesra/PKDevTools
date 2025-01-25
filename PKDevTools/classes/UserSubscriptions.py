@@ -60,3 +60,13 @@ class PKUserSusbscriptions:
                 f"{PKSubscriptionModel.Six_Months.name}":f"{str(PKSubscriptionModel.Six_Months.value)}",
                 f"{PKSubscriptionModel.One_Year.name}":f"{str(PKSubscriptionModel.One_Year.value)}"
                 }
+
+    @property
+    def subscriptionValueKeyPairs(self):
+        return {f"{PKSubscriptionModel.No_Subscription.value}":f"{str(PKSubscriptionModel.No_Subscription.name)}",
+                f"{PKSubscriptionModel.One_Day.value}":f"{str(PKSubscriptionModel.One_Day.name)}",
+                f"{PKSubscriptionModel.One_Week.value}":f"{str(PKSubscriptionModel.One_Week.name)}",
+                f"{PKSubscriptionModel.One_Month.value}":f"{str(PKSubscriptionModel.One_Month.name)}",
+                f"{PKSubscriptionModel.Six_Months.value}":f"{str(PKSubscriptionModel.Six_Months.name)}",
+                f"{PKSubscriptionModel.One_Year.value}":f"{str(PKSubscriptionModel.One_Year.name)}"
+                }
