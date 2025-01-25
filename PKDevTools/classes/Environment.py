@@ -42,7 +42,12 @@ class PKEnvironment(metaclass=SingletonType):
     def __init__(self):
         super(PKEnvironment, self).__init__()
         self._secrets = get_secrets()
+        self._allSecrets = dotenv_values(".env.dev")
 
     @property
     def secrets(self):
         return self._secrets
+
+    @property
+    def allSecrets(self):
+        return self._allSecrets

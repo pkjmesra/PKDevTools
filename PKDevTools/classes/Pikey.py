@@ -29,7 +29,7 @@ from PKDevTools.classes import Archiver
 class PKPikey():
 
     def savedFilePath(fileName:str):
-        filePath=os.path.join(Archiver.get_user_data_dir(),f"{fileName}.pdf")
+        filePath=os.path.join(Archiver.get_user_data_dir(),f"{fileName.replace('.pdf','')}.pdf")
         return filePath
 
     def createFile(fileName:str,fileKey:str,owner:str):
@@ -52,7 +52,7 @@ class PKPikey():
     def saveFile(file,fileName:str,fileKey:str,owner:str):
         try:
             allow_key = pikepdf.Permissions(extract=False, accessibility=False,modify_annotation=False,modify_assembly=False,modify_form=False,modify_other=False,print_highres=False,print_lowres=False)
-            file.save(f"{fileName}.pdf",
+            file.save(f"{fileName}",
                             encryption=pikepdf.Encryption(
                                 user=fileKey,
                                 owner=owner, 
