@@ -58,8 +58,9 @@ class PKUserSusbscriptions:
     def updateUserSubscription(self,user:PKUser,dbManager:DBManager):
         if (user.subscriptionmodel is None or \
             str(user.subscriptionmodel) == str(PKSubscriptionModel.No_Subscription.value) or \
-            str(user.subscriptionmodel) == "") or (user.otpvaliduntil is None or \
-            str(user.otpvaliduntil) == "" or \
+            str(user.subscriptionmodel) == "") or ( \
+            #     user.otpvaliduntil is None or \
+            # str(user.otpvaliduntil) == "" or \
             (user.otpvaliduntil is not None and \
                 PKDateUtilities.dateFromYmdString(user.otpvaliduntil) < PKDateUtilities.currentDateTime().date())):
             # Remove such files and update user subscription back to no_subscription
