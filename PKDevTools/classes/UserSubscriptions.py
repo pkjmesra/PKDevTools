@@ -61,7 +61,7 @@ class PKUserSusbscriptions:
             str(user.subscriptionmodel) == "") or ( \
             #     user.otpvaliduntil is None or \
             # str(user.otpvaliduntil) == "" or \
-            (user.otpvaliduntil is not None and \
+            (user.otpvaliduntil is not None and len(user.otpvaliduntil) > 1 and \
                 PKDateUtilities.dateFromYmdString(user.otpvaliduntil) < PKDateUtilities.currentDateTime().date())):
             # Remove such files and update user subscription back to no_subscription
             PKPikey.removeSavedFile(str(user.userid))
@@ -79,13 +79,13 @@ class PKUserSusbscriptions:
             if user.subscriptionmodel == str(PKSubscriptionModel.One_Day.value):
                 n = 1
             elif user.subscriptionmodel == str(PKSubscriptionModel.One_Week.value):
-                n = 7
+                n = 6
             elif user.subscriptionmodel == str(PKSubscriptionModel.One_Month.value):
-                n = 30
+                n = 29
             elif user.subscriptionmodel == str(PKSubscriptionModel.Six_Months.value):
-                n = 183
+                n = 179
             elif user.subscriptionmodel == str(PKSubscriptionModel.One_Year.value):
-                n = 365
+                n = 364
             user.otpvaliduntil = PKDateUtilities.YmdStringFromDate(PKDateUtilities.currentDateTime(),n=n)
             created, fileKey = dbManager.refreshOTPForUser(user)
             if created:
