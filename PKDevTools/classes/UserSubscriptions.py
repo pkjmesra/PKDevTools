@@ -56,7 +56,8 @@ class PKUserSusbscriptions:
                         dbManager.updateUser(user)
 
                 if (user.subscriptionmodel is not None and \
-                    str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and 
+                    str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value and \
+                    len(str(user.subscriptionmodel)) > 1) and
                     (user.otpvaliduntil is None or str(user.otpvaliduntil) == "")):
                     # Update validity of subscription
                     n = 1
