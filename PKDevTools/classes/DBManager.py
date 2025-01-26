@@ -115,13 +115,13 @@ class DBManager:
     def refreshOTPForUser(self,user:PKUser,validityIntervalInSeconds=30):
         otpValue = str(pyotp.TOTP(user.totptoken,interval=int(validityIntervalInSeconds)).now())
         try:
-            self.updateOTP(user.userid,otpValue)
+            self.updateOTP(user.userid,otpValue,user.otpvaliduntil)
             return True, otpValue
         except Exception as e: # pragma: no cover
             default_logger().debug(e, exc_info=True)
             return False, otpValue
 
-    def getOTP(self,userID,username,name,retry=False,validityIntervalInSeconds=30):
+    def getOTP(self,userID,username,name,retry=False,validityIntervalInSeconds=86400):
         try:
             otpValue = 0
             dbUsers = self.getUserByID(int(userID))
@@ -234,9 +234,12 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
 
-    def updateOTP(self,userID,otp):
+    def updateOTP(self,userID,otp,otpValidUntilDate=None):
         try:
-            result = self.connection().execute(f"UPDATE users SET lastotp={self.sanitisedStrValue(otp)} WHERE userid={self.sanitisedIntValue(userID)}")
+            if otpValidUntilDate is None:
+                result = self.connection().execute(f"UPDATE users SET lastotp={self.sanitisedStrValue(otp)} WHERE userid={self.sanitisedIntValue(userID)}")
+            elif otpValidUntilDate is not None:
+                result = self.connection().execute(f"UPDATE users SET otpvaliduntil={self.sanitisedStrValue(otpValidUntilDate)},lastotp={self.sanitisedStrValue(otp)} WHERE userid={self.sanitisedIntValue(userID)}")
             if result.rows_affected > 0:
                 default_logger().debug(f"User: {userID} updated with otp: {otp}!")
         except Exception as e: # pragma: no cover

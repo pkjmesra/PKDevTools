@@ -25,6 +25,7 @@
 from enum import Enum
 from PKDevTools.classes.DBManager import DBManager
 from PKDevTools.classes.Pikey import PKPikey
+from PKDevTools.classes.PKDateUtilities import PKDateUtilities
 
 class PKSubscriptionModel(Enum):
     No_Subscription = 0
@@ -42,9 +43,34 @@ class PKUserSusbscriptions:
             dbManager = DBManager()
             users = dbManager.getUsers()
             for user in users:
-                if user.subscriptionmodel is None or \
+                if (user.subscriptionmodel is None or \
                     str(user.subscriptionmodel) == str(PKSubscriptionModel.No_Subscription.value) or \
-                        str(user.subscriptionmodel) == "":
+                    str(user.subscriptionmodel) == "") or (user.otpvaliduntil is None or \
+                    str(user.otpvaliduntil) == "" or \
+                    (user.otpvaliduntil is not None and \
+                     PKDateUtilities.dateFromYmdString(user.otpvaliduntil) < PKDateUtilities.currentDateTime().date())):
+                    # Remove such files and update user subscription back to no_subscription
+                    PKPikey.removeSavedFile(str(user.userid))
+                    if len(str(user.subscriptionmodel)) > 1:
+                        user.subscriptionmodel = "0"
+                        dbManager.updateUser(user)
+
+                if (user.subscriptionmodel is not None and \
+                    str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and 
+                    (user.otpvaliduntil is None or str(user.otpvaliduntil) == "")):
+                    # Update validity of subscription
+                    n = 1
+                    if user.subscriptionmodel == PKSubscriptionModel.One_Day.name:
+                        n = 1
+                    elif user.subscriptionmodel == PKSubscriptionModel.One_Week.name:
+                        n = 7
+                    elif user.subscriptionmodel == PKSubscriptionModel.One_Month.name:
+                        n = 30
+                    elif user.subscriptionmodel == PKSubscriptionModel.Six_Months.name:
+                        n = 183
+                    elif user.subscriptionmodel == PKSubscriptionModel.One_Year.name:
+                        n = 365
+                    user.otpvaliduntil = PKDateUtilities.YmdStringFromDate(PKDateUtilities.currentDateTime(),n=n)
                     created, fileKey = dbManager.refreshOTPForUser(user)
                     if created:
                         PKPikey.createFile(str(user.userid),fileKey,"PKScreener")

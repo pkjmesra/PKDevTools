@@ -128,7 +128,16 @@ class PKDateUtilities:
         calcDate = PKDateUtilities.last_day_of_month(any_day) + datetime.timedelta(days=1)
         lastTradingDate = PKDateUtilities.previousTradingDate(calcDate)
         return lastTradingDate
-    
+
+    def YmdStringFromDate(d1:datetime.datetime=None,n=0):
+        if d1 is None:
+            d1 = PKDateUtilities.currentDateTime()
+        counter = n
+        d2 = (d1 + datetime.timedelta(days=counter))
+        if isinstance(d2,datetime.datetime):
+            d2 = d2.date()
+        return d2.strftime("%Y-%m-%d")
+
     def dateFromYmdString(Ymd=None):
         today = PKDateUtilities.currentDateTime()
         return datetime.datetime.strptime(Ymd, "%Y-%m-%d").replace(tzinfo=today.tzinfo)
