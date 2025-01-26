@@ -28,9 +28,20 @@ except: # pragma: no cover
     pass
 import pyotp
 from time import sleep
-
+from enum import Enum
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.Environment import PKEnvironment
+
+class PKUserModel(Enum):
+        userid = 0
+        username = 1
+        name = 2
+        email = 3
+        mobile = 4
+        otpvaliduntil = 5
+        totptoken = 6
+        subscriptionmodel = 7
+        lastotp = 8
 
 class PKUser:
     userid=0
@@ -250,6 +261,19 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
     
+    def updateUserModel(self,userID,column:PKUserModel,columnValue=None):
+        try:
+            result = self.connection().execute(f"UPDATE users SET {column.name}={self.sanitisedStrValue(columnValue) if type(columnValue) == str else self.sanitisedIntValue(columnValue)} WHERE userid={self.sanitisedIntValue(userID)}")
+            if result.rows_affected > 0:
+                default_logger().debug(f"User: {userID} updated with {column.name}: {columnValue}!")
+        except Exception as e: # pragma: no cover
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+
     def getUsers(self):
         try:
             users = []

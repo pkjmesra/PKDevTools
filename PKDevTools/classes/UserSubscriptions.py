@@ -23,7 +23,7 @@
 
 """
 from enum import Enum
-from PKDevTools.classes.DBManager import DBManager
+from PKDevTools.classes.DBManager import DBManager, PKUserModel
 from PKDevTools.classes.Pikey import PKPikey
 from PKDevTools.classes.PKDateUtilities import PKDateUtilities
 
@@ -56,20 +56,20 @@ class PKUserSusbscriptions:
                         dbManager.updateUser(user)
 
                 if (user.subscriptionmodel is not None and \
-                    str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value and \
-                    len(str(user.subscriptionmodel)) > 1) and
-                    (user.otpvaliduntil is None or str(user.otpvaliduntil) == "")):
+                    str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and \
+                    len(str(user.subscriptionmodel)) > 1) and \
+                    (user.otpvaliduntil is None or str(user.otpvaliduntil) == ""):
                     # Update validity of subscription
                     n = 1
-                    if user.subscriptionmodel == PKSubscriptionModel.One_Day.name:
+                    if user.subscriptionmodel == str(PKSubscriptionModel.One_Day.value):
                         n = 1
-                    elif user.subscriptionmodel == PKSubscriptionModel.One_Week.name:
+                    elif user.subscriptionmodel == str(PKSubscriptionModel.One_Week.value):
                         n = 7
-                    elif user.subscriptionmodel == PKSubscriptionModel.One_Month.name:
+                    elif user.subscriptionmodel == str(PKSubscriptionModel.One_Month.value):
                         n = 30
-                    elif user.subscriptionmodel == PKSubscriptionModel.Six_Months.name:
+                    elif user.subscriptionmodel == str(PKSubscriptionModel.Six_Months.value):
                         n = 183
-                    elif user.subscriptionmodel == PKSubscriptionModel.One_Year.name:
+                    elif user.subscriptionmodel == str(PKSubscriptionModel.One_Year.value):
                         n = 365
                     user.otpvaliduntil = PKDateUtilities.YmdStringFromDate(PKDateUtilities.currentDateTime(),n=n)
                     created, fileKey = dbManager.refreshOTPForUser(user)
@@ -78,6 +78,11 @@ class PKUserSusbscriptions:
         except:
             pass
 
+    @classmethod
+    def updateSubscription(self,userID,subscription:PKSubscriptionModel=PKSubscriptionModel.No_Subscription):
+        dbManager = DBManager()
+        dbManager.updateUserModel(userID,PKUserModel.subscriptionmodel,subscription)
+        
     @property
     def subscriptionKeyValuePairs(self):
         return {f"{PKSubscriptionModel.No_Subscription.name}":f"{str(PKSubscriptionModel.No_Subscription.value)}",
