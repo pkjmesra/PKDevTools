@@ -43,7 +43,7 @@ class PKUserSusbscriptions:
             dbManager = DBManager()
             users = dbManager.getUsers()
             for user in users:
-                PKUserSusbscriptions.updateUserSubscription(user)
+                PKUserSusbscriptions.updateUserSubscription(user,dbManager)
         except:
             pass
 
@@ -52,7 +52,7 @@ class PKUserSusbscriptions:
         dbManager = DBManager()
         dbManager.updateUserModel(userID,PKUserModel.subscriptionmodel,str(subscription.value))
         user = PKUser.userFromDBRecord([userID,"","","","","","",str(subscription.value),0])
-        PKUserSusbscriptions.updateUserSubscription(user)
+        PKUserSusbscriptions.updateUserSubscription(user,dbManager)
 
     @classmethod
     def updateUserSubscription(self,user:PKUser,dbManager:DBManager):
