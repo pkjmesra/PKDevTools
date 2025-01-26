@@ -31,6 +31,7 @@ from time import sleep
 from enum import Enum
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.Environment import PKEnvironment
+from PKDevTools.classes.PKDateUtilities import PKDateUtilities
 
 class PKUserModel(Enum):
         userid = 0
@@ -138,11 +139,15 @@ class DBManager:
             dbUsers = self.getUserByID(int(userID))
             subscriptionModel = dbUsers[0].subscriptionmodel
             subscriptionValidity = dbUsers[0].otpvaliduntil
+            otpStillValid = (user.otpvaliduntil is not None and len(user.otpvaliduntil) > 1 and \
+                PKDateUtilities.dateFromYmdString(user.otpvaliduntil) <= PKDateUtilities.currentDateTime().date())
+            otpValue = dbUsers[0].lastotp if otpStillValid else otpValue
             if not retry:
                 if len(dbUsers) > 0:
                     token = dbUsers[0].totptoken
                     if token is not None:
-                        otpValue = str(pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).now())
+                        if not otpStillValid:
+                            otpValue = str(pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).now())
                     else:
                         # Update user
                         user = PKUser.userFromDBRecord([userID,username.lower(),name,dbUsers[0].email,dbUsers[0].mobile,dbUsers[0].otpvaliduntil,pyotp.random_base32(),dbUsers[0].subscriptionmodel,dbUsers[0].lastotp])
