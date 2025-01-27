@@ -44,7 +44,7 @@ class Committer():
             COPY_CMD = "copy"
         Committer.execOSCommand(f"{COPY_CMD} {srcPath} {destPath}")
 
-    def commitTempOutcomes(addPath="*.*",commitMessage="[Temp-Commit]",branchName="gh-pages"):
+    def commitTempOutcomes(addPath="*.*",commitMessage="[Temp-Commit]",branchName="gh-pages",showStatus=False):
         '''
 
         '''
@@ -52,6 +52,7 @@ class Committer():
         if not cwd.endswith(os.sep):
             cwd = f"{cwd}{os.sep}"
         addPath = addPath.replace(cwd,"")
+        suffix = ">/dev/null 2>&1" if not showStatus else "--verbose"
         Committer.execOSCommand("git config user.name github-actions >/dev/null 2>&1")
         Committer.execOSCommand("git config user.email github-actions@github.com >/dev/null 2>&1")
         Committer.execOSCommand("git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' >/dev/null 2>&1")
@@ -61,16 +62,19 @@ class Committer():
         # is heavy on data.
         # Committer.execOSCommand("git remote update >/dev/null 2>&1")
         # git fetch will update only the branch you're on, but not merge any changes in.
-        Committer.execOSCommand("git fetch >/dev/null 2>&1")
+        # Committer.execOSCommand("git fetch >/dev/null 2>&1")
         Committer.execOSCommand("git config pull.rebase false >/dev/null 2>&1")
+        if showStatus:
+            Committer.execOSCommand("git status")
         # git pull will update and merge any remote changes of the current branch you're on. 
         # This would be the one you use to update a local branch.
-        Committer.execOSCommand("git pull >/dev/null 2>&1")
+        # Only pull from specific branch in remote origin
+        Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
         # Committer.execOSCommand("git checkout --ours .")
         Committer.execOSCommand(f"git add {addPath} --force")
         Committer.execOSCommand(f"git commit -m '{commitMessage}'")
-        Committer.execOSCommand("git pull >/dev/null 2>&1")
-        Committer.execOSCommand(f"git push -v -u origin +{branchName} >/dev/null 2>&1")
+        Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
+        Committer.execOSCommand(f"git push -v -u origin +{branchName} {suffix}")
 
     def execOSCommand(command:str):
         try:
