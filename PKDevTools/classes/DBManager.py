@@ -145,7 +145,7 @@ class DBManager:
             subscriptionModel = dbUser.subscriptionmodel
             subscriptionValidity = dbUser.otpvaliduntil
             otpStillValid = (dbUser.otpvaliduntil is not None and len(dbUser.otpvaliduntil) > 1 and \
-                PKDateUtilities.dateFromYmdString(dbUser.otpvaliduntil) <= PKDateUtilities.currentDateTime().date())
+                PKDateUtilities.dateFromYmdString(dbUser.otpvaliduntil).date() <= PKDateUtilities.currentDateTime().date())
             otpValue = dbUser.lastotp if otpStillValid else otpValue
             if not retry:
                 if len(dbUsers) > 0:
