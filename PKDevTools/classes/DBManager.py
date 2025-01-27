@@ -141,20 +141,21 @@ class DBManager:
         try:
             otpValue = 0
             dbUsers = self.getUserByID(int(userID))
-            subscriptionModel = dbUsers[0].subscriptionmodel
-            subscriptionValidity = dbUsers[0].otpvaliduntil
-            otpStillValid = (user.otpvaliduntil is not None and len(user.otpvaliduntil) > 1 and \
-                PKDateUtilities.dateFromYmdString(user.otpvaliduntil) <= PKDateUtilities.currentDateTime().date())
-            otpValue = dbUsers[0].lastotp if otpStillValid else otpValue
+            dbUser = dbUsers[0]
+            subscriptionModel = dbUser.subscriptionmodel
+            subscriptionValidity = dbUser.otpvaliduntil
+            otpStillValid = (dbUser.otpvaliduntil is not None and len(dbUser.otpvaliduntil) > 1 and \
+                PKDateUtilities.dateFromYmdString(dbUser.otpvaliduntil) <= PKDateUtilities.currentDateTime().date())
+            otpValue = dbUser.lastotp if otpStillValid else otpValue
             if not retry:
                 if len(dbUsers) > 0:
-                    token = dbUsers[0].totptoken
+                    token = dbUser.totptoken
                     if token is not None:
                         if not otpStillValid:
                             otpValue = str(pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).now())
                     else:
                         # Update user
-                        user = PKUser.userFromDBRecord([userID,username.lower(),name,dbUsers[0].email,dbUsers[0].mobile,dbUsers[0].otpvaliduntil,pyotp.random_base32(),dbUsers[0].subscriptionmodel,dbUsers[0].lastotp])
+                        user = PKUser.userFromDBRecord([userID,username.lower(),name,dbUser.email,dbUser.mobile,dbUser.otpvaliduntil,pyotp.random_base32(),dbUser.subscriptionmodel,dbUser.lastotp])
                         self.updateUser(user)
                         return self.getOTP(userID,username,name,retry=True)
                 else:
