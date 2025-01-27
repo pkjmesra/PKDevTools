@@ -50,9 +50,7 @@ class PKUserSusbscriptions:
     @classmethod
     def updateSubscription(self,userID,subscription:PKSubscriptionModel=PKSubscriptionModel.No_Subscription):
         dbManager = DBManager()
-        print("DBManager created")
         dbManager.updateUserModel(userID,PKUserModel.subscriptionmodel,str(subscription.value))
-        print("DBManager updated user model")
         user = PKUser.userFromDBRecord([userID,"","","","","","",str(subscription.value),0])
         PKUserSusbscriptions.updateUserSubscription(user,dbManager)
 
@@ -71,7 +69,6 @@ class PKUserSusbscriptions:
                 user.subscriptionmodel = "0"
                 user.otpvaliduntil = ""
                 dbManager.refreshOTPForUser(user)
-                print("DBManager refreshed OTP for user")
 
         if (user.subscriptionmodel is not None and \
             str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and \
@@ -93,7 +90,6 @@ class PKUserSusbscriptions:
             created, fileKey = dbManager.refreshOTPForUser(user)
             if created:
                 PKPikey.createFile(str(user.userid),fileKey,"PKScreener")
-                print("Created SubData for user")
 
     @property
     def subscriptionKeyValuePairs(self):

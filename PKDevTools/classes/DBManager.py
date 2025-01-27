@@ -78,7 +78,7 @@ class DBManager:
             self.token = local_secrets["TAT"]
         except Exception as e: # pragma: no cover
             default_logger().debug(e, exc_info=True)
-            print(e)
+            # print(e)
             self.url = None
             self.token = None
         self.conn = None
@@ -99,7 +99,7 @@ class DBManager:
                 # self.conn.sync()
                 self.conn = libsql.create_client_sync(self.url,auth_token=self.token)
         except Exception as e: # pragma: no cover
-            print(e)
+            # print(e)
             default_logger().debug(e, exc_info=True)
             pass
         return self.conn
@@ -133,11 +133,11 @@ class DBManager:
             self.updateOTP(user.userid,otpValue,user.otpvaliduntil)
             return True, otpValue
         except Exception as e: # pragma: no cover
-            print(e)
+            # print(e)
             default_logger().debug(e, exc_info=True)
             return False, otpValue
 
-    def getOTP(self,userID,username,name,retry=False,validityIntervalInSeconds=86400):
+    def getOTP(self,userID,username=None,name=None,retry=False,validityIntervalInSeconds=86400):
         try:
             otpValue = 0
             dbUsers = self.getUserByID(int(userID))
@@ -145,7 +145,7 @@ class DBManager:
             subscriptionModel = dbUser.subscriptionmodel
             subscriptionValidity = dbUser.otpvaliduntil
             otpStillValid = (dbUser.otpvaliduntil is not None and len(dbUser.otpvaliduntil) > 1 and \
-                PKDateUtilities.dateFromYmdString(dbUser.otpvaliduntil).date() <= PKDateUtilities.currentDateTime().date())
+                PKDateUtilities.dateFromYmdString(dbUser.otpvaliduntil).date() >= PKDateUtilities.currentDateTime().date())
             otpValue = dbUser.lastotp if otpStillValid else otpValue
             if not retry:
                 if len(dbUsers) > 0:
@@ -164,7 +164,7 @@ class DBManager:
                     self.insertUser(user)
                     return self.getOTP(userID,username,name,retry=True)
         except Exception as e: # pragma: no cover
-            print(e)
+            # print(e)
             default_logger().debug(e, exc_info=True)
             pass
         try:
@@ -186,7 +186,7 @@ class DBManager:
                 # Let's tell the user
                 default_logger().debug(f"User: {userID} not found! Probably needs registration?")
         except Exception as e: # pragma: no cover
-            print(e)
+            # print(e)
             default_logger().debug(e, exc_info=True)
             pass
         finally:
@@ -267,7 +267,7 @@ class DBManager:
             if result.rows_affected > 0:
                 default_logger().debug(f"User: {userID} updated with otp: {otp}!")
         except Exception as e: # pragma: no cover
-            print(e)
+            # print(e)
             default_logger().debug(e, exc_info=True)
             pass
         finally:
@@ -281,7 +281,7 @@ class DBManager:
             if result.rows_affected > 0:
                 default_logger().debug(f"User: {userID} updated with {column.name}: {columnValue}!")
         except Exception as e: # pragma: no cover
-            print(e)
+            # print(e)
             default_logger().debug(e, exc_info=True)
             pass
         finally:
@@ -301,7 +301,7 @@ class DBManager:
                 # Let's tell the user
                 default_logger().debug(f"Users not found!")
         except Exception as e: # pragma: no cover
-            print(e)
+            # print(e)
             default_logger().debug(e, exc_info=True)
             pass
         finally:
