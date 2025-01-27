@@ -55,9 +55,16 @@ class Committer():
         Committer.execOSCommand("git config user.name github-actions >/dev/null 2>&1")
         Committer.execOSCommand("git config user.email github-actions@github.com >/dev/null 2>&1")
         Committer.execOSCommand("git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' >/dev/null 2>&1")
-        Committer.execOSCommand("git remote update >/dev/null 2>&1")
+        # git remote update will update all of your branches set to track remote ones, 
+        # but not merge any changes in. If you've not checkedout all remote branches,
+        # this might take a while to update all branches if one of the branches
+        # is heavy on data.
+        # Committer.execOSCommand("git remote update >/dev/null 2>&1")
+        # git fetch will update only the branch you're on, but not merge any changes in.
         Committer.execOSCommand("git fetch >/dev/null 2>&1")
         Committer.execOSCommand("git config pull.rebase false >/dev/null 2>&1")
+        # git pull will update and merge any remote changes of the current branch you're on. 
+        # This would be the one you use to update a local branch.
         Committer.execOSCommand("git pull >/dev/null 2>&1")
         # Committer.execOSCommand("git checkout --ours .")
         Committer.execOSCommand(f"git add {addPath} --force")
@@ -70,11 +77,13 @@ class Committer():
             default_logger().debug(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
             command.replace(">/dev/null 2>&1","")
             os.system(f"{command} >/dev/null 2>&1")
-        except Exception:
+        except Exception as e:
             try:
+                print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}\nException:\n{e}")
                 # We probably got into a conflict
                 os.system("git checkout --ours . >/dev/null 2>&1")
                 os.system(f"{command} >/dev/null 2>&1")
-            except:
+            except Exception as ex:
+                print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}\nException:\n{e}")
                 pass
             pass
