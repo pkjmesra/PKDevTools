@@ -56,24 +56,49 @@ class PKUserSusbscriptions:
 
     @classmethod
     def updateUserSubscription(self,user:PKUser,dbManager:DBManager):
+        # Let's remove the subscriptions for those for which the validity has already expired
+        # or there is no subscription!
+        # No subscription cases
         if (user.subscriptionmodel is None or \
             str(user.subscriptionmodel) == str(PKSubscriptionModel.No_Subscription.value) or \
             str(user.subscriptionmodel) == "") or ( \
-            #     user.otpvaliduntil is None or \
-            # str(user.otpvaliduntil) == "" or \
+            # Validity of subscriptions expired!
             (user.otpvaliduntil is not None and len(user.otpvaliduntil) > 1 and \
                 PKDateUtilities.dateFromYmdString(user.otpvaliduntil).date() < PKDateUtilities.currentDateTime().date())):
             # Remove such files and update user subscription back to no_subscription
             PKPikey.removeSavedFile(str(user.userid))
             if len(str(user.subscriptionmodel)) > 0:
+                print(f"Subscription being updated/removed for user:{user.userid}, subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}")
                 user.subscriptionmodel = "0"
                 user.otpvaliduntil = ""
-                dbManager.refreshOTPForUser(user)
+                otpUpdated, _ = dbManager.refreshOTPForUser(user)
+                print(f"Subscription {'updated/removed' if otpUpdated else 'could NOT be updated/removed'} for user:{user.userid}")
 
+        # Users having a valid existing subscription
+        if (user.subscriptionmodel is not None and \
+            str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and \
+            len(str(user.subscriptionmodel)) > 1) and \
+            (user.otpvaliduntil is not None and len(user.otpvaliduntil) > 1):
+            # Update validity of subscription that are pre-existing
+            # We just need to periodically update the OTP, leaving the
+            # validity and subscription type unchanged.
+            print(f"OTP being updated for user:{user.userid}, subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}")
+            created, fileKey = dbManager.refreshOTPForUser(user)
+            if created:
+                fileCreated = PKPikey.createFile(str(user.userid),fileKey,"PKScreener")
+                print(f"OTP updated for user:{user.userid}")
+                print(f"Subscription file {'updated' if fileCreated else 'could NOT be updated'} for user:{user.userid}")
+            else:
+                print(f"OTP could NOT be updated for user:{user.userid}")
+                print(f"Subscription file could NOT be updated for user:{user.userid}")
+
+
+        # Users having a valid existing subscription, probably the first time subscription users
         if (user.subscriptionmodel is not None and \
             str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and \
             len(str(user.subscriptionmodel)) > 1) and \
             (user.otpvaliduntil is None or str(user.otpvaliduntil) == ""):
+            # the subscription validity has not been updated so far
             # Update validity of subscription
             n = 1
             if user.subscriptionmodel == str(PKSubscriptionModel.One_Day.value):
@@ -89,7 +114,12 @@ class PKUserSusbscriptions:
             user.otpvaliduntil = PKDateUtilities.YmdStringFromDate(PKDateUtilities.currentDateTime(),n=n)
             created, fileKey = dbManager.refreshOTPForUser(user)
             if created:
-                PKPikey.createFile(str(user.userid),fileKey,"PKScreener")
+                fileCreated = PKPikey.createFile(str(user.userid),fileKey,"PKScreener")
+                print(f"Subscription updated for user:{user.userid} to subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}")
+                print(f"Subscription file {'updated' if fileCreated else 'could NOT be updated'} for user:{user.userid}")
+            else:
+                print(f"Subscription could NOT be updated for user:{user.userid} to subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}")
+                print(f"Subscription file could NOT be updated for user:{user.userid}")
 
     @property
     def subscriptionKeyValuePairs(self):
