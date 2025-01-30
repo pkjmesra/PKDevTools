@@ -139,7 +139,7 @@ class PKUserSusbscriptions:
             str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and \
             len(str(user.subscriptionmodel)) > 1) and \
             (user.otpvaliduntil is not None and len(user.otpvaliduntil) > 1 and \
-                PKDateUtilities.dateFromYmdString(user.otpvaliduntil).date() <= PKDateUtilities.currentDateTime().date())
+                PKDateUtilities.dateFromYmdString(user.otpvaliduntil).date() >= PKDateUtilities.currentDateTime().date())
 
     @property
     def subscriptionKeyValuePairs(self):
