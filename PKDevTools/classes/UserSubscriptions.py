@@ -121,6 +121,26 @@ class PKUserSusbscriptions:
                 print(f"Subscription could NOT be updated for user:{user.userid} to subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}")
                 print(f"Subscription file could NOT be updated for user:{user.userid}")
 
+    @classmethod
+    def userExists(self,userID):
+        dbManager = DBManager()
+        dbusers = dbManager.getUserByID(userID)
+        return len(dbusers) > 0
+
+    @classmethod
+    def userSubscribed(self,userID):
+        dbManager = DBManager()
+        dbusers = dbManager.getUserByID(userID)
+        user = None
+        if len(dbusers) > 0:
+            user = dbusers[0]
+        return user is not None and \
+            (user.subscriptionmodel is not None and \
+            str(user.subscriptionmodel) != str(PKSubscriptionModel.No_Subscription.value) and \
+            len(str(user.subscriptionmodel)) > 1) and \
+            (user.otpvaliduntil is not None and len(user.otpvaliduntil) > 1 and \
+                PKDateUtilities.dateFromYmdString(user.otpvaliduntil).date() <= PKDateUtilities.currentDateTime().date())
+
     @property
     def subscriptionKeyValuePairs(self):
         return {f"{PKSubscriptionModel.No_Subscription.name}":f"{str(PKSubscriptionModel.No_Subscription.value)}",
