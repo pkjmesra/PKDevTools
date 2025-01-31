@@ -315,6 +315,3 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         return users
-
-dbManager = DBManager()
-dbManager.getOTP("1087013660",None,"Roozbeh Bhaya")
