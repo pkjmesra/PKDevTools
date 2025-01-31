@@ -141,28 +141,34 @@ class DBManager:
         try:
             otpValue = 0
             dbUsers = self.getUserByID(int(userID))
-            dbUser = dbUsers[0]
-            subscriptionModel = dbUser.subscriptionmodel
-            subscriptionValidity = dbUser.otpvaliduntil
-            otpStillValid = (dbUser.otpvaliduntil is not None and len(dbUser.otpvaliduntil) > 1 and \
-                PKDateUtilities.dateFromYmdString(dbUser.otpvaliduntil).date() >= PKDateUtilities.currentDateTime().date())
-            otpValue = dbUser.lastotp if otpStillValid else otpValue
-            if not retry:
-                if len(dbUsers) > 0:
-                    token = dbUser.totptoken
-                    if token is not None:
-                        if not otpStillValid:
-                            otpValue = str(pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).now())
+            if len(dbUsers) > 0:
+                dbUser = dbUsers[0]
+                subscriptionModel = dbUser.subscriptionmodel
+                subscriptionValidity = dbUser.otpvaliduntil
+                otpStillValid = (dbUser.otpvaliduntil is not None and len(dbUser.otpvaliduntil) > 1 and \
+                    PKDateUtilities.dateFromYmdString(dbUser.otpvaliduntil).date() >= PKDateUtilities.currentDateTime().date())
+                otpValue = dbUser.lastotp if otpStillValid else otpValue
+                if not retry:
+                    if len(dbUsers) > 0:
+                        token = dbUser.totptoken
+                        if token is not None:
+                            if not otpStillValid:
+                                otpValue = str(pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).now())
+                        else:
+                            # Update user
+                            user = PKUser.userFromDBRecord([userID,str(username).lower(),name,dbUser.email,dbUser.mobile,dbUser.otpvaliduntil,pyotp.random_base32(),dbUser.subscriptionmodel,dbUser.lastotp])
+                            self.updateUser(user)
+                            return self.getOTP(userID,username,name,retry=True)
                     else:
-                        # Update user
-                        user = PKUser.userFromDBRecord([userID,username.lower(),name,dbUser.email,dbUser.mobile,dbUser.otpvaliduntil,pyotp.random_base32(),dbUser.subscriptionmodel,dbUser.lastotp])
-                        self.updateUser(user)
+                        # Insert user
+                        user = PKUser.userFromDBRecord([userID,str(username).lower(),name,None,None,None,pyotp.random_base32(),None,None])
+                        self.insertUser(user)
                         return self.getOTP(userID,username,name,retry=True)
-                else:
-                    # Insert user
-                    user = PKUser.userFromDBRecord([userID,username.lower(),name,None,None,None,pyotp.random_base32(),None,None])
-                    self.insertUser(user)
-                    return self.getOTP(userID,username,name,retry=True)
+            else:
+                # Insert user
+                user = PKUser.userFromDBRecord([userID,str(username).lower(),name,None,None,None,pyotp.random_base32(),None,None])
+                self.insertUser(user)
+                return self.getOTP(userID,username,name,retry=True)
         except Exception as e: # pragma: no cover
             # print(e)
             default_logger().debug(e, exc_info=True)
@@ -205,7 +211,7 @@ class DBManager:
                 userID = 0
                 pass
             if userID == 0:
-                records = cursor.execute(f"SELECT * FROM users WHERE username={self.sanitisedStrValue(userIDOrusername.lower())}") #.fetchall()
+                records = cursor.execute(f"SELECT * FROM users WHERE username={self.sanitisedStrValue(str(userIDOrusername).lower())}") #.fetchall()
             else:
                 records = cursor.execute(f"SELECT * FROM users WHERE userid={self.sanitisedIntValue(userID)}") #.fetchall()
             for row in records.rows:
@@ -226,7 +232,7 @@ class DBManager:
     
     def insertUser(self,user:PKUser):
         try:
-            result = self.connection().execute(f"INSERT INTO users(userid,username,name,email,mobile,otpvaliduntil,totptoken,subscriptionmodel) VALUES ({self.sanitisedIntValue(user.userid)},{self.sanitisedStrValue(user.username.lower())},{self.sanitisedStrValue(user.name)},{self.sanitisedStrValue(user.email)},{self.sanitisedIntValue(user.mobile)},{self.sanitisedStrValue(user.otpvaliduntil)},{self.sanitisedStrValue(user.totptoken)},{self.sanitisedStrValue(user.subscriptionmodel)});")
+            result = self.connection().execute(f"INSERT INTO users(userid,username,name,email,mobile,otpvaliduntil,totptoken,subscriptionmodel) VALUES ({self.sanitisedIntValue(user.userid)},{self.sanitisedStrValue(str(user.username).lower())},{self.sanitisedStrValue(user.name)},{self.sanitisedStrValue(user.email)},{self.sanitisedIntValue(user.mobile)},{self.sanitisedStrValue(user.otpvaliduntil)},{self.sanitisedStrValue(user.totptoken)},{self.sanitisedStrValue(user.subscriptionmodel)});")
             if result.rows_affected > 0 and result.last_insert_rowid is not None:
                 default_logger().debug(f"User: {user.userid} inserted as last row ID: {result.last_insert_rowid}!")
             # self.connection().commit()
@@ -247,7 +253,7 @@ class DBManager:
 
     def updateUser(self,user:PKUser):
         try:
-            result = self.connection().execute(f"UPDATE users SET username={self.sanitisedStrValue(user.username.lower())},name={self.sanitisedStrValue(user.name)},email={self.sanitisedStrValue(user.email)},mobile={self.sanitisedIntValue(user.mobile)},otpvaliduntil={self.sanitisedStrValue(user.otpvaliduntil)},totptoken={self.sanitisedStrValue(user.totptoken)},subscriptionmodel={self.sanitisedStrValue(user.subscriptionmodel)},lastotp={self.sanitisedStrValue(user.lastotp)} WHERE userid={self.sanitisedIntValue(user.userid)}")
+            result = self.connection().execute(f"UPDATE users SET username={self.sanitisedStrValue(str(user.username).lower())},name={self.sanitisedStrValue(user.name)},email={self.sanitisedStrValue(user.email)},mobile={self.sanitisedIntValue(user.mobile)},otpvaliduntil={self.sanitisedStrValue(user.otpvaliduntil)},totptoken={self.sanitisedStrValue(user.totptoken)},subscriptionmodel={self.sanitisedStrValue(user.subscriptionmodel)},lastotp={self.sanitisedStrValue(user.lastotp)} WHERE userid={self.sanitisedIntValue(user.userid)}")
             if result.rows_affected > 0:
                 default_logger().debug(f"User: {user.userid} updated!")
         except Exception as e: # pragma: no cover
@@ -309,3 +315,6 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         return users
+
+dbManager = DBManager()
+dbManager.getOTP("1087013660",None,"Roozbeh Bhaya")
