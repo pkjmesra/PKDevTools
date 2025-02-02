@@ -50,8 +50,14 @@ class PKUserSusbscriptions:
     @classmethod
     def updateSubscription(self,userID,subscription:PKSubscriptionModel=PKSubscriptionModel.No_Subscription):
         dbManager = DBManager()
+        user = None
+        dbUsers = dbManager.getUserByID(userID=userID)
+        if len(dbUsers) > 0:
+            user = dbUsers[0]
+            user.subscriptionmodel = str(subscription.value)
+        else:
+            user = PKUser.userFromDBRecord([userID,"","","","","","",str(subscription.value),0])
         dbManager.updateUserModel(userID,PKUserModel.subscriptionmodel,str(subscription.value))
-        user = PKUser.userFromDBRecord([userID,"","","","","","",str(subscription.value),0])
         PKUserSusbscriptions.updateUserSubscription(user,dbManager)
 
     @classmethod
