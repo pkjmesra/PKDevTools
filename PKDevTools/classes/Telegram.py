@@ -190,8 +190,8 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
             if len(reply_markup_encoded) > 0:
                 url = (
                     botsUrl
-                    + "/sendMessage?chat_id={}&text={}&reply_markup={reply_markup_encoded}".format(
-                        people_id, escaped_text[:MAX_MSG_LENGTH], reply_markup_encoded=reply_markup_encoded
+                    + "/sendMessage?chat_id={}&text={}&reply_markup={reply_markup_encoded}&parse_mode={parse_mode}".format(
+                        people_id, escaped_text[:MAX_MSG_LENGTH], reply_markup_encoded=reply_markup_encoded,parse_mode=parse_type
                     )
                 )
             else:
