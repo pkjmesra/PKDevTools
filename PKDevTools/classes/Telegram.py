@@ -187,12 +187,20 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
     if list_png is None or any(elem is None for elem in list_png):
         resp = None
         for people_id in LIST_PEOPLE_IDS_CHAT:
-            url = (
-                botsUrl
-                + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}&reply_markup={reply_markup_encoded}".format(
-                    people_id, escaped_text[:MAX_MSG_LENGTH], parse_mode=parse_type, reply_markup_encoded=reply_markup_encoded
+            if len(reply_markup_encoded) > 0:
+                url = (
+                    botsUrl
+                    + "/sendMessage?chat_id={}&text={}&reply_markup={reply_markup_encoded}".format(
+                        people_id, escaped_text[:MAX_MSG_LENGTH], parse_mode=parse_type, reply_markup_encoded=reply_markup_encoded
+                    )
                 )
-            )
+            else:
+                url = (
+                    botsUrl
+                    + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}".format(
+                        people_id, escaped_text[:MAX_MSG_LENGTH], parse_mode=parse_type, reply_markup_encoded=reply_markup_encoded
+                    )
+                )
             try:
                 resp = requests.get(
                     url, timeout=2 # 2 sec timeout
