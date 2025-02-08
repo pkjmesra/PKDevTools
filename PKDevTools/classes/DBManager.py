@@ -45,6 +45,21 @@ class PKUserModel(Enum):
         subscriptionmodel = 7
         lastotp = 8
 
+class PKScannerJob:
+    scannerId=''
+    userIds=[]
+
+    def scannerJobFromRecord(row):
+        scanner = PKScannerJob()
+        scanner.scannerId= row[0]
+        scanner.userIds = []
+        for user in row[1].split(";"):
+            scanner.userIds.append(user)
+        if len(scanner.userIds) > 0:
+            # Only unique values
+            scanner.userIds = list(set(scanner.userIds))
+        return scanner
+    
 class PKUser:
     userid=0
     username=""
@@ -55,6 +70,8 @@ class PKUser:
     totptoken=""
     subscriptionmodel=""
     lastotp=""
+    balance = 0
+    scannerJobs = []
 
     def userFromDBRecord(row):
         user = PKUser()
@@ -67,6 +84,18 @@ class PKUser:
         user.totptoken= row[6]
         user.subscriptionmodel= row[7]
         user.lastotp= row[8]
+        return user
+    
+    def userFromAlertsRecord(row):
+        user = PKUser()
+        user.userid= row[0]
+        user.balance= row[1]
+        user.scannerJobs = []
+        for job in row[2].split(";"):
+            user.scannerJobs.append(str(job).upper())
+        if len(user.scannerJobs) > 0:
+            # Only unique values
+            user.scannerJobs = list(set(user.scannerJobs))
         return user
 
 class DBManager:
@@ -323,3 +352,61 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         return users
+
+    def alertsForUser(self,userID:int):
+        try:
+            users = []
+            cursor = self.connection()
+            records = cursor.execute(f"SELECT * FROM alertsubscriptions where userId={self.sanitisedIntValue(userID)}")
+            for row in records.rows:
+                users.append(PKUser.userFromAlertsRecord(row))
+            # cursor.close()
+            if len(records.columns) > 0 and len(records.rows) <= 0:
+                default_logger().debug(f"Users not found!")
+        except Exception as e: # pragma: no cover
+            print(f"Could not get alertsForUser\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+        return users[0] if len(users) > 0 else None
+
+    def scannerJobsWithActiveUsers(self):
+        try:
+            scanners = []
+            cursor = self.connection()
+            records = cursor.execute(f"SELECT * FROM scannerjobs where users != ''")
+            for row in records.rows:
+                scanners.append(PKScannerJob.scannerJobFromRecord(row))
+            if len(records.columns) > 0 and len(records.rows) <= 0:
+                default_logger().debug(f"Scanners not found!")
+        except Exception as e: # pragma: no cover
+            print(f"Could not get scannerJobsWithActiveUsers\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+        return scanners
+    
+    def usersForScannerJobId(self,scannerJobId:str):
+        try:
+            scanners = []
+            cursor = self.connection()
+            records = cursor.execute(f"SELECT * FROM scannerjobs where scannerId = {self.sanitisedStrValue(str(scannerJobId).upper())}")
+            for row in records.rows:
+                scanners.append(PKScannerJob.scannerJobFromRecord(row))
+            if len(records.columns) > 0 and len(records.rows) <= 0:
+                default_logger().debug(f"Scanners not found!")
+        except Exception as e: # pragma: no cover
+            print(f"Could not get scannerJobsWithActiveUsers\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+        return scanners[0].userIds if len(scanners) > 0 else []
