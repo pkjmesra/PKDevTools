@@ -410,3 +410,107 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         return scanners[0].userIds if len(scanners) > 0 else []
+
+    def updateAlertSubscriptionModel(self,userID,charge:float,scanId:str):
+        try:
+            result = self.connection().execute("""
+                                            UPDATE alertsubscriptions
+                                            SET 
+                                                balance = balance - ?,
+                                                scannerJobs = scannerJobs || ';' || ?
+                                            WHERE userId = ?;
+                                        """, (charge, scanId, userID))
+            if result.rows_affected > 0:
+                default_logger().debug(f"User: {userID} updated with balance and scannerJobs!")
+                self.topUpScannerJobs(scanId,userID)
+        except Exception as e: # pragma: no cover
+            print(f"Could not updateAlertSubscriptionModel UserID: {userID}\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+
+    def topUpAlertSubscriptionBalance(self,userID,topup:float):
+        """
+        Handles a new user insertion as well as update.
+
+        If UserID does not exist, a new row is inserted with the given Balance.
+        If UserID already exists, only the Balance is updated by adding the new amount 
+        (Balance + excluded.Balance).
+        """
+        try:
+            result = self.connection().execute("""
+                                            INSERT INTO alertsubscriptions (userId, balance) 
+                                            VALUES (?, ?) 
+                                            ON CONFLICT(userId) DO UPDATE 
+                                            SET balance = balance + excluded.balance;
+                                        """, (userID,topup))
+            if result.rows_affected > 0:
+                default_logger().debug(f"User: {userID} topped up with balance !")
+        except Exception as e: # pragma: no cover
+            print(f"Could not topUpAlertSubscriptionBalance UserID: {userID}\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+
+    def topUpScannerJobs(self,scanId,userID):
+        """
+        Handles a new user insertion as well as update for a given scanId.
+
+        If scanId does not exist, a new row is inserted with the given userId.
+        If scanId already exists, only the users is updated by adding the new userId 
+        """
+        try:
+            result = self.connection().execute("""
+                                            INSERT INTO scannerjobs (scannerId, users) 
+                                            VALUES (?, ?) 
+                                            ON CONFLICT(scannerId) DO UPDATE 
+                                            SET users = users || ';' || excluded.users;
+                                        """, (scanId,userID))
+            if result.rows_affected > 0:
+                default_logger().debug(f"User: {userID} added to scanId !")
+        except Exception as e: # pragma: no cover
+            print(f"Could not topUpScannerJobs UserID: {userID}\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+
+    def resetScannerJobs(self):
+        """
+        Truncates scannerJobs and clears all jobs from users' alert subscriptions
+        """
+        try:
+            result = self.connection().execute("DELETE from scannerjobs")
+            if result.rows_affected > 0:
+                default_logger().debug(f"scannerJobs truncated !")
+        except Exception as e: # pragma: no cover
+            print(f"Could not deleteScannerJobs \n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+        try:
+            result = self.connection().execute("""
+                                            UPDATE alertsubscriptions
+                                            SET scannerJobs = ''
+                                        """)
+            if result.rows_affected > 0:
+                default_logger().debug(f"alertsubscriptions updated with cleaned up scannerJobs!")
+        except Exception as e: # pragma: no cover
+            print(f"Could not deleteScannerJobs \n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
