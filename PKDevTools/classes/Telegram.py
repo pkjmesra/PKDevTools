@@ -33,6 +33,7 @@
 import os
 import requests
 from PIL import Image
+import urllib.parse
 import json
 from io import BytesIO
 from PKDevTools.classes.Environment import PKEnvironment
@@ -107,22 +108,89 @@ def send_exception(ex, extra_mes=""):
         return
 
 
-def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial=False):
+def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial=False,reply_markup=None):
+    """
+    To use Telegram's sendMessage API with chat_id, text, parse_mode, and 
+    reply_markup, ensuring they are URL encoded, follow these steps:
+
+    # 1. Basic API Structure
+
+    Telegram's sendMessage API looks like this:
+    https://api.telegram.org/bot<BOT_TOKEN>/sendMessage?chat_id=<CHAT_ID>&text=<TEXT>&parse_mode=<PARSE_MODE>&reply_markup=<REPLY_MARKUP>
+    However, special characters (like spaces, newlines, JSON in reply_markup) need to be URL encoded.
+
+    # 2. Key Points
+
+    urllib.parse.quote(json.dumps(reply_markup)): Ensures reply_markup is properly URL-encoded.
+    requests.get(url, params=params): Automatically encodes parameters, but reply_markup needs manual encoding.
+    Markdown or HTML formatting in text should also be escaped according to Telegram's rules.
+
+    # 3. Example:
+
+    import requests
+    import urllib.parse
+    import json
+
+    BOT_TOKEN = "your_bot_token"
+    CHAT_ID = "your_chat_id"
+    TEXT = "Hello, *bold text*!"
+    PARSE_MODE = "MarkdownV2"
+
+    #Inline keyboard example
+    reply_markup = {
+        "inline_keyboard": [
+            [{"text": "Click me!", "url": "https://example.com"}]
+        ]
+    }
+
+    #Convert reply_markup to JSON and URL encode it
+    reply_markup_encoded = urllib.parse.quote(json.dumps(reply_markup))
+
+    #Construct URL
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    params = {
+        "chat_id": CHAT_ID,
+        "text": TEXT,
+        "parse_mode": PARSE_MODE,
+        "reply_markup": reply_markup_encoded
+    }
+
+    #Send request
+    response = requests.get(url, params=params)
+
+    #Print response
+    print(response.json())
+    """
     initTelegram()
     # botsUrl = f"https://api.telegram.org/bot{TOKEN}"  # + "/sendMessage?chat_id={}&text={}".format(chat_idLUISL, message_aler, parse_mode="HTML")
     # url = botsUrl + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}".format(chat_idLUISL, message_aler,parse_mode=PARSEMODE_MARKDOWN_V2)
     if not is_token_telegram_configured():
         return
+    # Inline keyboard example
+    # reply_markup = {
+    #     "inline_keyboard": [
+    #         [{"text": "Click me!", "url": "https://example.com"}]
+    #     ]
+    # }
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
     if userID is not None and userID !="":
         LIST_PEOPLE_IDS_CHAT = [int(str(userID).replace("\"",""))]
+    reply_markup_encoded = ""
+    if reply_markup is not None and len(reply_markup) > 0:
+        # Convert reply_markup to JSON and URL encode it
+        reply_markup_encoded = urllib.parse.quote(json.dumps(reply_markup))
+    escaped_text = ""
+    if message is not None and len(message) > 0:
+        escaped_text = urllib.parse.quote(message)
+
+
     if list_png is None or any(elem is None for elem in list_png):
         resp = None
         for people_id in LIST_PEOPLE_IDS_CHAT:
             url = (
                 botsUrl
-                + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}".format(
-                    people_id, message[:MAX_MSG_LENGTH], parse_mode=parse_type
+                + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}&reply_markup={reply_markup_encoded}".format(
+                    people_id, escaped_text[:MAX_MSG_LENGTH], parse_mode=parse_type, reply_markup_encoded=reply_markup_encoded
                 )
             )
             try:
