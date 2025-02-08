@@ -191,14 +191,14 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
                 url = (
                     botsUrl
                     + "/sendMessage?chat_id={}&text={}&reply_markup={reply_markup_encoded}".format(
-                        people_id, escaped_text[:MAX_MSG_LENGTH], parse_mode=parse_type, reply_markup_encoded=reply_markup_encoded
+                        people_id, escaped_text[:MAX_MSG_LENGTH], reply_markup_encoded=reply_markup_encoded
                     )
                 )
             else:
                 url = (
                     botsUrl
                     + "/sendMessage?chat_id={}&text={}&parse_mode={parse_mode}".format(
-                        people_id, escaped_text[:MAX_MSG_LENGTH], parse_mode=parse_type, reply_markup_encoded=reply_markup_encoded
+                        people_id, escaped_text[:MAX_MSG_LENGTH], parse_mode=parse_type
                     )
                 )
             try:
