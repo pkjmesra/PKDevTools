@@ -413,6 +413,7 @@ class DBManager:
 
     def updateAlertSubscriptionModel(self,userID,charge:float,scanId:str):
         try:
+            success = False
             result = self.connection().execute("""
                                             UPDATE alertsubscriptions
                                             SET 
@@ -422,7 +423,7 @@ class DBManager:
                                         """, (charge, scanId, userID))
             if result.rows_affected > 0:
                 default_logger().debug(f"User: {userID} updated with balance and scannerJobs!")
-                self.topUpScannerJobs(scanId,userID)
+                success = self.topUpScannerJobs(scanId,userID)
         except Exception as e: # pragma: no cover
             print(f"Could not updateAlertSubscriptionModel UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
@@ -431,6 +432,7 @@ class DBManager:
             if self.conn is not None:
                 self.conn.close()
                 self.conn = None
+        return success
 
     def topUpAlertSubscriptionBalance(self,userID,topup:float):
         """
@@ -441,6 +443,7 @@ class DBManager:
         (Balance + excluded.Balance).
         """
         try:
+            success = False
             result = self.connection().execute("""
                                             INSERT INTO alertsubscriptions (userId, balance) 
                                             VALUES (?, ?) 
@@ -449,6 +452,7 @@ class DBManager:
                                         """, (userID,topup))
             if result.rows_affected > 0:
                 default_logger().debug(f"User: {userID} topped up with balance !")
+                success = True
         except Exception as e: # pragma: no cover
             print(f"Could not topUpAlertSubscriptionBalance UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
@@ -457,6 +461,7 @@ class DBManager:
             if self.conn is not None:
                 self.conn.close()
                 self.conn = None
+        return success
 
     def topUpScannerJobs(self,scanId,userID):
         """
@@ -466,6 +471,7 @@ class DBManager:
         If scanId already exists, only the users is updated by adding the new userId 
         """
         try:
+            success = False
             result = self.connection().execute("""
                                             INSERT INTO scannerjobs (scannerId, users) 
                                             VALUES (?, ?) 
@@ -474,6 +480,7 @@ class DBManager:
                                         """, (scanId,userID))
             if result.rows_affected > 0:
                 default_logger().debug(f"User: {userID} added to scanId !")
+                success = True
         except Exception as e: # pragma: no cover
             print(f"Could not topUpScannerJobs UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
@@ -482,15 +489,18 @@ class DBManager:
             if self.conn is not None:
                 self.conn.close()
                 self.conn = None
+        return success
 
     def resetScannerJobs(self):
         """
         Truncates scannerJobs and clears all jobs from users' alert subscriptions
         """
         try:
+            success1 = False
             result = self.connection().execute("DELETE from scannerjobs")
             if result.rows_affected > 0:
                 default_logger().debug(f"scannerJobs truncated !")
+                success1 = True
         except Exception as e: # pragma: no cover
             print(f"Could not deleteScannerJobs \n{e}")
             default_logger().debug(e, exc_info=True)
@@ -500,12 +510,14 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         try:
+            success2 = False
             result = self.connection().execute("""
                                             UPDATE alertsubscriptions
                                             SET scannerJobs = ''
                                         """)
             if result.rows_affected > 0:
                 default_logger().debug(f"alertsubscriptions updated with cleaned up scannerJobs!")
+                success2 = True
         except Exception as e: # pragma: no cover
             print(f"Could not deleteScannerJobs \n{e}")
             default_logger().debug(e, exc_info=True)
@@ -514,3 +526,4 @@ class DBManager:
             if self.conn is not None:
                 self.conn.close()
                 self.conn = None
+        return success1 and success2
