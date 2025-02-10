@@ -38,6 +38,23 @@ class PKSubscriptionModel(Enum):
 class PKUserSusbscriptions:
 
     @classmethod
+    def subscriptionModelFromValue(self,subValue):
+        try:
+            model = PKSubscriptionModel(int(subValue))
+        except ValueError:
+            print(f"Value error for {subValue}")
+            models = [int(x) for x in list(PKUserSusbscriptions().subscriptionValueKeyPairs.keys())]
+            import bisect
+            models.sort()  # Ensure the list is sorted
+            idx = bisect.bisect_right(models, int(subValue)) - 1
+            modelValue = models[idx] if idx >= 0 else 0
+            print(f"The best model for {subValue} was found to be {modelValue}")
+            model = PKSubscriptionModel(modelValue)
+        except Exception as e:
+            pass
+        return model
+
+    @classmethod
     def updateSubscriptions(self):
         try:
             dbManager = DBManager()
