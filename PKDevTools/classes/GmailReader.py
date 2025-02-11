@@ -113,7 +113,7 @@ class PKGmailReader:
     def matchUTR(self,utr=None):
         if utr is not None and len(str(utr)) > 1:
             foundTransaction = None
-            for days in [0,1,2,3]:
+            for days in [0,1]:
                 try:
                     transactions = PKGmailReader.getTransactionsDict(forNthDayFromToday=days)
                     if str(utr) in transactions.keys():
