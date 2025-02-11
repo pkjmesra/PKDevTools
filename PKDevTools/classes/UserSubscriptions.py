@@ -29,11 +29,13 @@ from PKDevTools.classes.PKDateUtilities import PKDateUtilities
 
 class PKSubscriptionModel(Enum):
     No_Subscription = 0
-    One_Day = 130
-    One_Week = 600
-    One_Month = 2000
-    Six_Months = 11000
-    One_Year = 22000
+    One_Regular_Scan_Unlimited_Alerts_One_Day = 31
+    One_Piped_Scan_Unlimited_Alerts_One_Day = 40
+    All_Scans_One_Day = 130
+    All_Scans_One_Week = 600
+    All_Scans_One_Month = 2000
+    All_Scans_Six_Months = 11000
+    All_Scans_One_Year = 22000
 
 class PKUserSusbscriptions:
 
@@ -124,15 +126,15 @@ class PKUserSusbscriptions:
             # the subscription validity has not been updated so far
             # Update validity of subscription
             n = 1
-            if user.subscriptionmodel == str(PKSubscriptionModel.One_Day.value):
+            if user.subscriptionmodel == str(PKSubscriptionModel.All_Scans_One_Day.value):
                 n = 1
-            elif user.subscriptionmodel == str(PKSubscriptionModel.One_Week.value):
+            elif user.subscriptionmodel == str(PKSubscriptionModel.All_Scans_One_Week.value):
                 n = 6
-            elif user.subscriptionmodel == str(PKSubscriptionModel.One_Month.value):
+            elif user.subscriptionmodel == str(PKSubscriptionModel.All_Scans_One_Month.value):
                 n = 29
-            elif user.subscriptionmodel == str(PKSubscriptionModel.Six_Months.value):
+            elif user.subscriptionmodel == str(PKSubscriptionModel.All_Scans_Six_Months.value):
                 n = 179
-            elif user.subscriptionmodel == str(PKSubscriptionModel.One_Year.value):
+            elif user.subscriptionmodel == str(PKSubscriptionModel.All_Scans_One_Year.value):
                 n = 364
             user.otpvaliduntil = PKDateUtilities.YmdStringFromDate(PKDateUtilities.currentDateTime(),n=n)
             created, fileKey = dbManager.refreshOTPForUser(user)
@@ -166,20 +168,26 @@ class PKUserSusbscriptions:
 
     @property
     def subscriptionKeyValuePairs(self):
-        return {f"{PKSubscriptionModel.No_Subscription.name}":f"{str(PKSubscriptionModel.No_Subscription.value)}",
-                f"{PKSubscriptionModel.One_Day.name}":f"{str(PKSubscriptionModel.One_Day.value)}",
-                f"{PKSubscriptionModel.One_Week.name}":f"{str(PKSubscriptionModel.One_Week.value)}",
-                f"{PKSubscriptionModel.One_Month.name}":f"{str(PKSubscriptionModel.One_Month.value)}",
-                f"{PKSubscriptionModel.Six_Months.name}":f"{str(PKSubscriptionModel.Six_Months.value)}",
-                f"{PKSubscriptionModel.One_Year.name}":f"{str(PKSubscriptionModel.One_Year.value)}"
-                }
+        return {
+            f"{PKSubscriptionModel.No_Subscription.name}":f"{str(PKSubscriptionModel.No_Subscription.value)}",
+            f"{PKSubscriptionModel.One_Regular_Scan_Unlimited_Alerts_One_Day.name}":f"{str(PKSubscriptionModel.One_Regular_Scan_Unlimited_Alerts_One_Day.value)}",
+            f"{PKSubscriptionModel.One_Piped_Scan_Unlimited_Alerts_One_Day.name}":f"{str(PKSubscriptionModel.One_Piped_Scan_Unlimited_Alerts_One_Day.value)}",
+            f"{PKSubscriptionModel.All_Scans_One_Day.name}":f"{str(PKSubscriptionModel.All_Scans_One_Day.value)}",
+            f"{PKSubscriptionModel.All_Scans_One_Week.name}":f"{str(PKSubscriptionModel.All_Scans_One_Week.value)}",
+            f"{PKSubscriptionModel.All_Scans_One_Month.name}":f"{str(PKSubscriptionModel.All_Scans_One_Month.value)}",
+            f"{PKSubscriptionModel.All_Scans_Six_Months.name}":f"{str(PKSubscriptionModel.All_Scans_Six_Months.value)}",
+            f"{PKSubscriptionModel.All_Scans_One_Year.name}":f"{str(PKSubscriptionModel.All_Scans_One_Year.value)}"
+        }
 
     @property
     def subscriptionValueKeyPairs(self):
-        return {f"{PKSubscriptionModel.No_Subscription.value}":f"{str(PKSubscriptionModel.No_Subscription.name)}",
-                f"{PKSubscriptionModel.One_Day.value}":f"{str(PKSubscriptionModel.One_Day.name)}",
-                f"{PKSubscriptionModel.One_Week.value}":f"{str(PKSubscriptionModel.One_Week.name)}",
-                f"{PKSubscriptionModel.One_Month.value}":f"{str(PKSubscriptionModel.One_Month.name)}",
-                f"{PKSubscriptionModel.Six_Months.value}":f"{str(PKSubscriptionModel.Six_Months.name)}",
-                f"{PKSubscriptionModel.One_Year.value}":f"{str(PKSubscriptionModel.One_Year.name)}"
-                }
+        return {
+            f"{PKSubscriptionModel.No_Subscription.value}":f"{str(PKSubscriptionModel.No_Subscription.name)}",
+            f"{PKSubscriptionModel.One_Regular_Scan_Unlimited_Alerts_One_Day.value}":f"{str(PKSubscriptionModel.One_Regular_Scan_Unlimited_Alerts_One_Day.name)}",
+            f"{PKSubscriptionModel.One_Piped_Scan_Unlimited_Alerts_One_Day.value}":f"{str(PKSubscriptionModel.One_Piped_Scan_Unlimited_Alerts_One_Day.name)}",
+            f"{PKSubscriptionModel.All_Scans_One_Day.value}":f"{str(PKSubscriptionModel.All_Scans_One_Day.name)}",
+            f"{PKSubscriptionModel.All_Scans_One_Week.value}":f"{str(PKSubscriptionModel.All_Scans_One_Week.name)}",
+            f"{PKSubscriptionModel.All_Scans_One_Month.value}":f"{str(PKSubscriptionModel.All_Scans_One_Month.name)}",
+            f"{PKSubscriptionModel.All_Scans_Six_Months.value}":f"{str(PKSubscriptionModel.All_Scans_Six_Months.name)}",
+            f"{PKSubscriptionModel.All_Scans_One_Year.value}":f"{str(PKSubscriptionModel.All_Scans_One_Year.name)}"
+        }
