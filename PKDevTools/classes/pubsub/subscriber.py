@@ -23,6 +23,8 @@
 
 """
 from PKDevTools.classes.pubsub.events import globalEventsSignal
+from PKDevTools.classes.DBManager import DBManager
+from PKDevTools.classes.Telegram import send_message
 
 class PKNotificationService:
     def __init__(self):
@@ -30,7 +32,23 @@ class PKNotificationService:
         globalEventsSignal.connect(self.notify)
 
     def notify(self, sender, **kwargs):
-        print(f"[Notification] Notifying for {kwargs['scannerID']} with data: {kwargs['notification']}")
+        notificationText = kwargs['notification'] if 'notification' in kwargs else ""
+        scannerID = kwargs['scannerID'] if 'scannerID' in kwargs else ""
+        print(f"[Notification] Notifying for {scannerID} with data: {notificationText}")
+        dbManager = DBManager()
+        try:
+            if len(str(scannerID)) > 0:
+                userIDs = dbManager.usersForScannerJobId(scannerJobId=scannerID)
+                if len(userIDs) > 0:
+                    for userID in userIDs:
+                        send_message(message=notificationText,userID=userID,parse_type="HTML",)
+            else:
+                print(f"Error encountered:\n0 length scannerID passed for {notificationText}")
+        except Exception as e:
+            print(f"Error encountered:\n{e}")
+            pass
+
+
 
 # Ensure the subscriber is instantiated so it listens to events
 notification_service = PKNotificationService()
