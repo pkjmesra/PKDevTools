@@ -22,15 +22,10 @@
     SOFTWARE.
 
 """
-from PKDevTools.pubsub.events import globalEventsSignal
+from PKDevTools.classes.pubsub.events import globalEventsSignal
 
-class PKNotificationService:
-    def __init__(self):
-        # Subscribe to the event
-        globalEventsSignal.connect(self.notify)
-
-    def notify(self, sender, **kwargs):
-        print(f"[Notification] Notifying for {kwargs['scannerID']} with data: {kwargs['notification']}")
-
-# Ensure the subscriber is instantiated so it listens to events
-notification_service = PKNotificationService()
+class PKUserService:
+    def notify_user(self, scannerID=None,notification=None):
+        print(f"[UserService] Notifying for scanner: {scannerID} with notification: {notification}")
+        # Publish the event
+        globalEventsSignal.send(self, scannerID=scannerID,notification=notification)
