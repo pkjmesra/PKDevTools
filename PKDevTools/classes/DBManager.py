@@ -335,14 +335,15 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
 
-    def getUsers(self):
+    def getUsers(self,fieldName=None):
         """
         Returns all active PKUser instances in the database or an empty list if none is found.
+        Returns only the fieldName if requested.
         """
         try:
             users = []
             cursor = self.connection() #.cursor()
-            records = cursor.execute(f"SELECT * FROM users") #.fetchall()
+            records = cursor.execute(f"SELECT {'*' if fieldName is None else fieldName} FROM users") #.fetchall()
             for row in records.rows:
                 users.append(PKUser.userFromDBRecord(row))
             # cursor.close()
