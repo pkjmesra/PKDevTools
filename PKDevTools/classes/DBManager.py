@@ -527,6 +527,7 @@ class DBManager:
             if result.rows_affected > 0:
                 default_logger().debug(f"scannerJobs truncated !")
                 success1 = True
+            print(f"{result.rows_affected} rows deleted from scannerjobs")
         except Exception as e: # pragma: no cover
             print(f"Could not deleteScannerJobs \n{e}")
             default_logger().debug(e, exc_info=True)
@@ -544,6 +545,7 @@ class DBManager:
             if result.rows_affected > 0:
                 default_logger().debug(f"alertsubscriptions updated with cleaned up scannerJobs!")
                 success2 = True
+            print(f"{result.rows_affected} rows updated in alertsubscriptions")
         except Exception as e: # pragma: no cover
             print(f"Could not deleteScannerJobs \n{e}")
             default_logger().debug(e, exc_info=True)
