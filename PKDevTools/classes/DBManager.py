@@ -333,6 +333,9 @@ class DBManager:
                 self.conn = None
 
     def getUsers(self):
+        """
+        Returns all active PKUser instances in the database or an empty list if none is found.
+        """
         try:
             users = []
             cursor = self.connection() #.cursor()
@@ -354,6 +357,10 @@ class DBManager:
         return users
 
     def alertsForUser(self,userID:int):
+        """
+        Returns a PKUser instance with user's updated balance for daily alerts 
+        and relevant subscribed scannerJobs for a given userID or None.
+        """
         try:
             users = []
             cursor = self.connection()
@@ -374,6 +381,10 @@ class DBManager:
         return users[0] if len(users) > 0 else None
 
     def scannerJobsWithActiveUsers(self):
+        """
+        Returns all such PKScannerJob instances with (scannerIDs and subscribed userIds)
+        where there's at least one subscribed user.
+        """
         try:
             scanners = []
             cursor = self.connection()
@@ -393,6 +404,10 @@ class DBManager:
         return scanners
     
     def usersForScannerJobId(self,scannerJobId:str):
+        """
+        Returns userIds that are subscribed to a given scannerJobId or an 
+        empty list if that scannerJobId is not found.
+        """
         try:
             scanners = []
             cursor = self.connection()
@@ -412,6 +427,10 @@ class DBManager:
         return scanners[0].userIds if len(scanners) > 0 else []
 
     def updateAlertSubscriptionModel(self,userID,charge:float,scanId:str):
+        """
+        Updates alertsubscriptions with balance update as well as scanner jobs 
+        for a given user in the same table
+        """
         try:
             success = False
             result = self.connection().execute("""
