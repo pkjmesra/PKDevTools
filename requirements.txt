@@ -1,5 +1,6 @@
 alive_progress
 argparse
+blinker
 brotli
 bs4
 cloudscraper
