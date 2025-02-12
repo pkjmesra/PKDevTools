@@ -86,9 +86,10 @@ class PKUser:
         user.lastotp= row[8]
         return user
     
-    def userFromAlertsRecord(row):
-        user = PKUser()
-        user.userid= row[0]
+    def userFromAlertsRecord(row,user=None):
+        if user is None:
+            user = PKUser()
+            user.userid= row[0]
         user.balance= row[1]
         user.scannerJobs = []
         for job in row[2].split(";"):
@@ -172,6 +173,7 @@ class DBManager:
     def getOTP(self,userID,username=None,name=None,retry=False,validityIntervalInSeconds=86400):
         try:
             otpValue = 0
+            user = None
             dbUsers = self.getUserByID(int(userID))
             if len(dbUsers) > 0:
                 dbUser = dbUsers[0]
@@ -211,7 +213,8 @@ class DBManager:
             print(f"Could not get/update (getOTP) OTP for user: {user.userid}\n{e}")
             default_logger().debug(e, exc_info=True)
             pass
-        return otpValue, subscriptionModel, subscriptionValidity
+        alertUser = self.alertsForUser(userID,user=user)
+        return otpValue, subscriptionModel, subscriptionValidity, alertUser
 
     def getUserByID(self,userID):
         try:
@@ -356,7 +359,7 @@ class DBManager:
                 self.conn = None
         return users
 
-    def alertsForUser(self,userID:int):
+    def alertsForUser(self,userID:int,user:PKUser=None):
         """
         Returns a PKUser instance with user's updated balance for daily alerts 
         and relevant subscribed scannerJobs for a given userID or None.
@@ -364,9 +367,9 @@ class DBManager:
         try:
             users = []
             cursor = self.connection()
-            records = cursor.execute(f"SELECT * FROM alertsubscriptions where userId={self.sanitisedIntValue(userID)}")
+            records = cursor.execute(f"SELECT * FROM alertsubscriptions where userId={self.sanitisedIntValue(userID if user is None else user.userid)}")
             for row in records.rows:
-                users.append(PKUser.userFromAlertsRecord(row))
+                users.append(PKUser.userFromAlertsRecord(row,user=user))
             # cursor.close()
             if len(records.columns) > 0 and len(records.rows) <= 0:
                 default_logger().debug(f"Users not found!")
