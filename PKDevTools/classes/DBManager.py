@@ -72,18 +72,21 @@ class PKUser:
     lastotp=""
     balance = 0
     scannerJobs = []
+    customeField = None
 
     def userFromDBRecord(row):
         user = PKUser()
-        user.userid= row[0]
-        user.username= row[1]
-        user.name= row[2]
-        user.email= row[3]
-        user.mobile= row[4]
-        user.otpvaliduntil= row[5]
-        user.totptoken= row[6]
-        user.subscriptionmodel= row[7]
-        user.lastotp= row[8]
+        user.userid= row[0] if len(row) > 0 else None
+        if len(row) < 9:
+            user.customeField = row[0] if len(row) > 0 else None
+        user.username= row[1] if len(row) > 1 else None
+        user.name= row[2] if len(row) > 2 else None
+        user.email= row[3] if len(row) > 3 else None
+        user.mobile= row[4] if len(row) > 4 else None
+        user.otpvaliduntil= row[5] if len(row) > 5 else None
+        user.totptoken= row[6] if len(row) > 6 else None
+        user.subscriptionmodel= row[7] if len(row) > 7 else None
+        user.lastotp= row[8] if len(row) > 8 else None
         return user
     
     def userFromAlertsRecord(row,user=None):
