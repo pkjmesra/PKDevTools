@@ -53,7 +53,7 @@ class PKScannerJob:
         scanner = PKScannerJob()
         scanner.scannerId= row[0]
         scanner.userIds = []
-        for user in row[1].split(";"):
+        for user in str(row[1]).split(";"):
             scanner.userIds.append(user)
         if len(scanner.userIds) > 0:
             # Only unique values
@@ -95,7 +95,7 @@ class PKUser:
             user.userid= row[0]
         user.balance= row[1]
         user.scannerJobs = []
-        for job in row[2].split(";"):
+        for job in str(row[2]).split(";"):
             user.scannerJobs.append(str(job).upper())
         if len(user.scannerJobs) > 0:
             # Only unique values
