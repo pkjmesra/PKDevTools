@@ -31,26 +31,30 @@ from PKDevTools.classes.Environment import PKEnvironment
 class PKGmailReader:
 
     @classmethod
-    def getTransactions(self,user=None, password=None, label=None,senderEmail=None,forNthDayFromToday=0):
+    def getTransactions(self,user=None, password=None, label=None,senderEmail=None,forNthDayFromToday=0,utr=None):
         imap_url = 'imap.gmail.com'
         try:
             mail = imaplib.IMAP4_SSL(imap_url)
             mail.login(user, password)
-            mail.select(label,readonly=True)  # Connect to the labeled inbox.
+            ## Make sure emails can be modified (not read-only)
+            mail.select(label,readonly=False)  # Connect to the labeled inbox.
             today = datetime.date.today()
             pastDate = (today - datetime.timedelta(forNthDayFromToday))
             date = pastDate.strftime("%d-%b-%Y")
 
             # result, data  = mail.search(None,f'FROM "{senderEmail}"',"UNSEEN")
             # result, data = mail.uid('search', None, "UNSEEN") # (ALL/UNSEEN)
-            result, data = mail.uid('search', None, f'FROM "{senderEmail}" (SENTON %s)' % date)
+            # Search for UNSEEN emails from the sender on a specific date
+            result, data = mail.uid('search', None, f'UNSEEN FROM "{senderEmail}" (SENTON %s)' % date)
 
             i = len(data[0].split())
             transactions = {}
+            # if result == "OK":
             for x in range(i):
                 latest_email_uid = data[0].split()[x]
                 result, email_data = mail.uid('fetch', latest_email_uid, '(RFC822)')
-                # result, email_data = conn.store(num,'-FLAGS','\\Seen') 
+                # if result == "OK":
+                # result, email_data = conn.store(num,'+FLAGS','\\Seen') 
                 # this might work to set flag to seen, if it doesn't already
                 raw_email = email_data[0][1]
                 raw_email_string = raw_email.decode('utf-8')
@@ -80,6 +84,11 @@ class PKGmailReader:
                             # that identifies each Unified Payments Interface (UPI) transaction. 
                             # It's also known as the Unique Transaction Reference (UTR) number.
                             transactionNumber = transactionInfo.split("/")[2]
+                            
+                            if utr is not None and str(transactionNumber) == str(utr):
+                                # Mark email as read if UTR matches
+                                mail.uid('store', latest_email_uid, '+FLAGS', '\\Seen')
+
                             senderName = transactionInfo.split("/")[3]
                             senderBank = transactionInfo.split("/")[-1]
                             transactions[transactionNumber] = {"UTR":transactionNumber,"dateAndTime":dateAndTime,"amountPaid":amountCredited,
@@ -100,22 +109,23 @@ class PKGmailReader:
         return transactions
 
     @classmethod
-    def getTransactionsDict(self,forNthDayFromToday=0):
+    def getTransactionsDict(self,forNthDayFromToday=0,utr=None):
         secrets = PKEnvironment().allSecrets
         trans = PKGmailReader.getTransactions(secrets["MCU"],
                                               secrets["MCAP"],
                                               secrets["MCL"],
                                               secrets["MS"],
-                                              forNthDayFromToday=forNthDayFromToday)
+                                              forNthDayFromToday=forNthDayFromToday,
+                                              utr=utr)
         return trans
     
     @classmethod
     def matchUTR(self,utr=None):
         if utr is not None and len(str(utr)) > 1:
             foundTransaction = None
-            for days in [0,1]:
+            for days in [0,1,2,3]:
                 try:
-                    transactions = PKGmailReader.getTransactionsDict(forNthDayFromToday=days)
+                    transactions = PKGmailReader.getTransactionsDict(forNthDayFromToday=days,utr=utr)
                     if str(utr) in transactions.keys():
                         foundTransaction = transactions.get(str(utr))
                         break

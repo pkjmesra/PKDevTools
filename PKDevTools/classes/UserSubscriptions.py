@@ -67,12 +67,18 @@ class PKUserSusbscriptions:
             pass
 
     @classmethod
-    def updateSubscription(self,userID,subscription:PKSubscriptionModel=PKSubscriptionModel.No_Subscription):
+    def updateSubscription(self,userID,subscription:PKSubscriptionModel=PKSubscriptionModel.No_Subscription,subValue=0):
         dbManager = DBManager()
         user = None
         dbUsers = dbManager.getUserByID(userID=userID)
         if len(dbUsers) > 0:
             user = dbUsers[0]
+            if subValue > 0 and (subscription.value != subValue or subscription.value < PKSubscriptionModel.All_Scans_1_Day.value):
+                # Update the balance instead of the standard subscription
+                toppedUp = dbManager.topUpAlertSubscriptionBalance(userID=userID,topup=subValue)
+                if not toppedUp:
+                    print(f"Could not top-up alert balance {subValue} for user:{userID}")
+                return
             user.subscriptionmodel = str(subscription.value)
         else:
             user = PKUser.userFromDBRecord([userID,"","","","","","",str(subscription.value),0])
