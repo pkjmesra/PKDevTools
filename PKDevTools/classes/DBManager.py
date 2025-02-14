@@ -555,3 +555,83 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         return success1 and success2
+
+    def removeScannerJob(self,userID, scanId):
+        """
+        Removes scanId from scannerJobs column in alertsubscriptions
+        
+        Removes userID from the users column in scannerJobs
+
+        Deletes the row in scannerJobs if no more userIds are left
+        """
+        try:
+            success = False
+            # Step 1: Remove job from user's alertsubscriptions table
+            query_alertsubscriptions = """
+                UPDATE alertsubscriptions
+                SET scannerJobs = 
+                    CASE 
+                        WHEN scannerJobs = ? THEN ''  -- If the only job, set to empty string
+                        ELSE 
+                            TRIM(
+                                REPLACE(
+                                    REPLACE(
+                                        ';' || scannerJobs || ';',  -- Add extra delimiters to prevent partial replacements
+                                        ';' || ? || ';', 
+                                        ';'
+                                    ), 
+                                    ';;', ';'  -- Fix extra semicolons
+                                ),
+                                ';'
+                            )  -- Trim leading/trailing semicolon
+                    END
+                WHERE userId = ?;
+                """
+            result = self.connection().execute(query_alertsubscriptions, (scanId,scanId,userID))
+            if result.rows_affected > 0:
+                default_logger().debug(f"User: {userID} removed {scanId} from alertsubscriptions!")
+                success = True
+            if success:
+                # Step 2: Remove userId from scannerJobs table
+                query_scanner_jobs = """
+                    UPDATE scannerJobs
+                    SET users = 
+                        CASE 
+                            WHEN users = ? THEN ''  -- If the only user, set to empty string
+                            ELSE 
+                                TRIM(
+                                    REPLACE(
+                                        REPLACE(
+                                            ';' || users || ';',
+                                            ';' || ? || ';', 
+                                            ';'
+                                        ), 
+                                        ';;', ';'
+                                    ),
+                                    ';'
+                                )  -- Trim leading/trailing semicolon
+                        END
+                    WHERE scannerId = ?;
+                    """
+                result = self.connection().execute(query_scanner_jobs, (str(userID),str(userID),scanId))
+                if result.rows_affected > 0:
+                    default_logger().debug(f"User: {userID} removed {scanId} from scannerJobs!")
+                    success = True
+            if success:
+                # Step 3: Delete row from scannerJobs if users column is empty
+                query_delete_empty = """
+                DELETE FROM scannerJobs WHERE scannerId = ? AND (users IS NULL OR users = '');
+                """
+                result = self.connection().execute(query_delete_empty, (scanId,))
+                if result.rows_affected > 0:
+                    default_logger().debug(f"{scanId} deleted from scannerJobs by User: {userID} !")
+                    success = True
+        except Exception as e: # pragma: no cover
+            print(f"Could not removeScannerJob: {scanId} for UserID: {userID}\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+        return success
