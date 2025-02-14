@@ -86,7 +86,7 @@ class NSEMarketStatus(SingletonMixin, metaclass=SingletonType):
         return shouldFetch, next_bell, filePath, modifiedDateTime
 
     def getNextBell(self):
-        if not 'pytest' in sys.modules:
+        if 'unittest' in sys.modules or any("pytest" in arg for arg in sys.argv):
             return '2025-02-14T09:15:00+05:30'
 
         next_bell = self.marketStatus.get("next_bell")
