@@ -88,7 +88,14 @@ class PKUser:
         user.subscriptionmodel= row[7] if len(row) > 7 else None
         user.lastotp= row[8] if len(row) > 8 else None
         return user
-    
+
+    def payingUserFromDBRecord(row):
+        user = PKUser()
+        user.userid= row[0] if len(row) > 0 else None
+        user.subscriptionmodel = row[1] if len(row) > 1 else None
+        user.balance= row[2] if len(row) > 2 else None
+        return user
+
     def userFromAlertsRecord(row,user=None):
         if user is None:
             user = PKUser()
@@ -338,7 +345,7 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
 
-    def getUsers(self,fieldName=None):
+    def getUsers(self,fieldName=None,where=None):
         """
         Returns all active PKUser instances in the database or an empty list if none is found.
         Returns only the fieldName if requested.
@@ -346,7 +353,7 @@ class DBManager:
         try:
             users = []
             cursor = self.connection() #.cursor()
-            records = cursor.execute(f"SELECT {'*' if fieldName is None else fieldName} FROM users") #.fetchall()
+            records = cursor.execute(f"SELECT {'*' if fieldName is None else fieldName} FROM users {where if where is not None else ''}") #.fetchall()
             for row in records.rows:
                 users.append(PKUser.userFromDBRecord(row))
             # cursor.close()
@@ -635,3 +642,35 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         return success
+
+    def getPayingUsers(self):
+        """
+        Returns all active PKUser instances in the database who either have a subscription model
+        or have a alerts balance.
+        """
+        try:
+            users = []
+            cursor = self.connection() #.cursor()
+            query_paying_users = """
+                SELECT DISTINCT u.userId, u.subscriptionmodel, a.balance
+                FROM users u
+                LEFT JOIN alertsubscriptions a ON u.userId = a.userId
+                WHERE COALESCE(a.balance, 0) > 0 OR (u.subscriptionmodel != '' and u.subscriptionmodel != '0');
+
+            """
+            records = cursor.execute(query_paying_users)
+            for row in records.rows:
+                users.append(PKUser.payingUserFromDBRecord(row))
+            # cursor.close()
+            if len(records.columns) > 0 and len(records.rows) <= 0:
+                # Let's tell the user
+                default_logger().debug(f"Paying Users not found!")
+        except Exception as e: # pragma: no cover
+            print(f"Could not getPayingUsers\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
+        return users
