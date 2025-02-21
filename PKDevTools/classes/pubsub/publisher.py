@@ -29,3 +29,8 @@ class PKUserService:
         print(f"[UserService] Notifying for scanner: {scannerID} with notification: {notification}")
         # Publish the event
         globalEventsSignal.send(self, scannerID=scannerID,notification=notification)
+
+    def send_event(self, event_name, event_params=None):
+        """Send a custom event to Google Analytics."""
+        # Publish the event
+        globalEventsSignal.send(self, eventType="ga",event_name=event_name,event_params=event_params)

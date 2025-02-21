@@ -22,6 +22,8 @@
     SOFTWARE.
 
 """
+import uuid
+import requests
 from PKDevTools.classes.pubsub.events import globalEventsSignal
 from PKDevTools.classes.DBManager import DBManager
 from PKDevTools.classes.Telegram import send_message
@@ -32,23 +34,51 @@ class PKNotificationService:
         globalEventsSignal.connect(self.notify)
 
     def notify(self, sender, **kwargs):
-        notificationText = kwargs['notification'] if 'notification' in kwargs else ""
-        scannerID = kwargs['scannerID'] if 'scannerID' in kwargs else ""
-        print(f"[Notification] Notifying for {scannerID} with data: {notificationText}")
-        dbManager = DBManager()
-        try:
-            if len(str(scannerID)) > 0:
-                userIDs = dbManager.usersForScannerJobId(scannerJobId=scannerID)
-                if len(userIDs) > 0:
-                    for userID in userIDs:
-                        send_message(message=notificationText,userID=userID,parse_type="HTML",)
-            else:
-                print(f"Error encountered:\n0 length scannerID passed for {notificationText}")
-        except Exception as e:
-            print(f"Error encountered:\n{e}")
-            pass
+        if 'eventType' in kwargs:
+            if kwargs['eventType'] == "ga":
+                # Capture GA event
+                event_name = kwargs['event_name']
+                event_params = kwargs['event_params']
+                if event_params is None:
+                    event_params = {}
 
+                payload = {
+                    "client_id": str(uuid.uuid4()),  # Unique client ID for GA
+                    "events": [{
+                        "name": event_name,
+                        "params": event_params
+                    }]
+                }
+                # Google Analytics API Details
+                MEASUREMENT_ID = "G-T0TLV56Y0C"
+                API_SECRET = "2dD6iqHQQl2EzhCvHXA7EQ"
+                GA_ENDPOINT = f"https://www.google-analytics.com/mp/collect?measurement_id={MEASUREMENT_ID}&api_secret={API_SECRET}"
 
+                try:
+                    response = requests.post(GA_ENDPOINT, json=payload)
+                    # if response.status_code == 204:
+                    #     print(f"Event '{event_name}' sent successfully")
+                    # else:
+                    #     print(f"Error sending event: {response.text}")
+                except Exception as e:
+                    # print(f"Failed to send event: {e}")
+                    pass
+        else:
+            notificationText = kwargs['notification'] if 'notification' in kwargs else ""
+            scannerID = kwargs['scannerID'] if 'scannerID' in kwargs else ""
+            print(f"[Notification] Notifying for {scannerID} with data: {notificationText}")
+            dbManager = DBManager()
+            try:
+                if len(str(scannerID)) > 0:
+                    userIDs = dbManager.usersForScannerJobId(scannerJobId=scannerID)
+                    if len(userIDs) > 0:
+                        for userID in userIDs:
+                            send_message(message=notificationText,userID=userID,parse_type="HTML",)
+                else:
+                    print(f"Error encountered:\n0 length scannerID passed for {notificationText}")
+            except Exception as e:
+                print(f"Error encountered:\n{e}")
+                pass
 
 # Ensure the subscriber is instantiated so it listens to events
 notification_service = PKNotificationService()
