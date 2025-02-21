@@ -28,8 +28,11 @@ from PKDevTools.classes.pubsub.events import globalEventsSignal
 from PKDevTools.classes.DBManager import DBManager
 from PKDevTools.classes.Telegram import send_message
 
-class PKNotificationService:
+from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
+
+class PKNotificationService(SingletonMixin, metaclass=SingletonType):
     def __init__(self):
+        super(PKNotificationService, self).__init__()
         # Subscribe to the event
         globalEventsSignal.connect(self.notify)
 
