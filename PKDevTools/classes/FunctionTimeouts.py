@@ -35,6 +35,13 @@ except ImportError:
 
 INTERMEDIATE_NUM_SECONDS_WARN=30
 
+def cdping(instance):
+    try:
+        if instance is not None and hasattr(instance, "send_event"):
+            instance.send_event("ping")
+    except:
+        pass
+
 def cdquit(fn_name):
     # print to stderr, unbuffered in Python 2.
     print('{0} took too long. Handle KeyboardInterrupt if you do not want to exit'.format(fn_name), file=sys.stderr)
@@ -63,6 +70,23 @@ def exit_after(s):
             finally:
                 timer.cancel()
                 timer_mid.cancel()
+            return result
+        return inner
+    return outer
+
+def ping(s,instance):
+    '''
+    use as decorator to ping process every s seconds
+    '''
+    def outer(fn):
+        def inner(*args, **kwargs):
+            timer = threading.Timer(s, cdping, args=[fn.__name__])
+            timer.start()
+            try:
+                result = None
+                result = fn(*args, **kwargs)
+            finally:
+                timer.cancel()
             return result
         return inner
     return outer
