@@ -27,6 +27,8 @@ from __future__ import print_function
 
 import sys
 import threading
+import time
+import functools
 from time import sleep
 try:
     import thread
@@ -34,13 +36,6 @@ except ImportError:
     import _thread as thread
 
 INTERMEDIATE_NUM_SECONDS_WARN=30
-
-def cdping(instance):
-    try:
-        if instance is not None and hasattr(instance, "send_event"):
-            instance.send_event("ping")
-    except:
-        pass
 
 def cdquit(fn_name):
     # print to stderr, unbuffered in Python 2.
@@ -74,19 +69,30 @@ def exit_after(s):
         return inner
     return outer
 
-def ping(s,instance):
-    '''
-    use as decorator to ping process every s seconds
-    '''
-    def outer(fn):
-        def inner(*args, **kwargs):
-            timer = threading.Timer(s, cdping, args=[fn.__name__])
-            timer.start()
+def ping(interval=60,instance=None):
+    """Decorator to run a ping function in a background thread."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            stop_event = threading.Event()
+
+            def send_ping():
+                while not stop_event.is_set():
+                    time.sleep(interval)
+                    if instance is not None and hasattr(instance, "send_event"):
+                        instance.send_event("ping")
+
+            # Start ping thread
+            ping_thread = threading.Thread(target=send_ping, daemon=True)
+            ping_thread.start()
+
             try:
-                result = None
-                result = fn(*args, **kwargs)
+                return func(*args, **kwargs)  # Run the main function
+            except (KeyboardInterrupt, SystemExit):
+                stop_event.set()
+                ping_thread.join()
             finally:
-                timer.cancel()
-            return result
-        return inner
-    return outer
+                stop_event.set()  # Ensure ping thread stops even if func exits normally
+
+        return wrapper
+    return decorator
