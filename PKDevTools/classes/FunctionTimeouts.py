@@ -90,7 +90,10 @@ def ping(interval=60,instance=None):
                 return func(*args, **kwargs)  # Run the main function
             except (KeyboardInterrupt, SystemExit):
                 stop_event.set()
-                ping_thread.join()
+                try:
+                    ping_thread.join(timeout=1)
+                except:
+                    pass
             finally:
                 stop_event.set()  # Ensure ping thread stops even if func exits normally
 
