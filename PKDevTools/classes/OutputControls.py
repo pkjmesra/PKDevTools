@@ -24,6 +24,7 @@
 """
 import sys
 import os
+import time
 
 from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
 
@@ -34,6 +35,9 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         self.enableMultipleLineOutput = enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
         self.enableUserInput = enableUserInput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
         self.lines = 0
+        self.timeit = 'timeit' in os.environ.keys()
+        if self.timeit:
+            self.start_time = time.time()
 
     def takeUserInput(
         self,
@@ -55,6 +59,8 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
     ) -> None:
         # end = '\r' if (not enableMultipleLineOutput) else end
         # flush = True if (not enableMultipleLineOutput) else flush
+        if self.timeit:
+            print(f"@{str('{:.2f}'.format(time.time()-self.start_time))}s:")
         print(*values, sep=sep, end=end, flush=flush)
         enableMultipleLineOutput = self.enableMultipleLineOutput or enableMultipleLineOutput or ('PKDevTools_Default_Log_Level' in os.environ.keys())
         lines = len(str(*values).splitlines())
