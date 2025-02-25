@@ -59,9 +59,9 @@ def zip_sqlite_file():
         ensure_directory()
         with zipfile.ZipFile(ZIP_FILE, 'w', zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(DB_FILE, os.path.basename(DB_FILE))  # Store file without full path
-        OutputControls().printOutput(f"✅ Zipped {DB_FILE} -> {ZIP_FILE}")
+        # OutputControls().printOutput(f"✅ Zipped {DB_FILE} -> {ZIP_FILE}")
     except Exception as e:
-        OutputControls().printOutput(f"❌ Error zipping database: {e}")
+        OutputControls().printOutput(f"❌ Error zipping DB Cache: {e}")
 
 
 def commit_and_push():
@@ -69,28 +69,28 @@ def commit_and_push():
     try:
         with pk_backup_restore_lock:  # Ensure thread safety
             repo = git.Repo(REPO_PATH)
-            repo.git.add(ZIP_FILE)
+            repo.git.add(ZIP_FILE, f="-f")  # Force add the file
             repo.index.commit("🔄 Updated SQLite database backup")
             origin = repo.remote(name="origin")
             origin.push()
-        OutputControls().printOutput("✅ Zipped file committed and pushed to GitHub.")
+        OutputControls().printOutput("✅ DB Cache backed up!")
     except Exception as e:
-        OutputControls().printOutput(f"❌ Error in commit and push: {e}")
+        OutputControls().printOutput(f"❌ Error in DB Backup: {e}")
 
 
 def backup_to_github():
     """Background function to zip and push database."""
-    OutputControls().printOutput("⏳ Starting backup in background thread...")
+    OutputControls().printOutput("⏳ Starting DB Cache backup ...")
     zip_sqlite_file()
     commit_and_push()
-    OutputControls().printOutput("✅ Backup process completed.")
+    OutputControls().printOutput("✅ Backup completed.")
 
 def restore_from_github():
     """Background function to download and unzip database."""
-    OutputControls().printOutput("⏳ Starting restore in background thread...")
+    OutputControls().printOutput("⏳ Starting restore ...")
     download_zip_from_github()
     unzip_file()
-    OutputControls().printOutput("✅ Restore process completed.")
+    OutputControls().printOutput("✅ Restore DB Cache completed.")
 
 def start_backup():
     """Trigger backup as a background thread."""
@@ -113,12 +113,12 @@ def download_zip_from_github():
             with open(ZIP_FILE, "wb") as file:
                 for chunk in response.iter_content(chunk_size=1024):
                     file.write(chunk)
-            OutputControls().printOutput(f"✅ Downloaded {ZIP_FILE} from GitHub.")
+            # OutputControls().printOutput(f"✅ Downloaded {ZIP_FILE} from GitHub.")
         else:
-            OutputControls().printOutput(f"❌ Failed to download: {response.status_code}, {response.text}")
+            OutputControls().printOutput(f"❌ Failed to download DB Cache: {response.status_code}, {response.text}")
 
     except Exception as e:
-        OutputControls().printOutput(f"❌ Error downloading zip file: {e}")
+        OutputControls().printOutput(f"❌ Error downloading DB Cache: {e}")
 
 
 def unzip_file():
@@ -127,9 +127,9 @@ def unzip_file():
         ensure_directory()
         with zipfile.ZipFile(ZIP_FILE, 'r') as zipf:
             zipf.extractall(os.path.join(Archiver.get_user_data_dir(),DATA_DIR))  # Extract inside results/Data/
-        OutputControls().printOutput(f"✅ Extracted {DB_FILE} from {ZIP_FILE}")
+        # OutputControls().printOutput(f"✅ Extracted {DB_FILE} from {ZIP_FILE}")
     except Exception as e:
-        OutputControls().printOutput(f"❌ Error unzipping file: {e}")
+        OutputControls().printOutput(f"❌ Error unzipping DB Cache: {e}")
 
 
 # if __name__ == "__main__":
