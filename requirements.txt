@@ -5,6 +5,7 @@ brotli
 bs4
 cloudscraper
 filelock
+gitpython
 libsql_client
 mistletoe
 numpy
