@@ -674,3 +674,28 @@ class DBManager:
                 self.conn.close()
                 self.conn = None
         return users
+
+    def addAlertSummary(self,user_id,scanner_id,timestamp=None):
+        """
+        Adds a new row as an alert summary when an alert is sent to the user_id
+        for a subscribed scanner_id at a given timestamp.
+        """
+        try:
+            if timestamp is None:
+                timestamp = PKDateUtilities.currentDateTime().strftime("%Y-%m-%d %H:%M:%S")  # Current timestamp
+            result = self.connection().execute("""
+                    INSERT INTO alertssummary (userId, scannerId, timestamp)
+                    VALUES (?, ?, ?)
+                """, (user_id, scanner_id, timestamp))
+            if result.rows_affected > 0 and result.last_insert_rowid is not None:
+                default_logger().debug(f"addAlertSummary:User: {user_id} inserted as last row ID: {result.last_insert_rowid}!")
+            # self.connection().commit()
+            # self.connection().sync()
+        except Exception as e: # pragma: no cover
+            print(f"Could not addAlertSummary UserID: {user_id}\n{e}")
+            default_logger().debug(e, exc_info=True)
+            pass
+        finally:
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None

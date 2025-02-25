@@ -80,6 +80,9 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
                         for userID in userIDs:
                             send_message(message=notificationText,userID=userID,parse_type="HTML",)
                         send_message(message=f"{notificationText}\nsent to {','.join(userIDs)}",userID=DEV_CHANNEL_ID,parse_type="HTML",)
+                        # Let's now update the alerts summary
+                        for userID in userIDs:
+                            dbManager.addAlertSummary(user_id=userID,scanner_id=scannerID)
                     else:
                         send_message(message=f"No user subscribed to {scannerID} but the alerts job is running!",userID=DEV_CHANNEL_ID,parse_type="HTML",)
                 else:
