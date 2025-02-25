@@ -30,6 +30,8 @@ from PKDevTools.classes.Telegram import send_message
 
 from PKDevTools.classes.Singleton import SingletonType, SingletonMixin
 
+DEV_CHANNEL_ID="-1001785195297"
+
 class PKNotificationService(SingletonMixin, metaclass=SingletonType):
     def __init__(self):
         super(PKNotificationService, self).__init__()
@@ -77,10 +79,15 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
                     if len(userIDs) > 0:
                         for userID in userIDs:
                             send_message(message=notificationText,userID=userID,parse_type="HTML",)
+                        send_message(message=f"{notificationText}\nsent to {','.join(userIDs)}",userID=DEV_CHANNEL_ID,parse_type="HTML",)
+                    else:
+                        send_message(message=f"No user subscribed to {scannerID} but the alerts job is running!",userID=DEV_CHANNEL_ID,parse_type="HTML",)
                 else:
                     print(f"Error encountered:\n0 length scannerID passed for {notificationText}")
+                    send_message(message=f"Error encountered:\n0 length scannerID passed for {notificationText}",userID=DEV_CHANNEL_ID,parse_type="HTML",)
             except Exception as e:
                 print(f"Error encountered:\n{e}")
+                send_message(message=f"Error encountered:\n{e}",userID=DEV_CHANNEL_ID,parse_type="HTML",)
                 pass
 
 # Ensure the subscriber is instantiated so it listens to events
