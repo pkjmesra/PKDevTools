@@ -41,7 +41,7 @@ ZIP_FILE = os.path.join(Archiver.get_user_data_dir(), ZIP_FILE_NAME)  # Zipped f
 REPO_PATH = os.getcwd()
 REPO_URL = PKEnvironment().allSecrets.get("REPO_URL","https://github.com/pkjmesra/PKScreener.git")  # GitHub Repo URL
 BRANCH = os.getenv("BRANCH", "main")  # Git branch (default: main)
-GITHUB_TOKEN = PKEnvironment().allSecrets["GITHUB_TOKEN"]  # GitHub Personal Access Token
+GITHUB_TOKEN = PKEnvironment().allSecrets.get("GITHUB_TOKEN","")  # GitHub Personal Access Token
 GITHUB_ZIP_URL = f"{REPO_URL.replace('.git', '')}/raw/{BRANCH}/{DATA_DIR}/{ZIP_FILE_NAME}"  # URL to fetch the zip file
 
 # Thread Lock for thread-safe operations
