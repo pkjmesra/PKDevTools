@@ -58,7 +58,7 @@ def zip_sqlite_file():
     try:
         ensure_directory()
         with zipfile.ZipFile(ZIP_FILE, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            zipf.write(DB_FILE, os.path.basename(DB_FILE))  # Store file without full path
+            zipf.write(DB_FILE, os.path.basename(ZIP_FILE_NAME.replace(".zip","")))  # Store file without full path
         # OutputControls().printOutput(f"✅ Zipped {DB_FILE} -> {ZIP_FILE}")
     except Exception as e:
         OutputControls().printOutput(f"❌ Error zipping DB Cache: {e}")
