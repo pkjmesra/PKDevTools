@@ -50,7 +50,7 @@ pk_backup_restore_lock = threading.Lock()
 
 def ensure_directory():
     """Ensure results/Data directory exists."""
-    os.makedirs(os.path.join(Archiver.get_user_data_dir(),DATA_DIR), exist_ok=True)
+    os.makedirs(Archiver.get_user_data_dir(), exist_ok=True)
 
 
 def zip_sqlite_file():
@@ -58,7 +58,7 @@ def zip_sqlite_file():
     try:
         ensure_directory()
         with zipfile.ZipFile(ZIP_FILE, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            zipf.write(DB_FILE, os.path.basename(ZIP_FILE_NAME.replace(".zip","")))  # Store file without full path
+            zipf.write(DB_FILE, os.path.basename(DB_FILE))  # Store file without full path
         # OutputControls().printOutput(f"✅ Zipped {DB_FILE} -> {ZIP_FILE}")
     except Exception as e:
         OutputControls().printOutput(f"❌ Error zipping DB Cache: {e}")
@@ -126,7 +126,9 @@ def unzip_file():
     try:
         ensure_directory()
         with zipfile.ZipFile(ZIP_FILE, 'r') as zipf:
-            zipf.extractall(os.path.join(Archiver.get_user_data_dir(),DATA_DIR))  # Extract inside results/Data/
+            zipf.extractall(Archiver.get_user_data_dir())  # Extract inside results/Data/
+            # for file in zipf.namelist():
+            #     zipf.extract(file, Archiver.get_user_data_dir())
         # OutputControls().printOutput(f"✅ Extracted {DB_FILE} from {ZIP_FILE}")
     except Exception as e:
         OutputControls().printOutput(f"❌ Error unzipping DB Cache: {e}")
