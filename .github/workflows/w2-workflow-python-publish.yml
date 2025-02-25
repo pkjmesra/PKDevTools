@@ -245,7 +245,7 @@ jobs:
         if: ${{ matrix.platform_id == 'manylinux_x86_64' }}
         run: |
           ls -l dist
-          mv dist/pkdevtools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-linux_x86_64.whl dist/PKDevTools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-manylinux2014_x86_64.whl
+          mv dist/pkdevtools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-linux_x86_64.whl dist/pkdevtools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-manylinux2014_x86_64.whl
 
       - name: Build and publish distribution 📦 to Test PyPI
         env:
