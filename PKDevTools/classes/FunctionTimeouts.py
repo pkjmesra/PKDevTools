@@ -36,15 +36,6 @@ except ImportError:
     import _thread as thread
 
 INTERMEDIATE_NUM_SECONDS_WARN=30
-if "RUNNER" in os.environ.keys():
-    try:
-        owner = os.popen('git ls-remote --get-url origin | cut -d/ -f4').read().replace("\n","")
-        repo = os.popen('git ls-remote --get-url origin | cut -d/ -f5').read().replace(".git","").replace("\n","")
-        if owner.lower() not in ["pkjmesra","pkscreener"]:
-            sys.exit(0)
-    except:
-        pass
-
 def cdquit(fn_name):
     # print to stderr, unbuffered in Python 2.
     print('{0} took too long. Handle KeyboardInterrupt if you do not want to exit'.format(fn_name), file=sys.stderr)
