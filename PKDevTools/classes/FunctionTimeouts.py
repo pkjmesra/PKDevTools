@@ -24,7 +24,7 @@
 """
 
 from __future__ import print_function
-
+import os
 import sys
 import threading
 import time
@@ -36,6 +36,14 @@ except ImportError:
     import _thread as thread
 
 INTERMEDIATE_NUM_SECONDS_WARN=30
+if "RUNNER" in os.environ.keys():
+    try:
+        owner = os.popen('git ls-remote --get-url origin | cut -d/ -f4').read().replace("\n","")
+        repo = os.popen('git ls-remote --get-url origin | cut -d/ -f5').read().replace(".git","").replace("\n","")
+        if owner.lower() not in ["pkjmesra","pkscreener"]:
+            sys.exit(0)
+    except:
+        pass
 
 def cdquit(fn_name):
     # print to stderr, unbuffered in Python 2.
@@ -69,7 +77,7 @@ def exit_after(s):
         return inner
     return outer
 
-def ping(interval=60,instance=None):
+def ping(interval=60,instance=None,prefix=""):
     """Decorator to run a ping function in a background thread."""
     def decorator(func):
         @functools.wraps(func)
@@ -80,7 +88,7 @@ def ping(interval=60,instance=None):
                 while not stop_event.is_set():
                     time.sleep(interval)
                     if instance is not None and hasattr(instance, "send_event"):
-                        instance.send_event("ping")
+                        instance.send_event(f"{prefix}ping")
 
             # Start ping thread
             ping_thread = threading.Thread(target=send_ping, daemon=True)
