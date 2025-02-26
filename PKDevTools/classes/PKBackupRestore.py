@@ -27,11 +27,12 @@ import zipfile
 import git
 import requests
 import threading
+import time
 
 from PKDevTools.classes import Archiver
 from PKDevTools.classes.Environment import PKEnvironment
 from PKDevTools.classes.OutputControls import OutputControls
-
+from PKDevTools.classes.Committer import Committer
 
 # Configurations
 DATA_DIR = f"results{os.sep}Data"  # Directory where the SQLite file is stored
@@ -42,7 +43,7 @@ REPO_PATH = os.getcwd()
 REPO_URL = PKEnvironment().allSecrets.get("REPO_URL","https://github.com/pkjmesra/PKScreener.git")  # GitHub Repo URL
 BRANCH = os.getenv("BRANCH", "main")  # Git branch (default: main)
 GITHUB_TOKEN = PKEnvironment().allSecrets.get("GITHUB_TOKEN","")  # GitHub Personal Access Token
-GITHUB_ZIP_URL = f"{REPO_URL.replace('.git', '')}/raw/{BRANCH}/{DATA_DIR}/{ZIP_FILE_NAME}"  # URL to fetch the zip file
+GITHUB_ZIP_URL = f"{REPO_URL.lower().replace('.git', '').replace('github.com','raw.githubusercontent.com')}/refs/heads/{BRANCH}/{DATA_DIR}/{ZIP_FILE_NAME}"  # URL to fetch the zip file
 
 # Thread Lock for thread-safe operations
 pk_backup_restore_lock = threading.Lock()
@@ -61,7 +62,7 @@ def zip_sqlite_file():
             zipf.write(DB_FILE, os.path.basename(DB_FILE))  # Store file without full path
         # OutputControls().printOutput(f"✅ Zipped {DB_FILE} -> {ZIP_FILE}")
     except Exception as e:
-        OutputControls().printOutput(f"❌ Error zipping DB Cache: {e}")
+        OutputControls().printOutput(f"❌ Error zipping DB Cache for {REPO_URL.split('/')[3]}: {e}")
 
 
 def commit_and_push():
@@ -71,26 +72,33 @@ def commit_and_push():
             repo = git.Repo(REPO_PATH)
             repo.git.add(ZIP_FILE, f="-f")  # Force add the file
             repo.index.commit("🔄 Updated SQLite database backup")
+            # Set authenticated remote URL
             origin = repo.remote(name="origin")
+            origin.set_url(REPO_URL.lower().replace("github.com",f"{GITHUB_TOKEN}@github.com"))
+            origin.pull()
             origin.push()
-        OutputControls().printOutput("✅ DB Cache backed up!")
+            Committer.commitTempOutcomes(addPath=ZIP_FILE,
+                                         commitMessage="🔄 Updated SQLite database backup",
+                                         branchName=BRANCH,
+                                         showStatus="PKDevTools_Default_Log_Level" in os.environ.keys())
+        # OutputControls().printOutput(f"✅ DB Cache backed up to {REPO_URL.split('/')[3]}!")
     except Exception as e:
-        OutputControls().printOutput(f"❌ Error in DB Backup: {e}")
+        OutputControls().printOutput(f"❌ Error in DB Backup to {REPO_URL.split('/')[3]}: {e}")
 
 
 def backup_to_github():
     """Background function to zip and push database."""
-    OutputControls().printOutput("⏳ Starting DB Cache backup ...")
+    # OutputControls().printOutput("⏳ Starting DB Cache backup ...")
     zip_sqlite_file()
     commit_and_push()
-    OutputControls().printOutput("✅ Backup completed.")
+    OutputControls().printOutput(f"✅ Backup to {REPO_URL.split('/')[3]} completed.")
 
 def restore_from_github():
     """Background function to download and unzip database."""
-    OutputControls().printOutput("⏳ Starting restore ...")
+    # OutputControls().printOutput("⏳ Starting restore ...")
     download_zip_from_github()
     unzip_file()
-    OutputControls().printOutput("✅ Restore DB Cache completed.")
+    OutputControls().printOutput(f"✅ Restore DB Cache completed from {REPO_URL.split('/')[3]}.")
 
 def start_backup():
     """Trigger backup as a background thread."""
@@ -102,24 +110,32 @@ def restore_backup():
     backup_thread = threading.Thread(target=restore_from_github, daemon=True)
     backup_thread.start()
 
-def download_zip_from_github():
-    """Download the zipped file from GitHub."""
+def download_zip_from_github(retries=3, chunk_size=8192):
+    """Download the zipped file from GitHub with improved reliability."""
     try:
         ensure_directory()
-        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-        response = requests.get(GITHUB_ZIP_URL, headers=headers, stream=True)
-
-        if response.status_code == 200:
-            with open(ZIP_FILE, "wb") as file:
-                for chunk in response.iter_content(chunk_size=1024):
-                    file.write(chunk)
-            # OutputControls().printOutput(f"✅ Downloaded {ZIP_FILE} from GitHub.")
-        else:
-            OutputControls().printOutput(f"❌ Failed to download DB Cache: {response.status_code}, {response.text}")
-
+        # headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        for attempt in range(retries):
+            response = requests.get(GITHUB_ZIP_URL, stream=True)
+            if response.status_code == 200:
+                total_bytes_written = 0
+                content_length = int(response.headers.get("Content-Length", 0))  # Expected size
+                with open(ZIP_FILE, "wb") as file:
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        if chunk:  # Ensure the chunk is not empty
+                            file.write(chunk)
+                            total_bytes_written += len(chunk)
+                if total_bytes_written >= content_length:
+                    # OutputControls().printOutput(f"✅ Downloaded {ZIP_FILE} ({total_bytes_written} bytes) from GitHub.")
+                    return
+                else:
+                    OutputControls().printOutput(f"⚠️ Incomplete DB Cache download: {total_bytes_written}/{content_length} bytes. Retrying...")
+                    time.sleep(1)  # Small delay before retrying
+            else:
+                OutputControls().printOutput(f"❌ Failed to download DB Cache: {response.status_code}, {response.text}")
+        OutputControls().printOutput(f"❌ Download failed after {retries} attempts.")
     except Exception as e:
         OutputControls().printOutput(f"❌ Error downloading DB Cache: {e}")
-
 
 def unzip_file():
     """Extract the SQLite database file from the zip archive into results/Data/."""
@@ -131,7 +147,7 @@ def unzip_file():
             #     zipf.extract(file, Archiver.get_user_data_dir())
         # OutputControls().printOutput(f"✅ Extracted {DB_FILE} from {ZIP_FILE}")
     except Exception as e:
-        OutputControls().printOutput(f"❌ Error unzipping DB Cache: {e}")
+        OutputControls().printOutput(f"❌ Error unzipping DB Cache from {REPO_URL.split('/')[3]}: {e}")
 
 
 # if __name__ == "__main__":
