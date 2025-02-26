@@ -71,9 +71,10 @@ class Committer():
         # Only pull from specific branch in remote origin
         Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
         # Committer.execOSCommand("git checkout --ours .")
+        Committer.execOSCommand("git reset --hard")
         Committer.execOSCommand(f"git add {addPath} --force")
         Committer.execOSCommand(f"git commit -m '{commitMessage}'")
-        Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
+        # Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
         Committer.execOSCommand(f"git push -v -u origin +{branchName} {suffix}")
 
     def execOSCommand(command:str):

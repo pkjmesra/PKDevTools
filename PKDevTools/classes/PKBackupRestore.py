@@ -72,12 +72,15 @@ def commit_and_push():
             repo = git.Repo(REPO_PATH)
             # Set authenticated remote URL
             origin = repo.remote(name="origin")
-            origin.set_url(REPO_URL.lower().replace("github.com",f"{GITHUB_TOKEN}@github.com"))
+            origin.set_url(REPO_URL) # .lower().replace("github.com",f"{GITHUB_TOKEN}@github.com")
             origin.pull()
             repo.git.reset('--hard', 'origin/main')  # Reset local branch to match remote (force discards upstream changes)
             repo.git.add(ZIP_FILE, f="-f")  # Add your changes
             repo.index.commit("🔄 Force update SQLite database backup")
-            origin.push(force=True)  # Force push, ignoring upstream changes
+            try:
+                origin.push(force=True)  # Force push, ignoring upstream changes
+            except:
+                pass
             Committer.commitTempOutcomes(addPath=ZIP_FILE,
                                          commitMessage="🔄 Force update SQLite database backup",
                                          branchName=BRANCH,
