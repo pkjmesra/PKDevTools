@@ -70,15 +70,16 @@ def commit_and_push():
     try:
         with pk_backup_restore_lock:  # Ensure thread safety
             repo = git.Repo(REPO_PATH)
-            repo.git.add(ZIP_FILE, f="-f")  # Force add the file
-            repo.index.commit("🔄 Updated SQLite database backup")
             # Set authenticated remote URL
             origin = repo.remote(name="origin")
             origin.set_url(REPO_URL.lower().replace("github.com",f"{GITHUB_TOKEN}@github.com"))
             origin.pull()
-            origin.push()
+            repo.git.reset('--hard', 'origin/main')  # Reset local branch to match remote (force discards upstream changes)
+            repo.git.add(ZIP_FILE, f="-f")  # Add your changes
+            repo.index.commit("🔄 Force update SQLite database backup")
+            origin.push(force=True)  # Force push, ignoring upstream changes
             Committer.commitTempOutcomes(addPath=ZIP_FILE,
-                                         commitMessage="🔄 Updated SQLite database backup",
+                                         commitMessage="🔄 Force update SQLite database backup",
                                          branchName=BRANCH,
                                          showStatus="PKDevTools_Default_Log_Level" in os.environ.keys())
         # OutputControls().printOutput(f"✅ DB Cache backed up to {REPO_URL.split('/')[3]}!")
