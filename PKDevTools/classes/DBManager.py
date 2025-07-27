@@ -20,12 +20,11 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
-
 """
 try:
-    import libsql_client as libsql
+    import libsql
 except: # pragma: no cover
-    print("Error loading libsql_client!")
+    print("Error loading libsql")
     pass
 import pyotp
 from time import sleep
@@ -35,28 +34,28 @@ from PKDevTools.classes.Environment import PKEnvironment
 from PKDevTools.classes.PKDateUtilities import PKDateUtilities
 
 class PKUserModel(Enum):
-        userid = 0
-        username = 1
-        name = 2
-        email = 3
-        mobile = 4
-        otpvaliduntil = 5
-        totptoken = 6
-        subscriptionmodel = 7
-        lastotp = 8
+    userid = 0
+    username = 1
+    name = 2
+    email = 3
+    mobile = 4
+    otpvaliduntil = 5
+    totptoken = 6
+    subscriptionmodel = 7
+    lastotp = 8
 
 class PKScannerJob:
     scannerId=''
     userIds=[]
 
+    @staticmethod
     def scannerJobFromRecord(row):
         scanner = PKScannerJob()
-        scanner.scannerId= row[0]
+        scanner.scannerId = row[0]
         scanner.userIds = []
         for user in str(row[1]).split(";"):
             scanner.userIds.append(user)
         if len(scanner.userIds) > 0:
-            # Only unique values
             scanner.userIds = list(set(scanner.userIds))
         return scanner
     
@@ -74,44 +73,51 @@ class PKUser:
     scannerJobs = []
     customeField = None
 
+    @staticmethod
     def userFromDBRecord(row):
         user = PKUser()
-        user.userid= row[0] if len(row) > 0 else None
+        user.userid = row[0] if len(row) > 0 else None
         if len(row) < 9:
             user.customeField = row[0] if len(row) > 0 else None
-        user.username= row[1] if len(row) > 1 else None
-        user.name= row[2] if len(row) > 2 else None
-        user.email= row[3] if len(row) > 3 else None
-        user.mobile= row[4] if len(row) > 4 else None
-        user.otpvaliduntil= row[5] if len(row) > 5 else None
-        user.totptoken= row[6] if len(row) > 6 else None
-        user.subscriptionmodel= row[7] if len(row) > 7 else None
-        user.lastotp= row[8] if len(row) > 8 else None
+        user.username = row[1] if len(row) > 1 else None
+        user.name = row[2] if len(row) > 2 else None
+        user.email = row[3] if len(row) > 3 else None
+        user.mobile = row[4] if len(row) > 4 else None
+        user.otpvaliduntil = row[5] if len(row) > 5 else None
+        user.totptoken = row[6] if len(row) > 6 else None
+        user.subscriptionmodel = row[7] if len(row) > 7 else None
+        user.lastotp = row[8] if len(row) > 8 else None
         return user
 
+    @staticmethod
     def payingUserFromDBRecord(row):
         user = PKUser()
-        user.userid= row[0] if len(row) > 0 else None
+        user.userid = row[0] if len(row) > 0 else None
         user.subscriptionmodel = row[1] if len(row) > 1 else None
-        user.balance= row[2] if len(row) > 2 else None
+        user.balance = row[2] if len(row) > 2 else None
         return user
 
-    def userFromAlertsRecord(row,user=None):
+    @staticmethod
+    def userFromAlertsRecord(row, user=None):
         if user is None:
             user = PKUser()
-            user.userid= row[0]
-        user.balance= row[1]
+            user.userid = row[0]
+        user.balance = row[1]
         user.scannerJobs = []
         for job in str(row[2]).split(";"):
             user.scannerJobs.append(str(job).upper())
         if len(user.scannerJobs) > 0:
-            # Only unique values
             user.scannerJobs = list(set(user.scannerJobs))
         return user
 
 class DBManager:
-    
+    """A database manager class for handling operations with Turso database using libsql."""
     def __init__(self):
+        """Initialize the DBManager with connection parameters from environment.
+        
+        Reads TDU (Turso Database URL) and TAT (Turso Auth Token) from environment secrets.
+        Initializes connection parameters but doesn't establish immediate connection.
+        """
         try:
             local_secrets = PKEnvironment().allSecrets
             self.url = local_secrets["TDU"]
@@ -119,34 +125,89 @@ class DBManager:
         except Exception as e: # pragma: no cover
             print(f"Could not init library (__init__):\n{e}")
             default_logger().debug(e, exc_info=True)
-            # print(e)
             self.url = None
             self.token = None
         self.conn = None
     
     def shouldSkipLoading(self):
+        """Check if libsql is available for database operations.
+        
+        Returns:
+            bool: True if libsql cannot be imported, False if it can be imported successfully.
+        """
         skipLoading = False
         try:
-            import libsql_client as libsql
+            import libsql
         except Exception as e: # pragma: no cover
             print(f"Could not load library (shouldSkipLoading):\n{e}")
             skipLoading = True
-            pass
         return skipLoading
     
     def connection(self):
+        """Establish and return a database connection.
+        
+        Creates a new connection if none exists. Uses Turso URL and auth token from initialization.
+        
+        Returns:
+            libsql.Connection: An active database connection object.
+        """
         try:
             if self.conn is None:
-                # self.conn = libsql.connect("pkscreener.db", sync_url=self.url, auth_token=self.token)
-                # self.conn.sync()
-                self.conn = libsql.create_client_sync(self.url,auth_token=self.token)
+                # Connect to remote Turso database using libsql
+                self.conn = libsql.connect(
+                    database=self.url,
+                    auth_token=self.token
+                )
         except Exception as e: # pragma: no cover
             print(f"Could not establish connection:\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
         return self.conn
 
-    def validateOTP(self,userIDOrName,otp,validityIntervalInSeconds=30):
+    def execute_query(self, query, params=None):
+        """Execute a SQL query with proper error handling and connection management.
+        
+        Args:
+            query (str): The SQL query to execute
+            params (tuple, optional): Parameters for parameterized query. Defaults to None.
+            
+        Returns:
+            libsql.Cursor: A cursor object with query results if successful, None otherwise.
+        """
+        try:
+            conn = self.connection()
+            if conn is None:
+                return None
+                
+            cursor = conn.cursor()
+            if params:
+                result = cursor.execute(query, params)
+            else:
+                result = cursor.execute(query)
+            
+            return result
+        except Exception as e:
+            print(f"Database error: {e}")
+            default_logger().debug(e, exc_info=True)
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def validateOTP(self, userIDOrName, otp, validityIntervalInSeconds=30):
+        """Validate a one-time password for a user.
+        
+        Args:
+            userIDOrName (int/str): User ID or username to validate OTP for
+            otp (str): The one-time password to validate
+            validityIntervalInSeconds (int): Time window in seconds for OTP validity
+            
+        Returns:
+            bool: True if OTP is valid, False otherwise
+            
+        Example:
+            >>> db.validateOTP(123, "123456")
+            True
+        """
         try:
             otpValue = 0
             dbUsers = self.getUserByIDorUsername(userIDOrName)
@@ -155,32 +216,53 @@ class DBManager:
                 token = dbUsers[0].totptoken
                 lastOTP = dbUsers[0].lastotp
                 if token is not None:
-                    otpValue = str(pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).now())
+                    otpValue = str(pyotp.TOTP(token, interval=int(validityIntervalInSeconds)).now())
             else:
                 print(f"Could not locate user: {userIDOrName}")
         except Exception as e: # pragma: no cover
             print(f"Could not locate user (validateOTP): {userIDOrName}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
+        
         isValid = (otpValue == str(otp)) and int(otpValue) > 0
         if not isValid and len(token) > 0:
-            isValid = pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).verify(otp=otp,valid_window=60)
+            isValid = pyotp.TOTP(token, interval=int(validityIntervalInSeconds)).verify(otp=otp, valid_window=60)
             default_logger().debug(f"User entered OTP: {otp} did not match machine generated OTP: {otpValue} while the DB OTP was: {lastOTP} with local config interval:{validityIntervalInSeconds}")
             if not isValid and len(str(lastOTP)) > 0 and len(str(otp)) > 0:
                 isValid = (str(otp) == str(lastOTP)) or (int(otp) == int(lastOTP))
         return isValid
 
-    def refreshOTPForUser(self,user:PKUser,validityIntervalInSeconds=30):
-        otpValue = str(pyotp.TOTP(user.totptoken,interval=int(validityIntervalInSeconds)).now())
+    def refreshOTPForUser(self, user:PKUser, validityIntervalInSeconds=30):
+        """Generate and store a new OTP for the specified user.
+        
+        Args:
+            user (PKUser): User object to refresh OTP for
+            validityIntervalInSeconds (int): Validity window for new OTP
+            
+        Returns:
+            tuple: (success: bool, otpValue: str) where success indicates DB update status
+        """
+        otpValue = str(pyotp.TOTP(user.totptoken, interval=int(validityIntervalInSeconds)).now())
         try:
-            self.updateOTP(user.userid,otpValue,user.otpvaliduntil)
+            self.updateOTP(user.userid, otpValue, user.otpvaliduntil)
             return True, otpValue
         except Exception as e: # pragma: no cover
             print(f"Could not refresh OTP (refreshOTPForUser) for user: {user.userid}\n{e}")
             default_logger().debug(e, exc_info=True)
             return False, otpValue
 
-    def getOTP(self,userID,username=None,name=None,retry=False,validityIntervalInSeconds=86400):
+    def getOTP(self, userID, username=None, name=None, retry=False, validityIntervalInSeconds=86400):
+        """Retrieve or generate OTP for a user with fallback creation logic.
+        
+        Args:
+            userID (int): User ID to get OTP for
+            username (str, optional): Username if creating new user
+            name (str, optional): Name if creating new user
+            retry (bool): Internal flag for retry logic
+            validityIntervalInSeconds (int): OTP validity period
+            
+        Returns:
+            tuple: (otp: str, subscriptionModel: str, subscriptionValidity: str, alertUser: PKUser)
+        """
         try:
             otpValue = 0
             user = None
@@ -197,414 +279,442 @@ class DBManager:
                         token = dbUser.totptoken
                         if token is not None:
                             if not otpStillValid:
-                                otpValue = str(pyotp.TOTP(token,interval=int(validityIntervalInSeconds)).now())
+                                otpValue = str(pyotp.TOTP(token, interval=int(validityIntervalInSeconds)).now())
                         else:
-                            # Update user
-                            user = PKUser.userFromDBRecord([userID,str(username).lower(),name,dbUser.email,dbUser.mobile,dbUser.otpvaliduntil,pyotp.random_base32(),dbUser.subscriptionmodel,dbUser.lastotp])
+                            user = PKUser.userFromDBRecord([userID, str(username).lower(), name, dbUser.email, dbUser.mobile, dbUser.otpvaliduntil, pyotp.random_base32(), dbUser.subscriptionmodel, dbUser.lastotp])
                             self.updateUser(user)
-                            return self.getOTP(userID,username,name,retry=True)
+                            return self.getOTP(userID, username, name, retry=True)
                     else:
-                        # Insert user
-                        user = PKUser.userFromDBRecord([userID,str(username).lower(),name,None,None,None,pyotp.random_base32(),None,None])
+                        user = PKUser.userFromDBRecord([userID, str(username).lower(), name, None, None, None, pyotp.random_base32(), None, None])
                         self.insertUser(user)
-                        return self.getOTP(userID,username,name,retry=True)
+                        return self.getOTP(userID, username, name, retry=True)
             else:
-                # Insert user
-                user = PKUser.userFromDBRecord([userID,str(username).lower(),name,None,None,None,pyotp.random_base32(),None,None])
+                user = PKUser.userFromDBRecord([userID, str(username).lower(), name, None, None, None, pyotp.random_base32(), None, None])
                 self.insertUser(user)
-                return self.getOTP(userID,username,name,retry=True)
+                return self.getOTP(userID, username, name, retry=True)
         except Exception as e: # pragma: no cover
-            print(f"Could not get OTP (getOTP) for user: {user.userid}\n{e}")
+            print(f"Could not get OTP (getOTP) for user: {user.userid if user else 'unknown'}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
+        
         try:
-            self.updateOTP(userID,otpValue)
+            self.updateOTP(userID, otpValue)
         except Exception as e: # pragma: no cover
-            print(f"Could not get/update (getOTP) OTP for user: {user.userid}\n{e}")
+            print(f"Could not get/update (getOTP) OTP for user: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        alertUser = self.alertsForUser(userID,user=user)
+        
+        alertUser = self.alertsForUser(userID, user=user)
         return otpValue, subscriptionModel, subscriptionValidity, alertUser
 
-    def getUserByID(self,userID):
+    def getUserByID(self, userID):
+        """Retrieve user by their unique ID.
+        
+        Args:
+            userID (int): The user ID to search for
+            
+        Returns:
+            list[PKUser]: List of user objects (empty if not found)
+        """
+        users = []
         try:
-            users = []
-            cursor = self.connection() #.cursor()
-            records = cursor.execute(f"SELECT * FROM users WHERE userid={self.sanitisedIntValue(userID)}") #.fetchall()
-            for row in records.rows:
-                users.append(PKUser.userFromDBRecord(row))
-            # cursor.close()
-            if len(records.columns) > 0 and len(records.rows) <= 0:
-                # Let's tell the user
-                default_logger().debug(f"User: {userID} not found! Probably needs registration?")
+            result = self.execute_query("SELECT * FROM users WHERE userid = ?", (userID,))
+            if result:
+                for row in result.fetchall():
+                    users.append(PKUser.userFromDBRecord(row))
+                if not users:
+                    default_logger().debug(f"User: {userID} not found! Probably needs registration?")
         except Exception as e: # pragma: no cover
             print(f"Could not find user getUserByID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return users
 
-    def getUserByIDorUsername(self,userIDOrusername):
+    def getUserByIDorUsername(self, userIDOrusername):
+        """Retrieve user by either ID or username (case-insensitive).
+        
+        Args:
+            userIDOrusername (int/str): Either user ID or username
+            
+        Returns:
+            list[PKUser]: List of matching user objects
+        """
+        users = []
         try:
-            users = []
-            cursor = self.connection() #.cursor()
             try:
                 userID = int(userIDOrusername)
-            except Exception as e: # pragma: no cover
-                print(f"Invalid UserID: {userIDOrusername}\n{e}")
-                userID = 0
-                pass
-            if userID == 0:
-                records = cursor.execute(f"SELECT * FROM users WHERE username={self.sanitisedStrValue(str(userIDOrusername).lower())}") #.fetchall()
-            else:
-                records = cursor.execute(f"SELECT * FROM users WHERE userid={self.sanitisedIntValue(userID)}") #.fetchall()
-            for row in records.rows:
-                users.append(PKUser.userFromDBRecord(row))
-            if len(records.columns) > 0 and len(records.rows) <= 0:
-                # Let's tell the user
-                default_logger().debug(f"User: {userIDOrusername} not found! Probably needs registration?")
-                print(f"Could not locate user: {userIDOrusername}. Please reach out to the developer!")
-                sleep(3)
+                query = "SELECT * FROM users WHERE userid = ?"
+                params = (userID,)
+            except ValueError:
+                query = "SELECT * FROM users WHERE username = ?"
+                params = (str(userIDOrusername).lower(),)
+            
+            result = self.execute_query(query, params)
+            if result:
+                for row in result.fetchall():
+                    users.append(PKUser.userFromDBRecord(row))
+                if not users:
+                    default_logger().debug(f"User: {userIDOrusername} not found! Probably needs registration?")
+                    print(f"Could not locate user: {userIDOrusername}. Please reach out to the developer!")
+                    sleep(3)
         except Exception as e: # pragma: no cover
             print(f"Could not getUserByIDorUsername UserID: {userIDOrusername}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return users
     
-    def insertUser(self,user:PKUser):
+    def insertUser(self, user:PKUser):
+        """Insert a new user record into the database.
+        
+        Args:
+            user (PKUser): User object containing all required fields
+            
+        Note:
+            Requires userid, username, name, email, mobile, otpvaliduntil, 
+            totptoken, and subscriptionmodel fields
+        """
         try:
-            result = self.connection().execute(f"INSERT INTO users(userid,username,name,email,mobile,otpvaliduntil,totptoken,subscriptionmodel) VALUES ({self.sanitisedIntValue(user.userid)},{self.sanitisedStrValue(str(user.username).lower())},{self.sanitisedStrValue(user.name)},{self.sanitisedStrValue(user.email)},{self.sanitisedIntValue(user.mobile)},{self.sanitisedStrValue(user.otpvaliduntil)},{self.sanitisedStrValue(user.totptoken)},{self.sanitisedStrValue(user.subscriptionmodel)});")
-            if result.rows_affected > 0 and result.last_insert_rowid is not None:
-                default_logger().debug(f"User: {user.userid} inserted as last row ID: {result.last_insert_rowid}!")
-            # self.connection().commit()
-            # self.connection().sync()
+            query = """
+                INSERT INTO users(userid, username, name, email, mobile, otpvaliduntil, totptoken, subscriptionmodel)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """
+            params = (
+                user.userid,
+                str(user.username).lower(),
+                user.name,
+                user.email,
+                user.mobile,
+                user.otpvaliduntil,
+                user.totptoken,
+                user.subscriptionmodel
+            )
+            
+            result = self.execute_query(query, params)
+            if result and result.rowcount > 0:
+                default_logger().debug(f"User: {user.userid} inserted!")
         except Exception as e: # pragma: no cover
             print(f"Could not insertUser UserID: {user.userid}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
-    
-    def sanitisedStrValue(self,param):
-        return "''" if param is None else f"'{param}'"
 
-    def sanitisedIntValue(self,param):
-        return param if param is not None else 0
-
-    def updateUser(self,user:PKUser):
+    def updateUser(self, user:PKUser):
+        """Update all fields of an existing user record.
+        
+        Args:
+            user (PKUser): User object with updated field values
+            
+        Note:
+            Updates all fields for the user with matching userid
+        """
         try:
-            result = self.connection().execute(f"UPDATE users SET username={self.sanitisedStrValue(str(user.username).lower())},name={self.sanitisedStrValue(user.name)},email={self.sanitisedStrValue(user.email)},mobile={self.sanitisedIntValue(user.mobile)},otpvaliduntil={self.sanitisedStrValue(user.otpvaliduntil)},totptoken={self.sanitisedStrValue(user.totptoken)},subscriptionmodel={self.sanitisedStrValue(user.subscriptionmodel)},lastotp={self.sanitisedStrValue(user.lastotp)} WHERE userid={self.sanitisedIntValue(user.userid)}")
-            if result.rows_affected > 0:
+            query = """
+                UPDATE users 
+                SET username = ?, name = ?, email = ?, mobile = ?, 
+                    otpvaliduntil = ?, totptoken = ?, subscriptionmodel = ?, lastotp = ?
+                WHERE userid = ?
+            """
+            params = (
+                str(user.username).lower(),
+                user.name,
+                user.email,
+                user.mobile,
+                user.otpvaliduntil,
+                user.totptoken,
+                user.subscriptionmodel,
+                user.lastotp,
+                user.userid
+            )
+            
+            result = self.execute_query(query, params)
+            if result and result.rowcount > 0:
                 default_logger().debug(f"User: {user.userid} updated!")
         except Exception as e: # pragma: no cover
             print(f"Could not updateUser UserID: {user.userid}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
 
-    def updateOTP(self,userID,otp,otpValidUntilDate=None):
+    def updateOTP(self, userID, otp, otpValidUntilDate=None):
+        """Update the OTP and optionally its validity date for a user.
+        
+        Args:
+            userID (int): User ID to update
+            otp (str): New OTP value
+            otpValidUntilDate (str, optional): Date string in YYYY-MM-DD format
+        """
         try:
             if otpValidUntilDate is None:
-                result = self.connection().execute(f"UPDATE users SET lastotp={self.sanitisedStrValue(otp)} WHERE userid={self.sanitisedIntValue(userID)}")
-            elif otpValidUntilDate is not None:
-                result = self.connection().execute(f"UPDATE users SET otpvaliduntil={self.sanitisedStrValue(otpValidUntilDate)},lastotp={self.sanitisedStrValue(otp)} WHERE userid={self.sanitisedIntValue(userID)}")
-            if result.rows_affected > 0:
+                query = "UPDATE users SET lastotp = ? WHERE userid = ?"
+                params = (otp, userID)
+            else:
+                query = "UPDATE users SET otpvaliduntil = ?, lastotp = ? WHERE userid = ?"
+                params = (otpValidUntilDate, otp, userID)
+            
+            result = self.execute_query(query, params)
+            if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} updated with otp: {otp}!")
         except Exception as e: # pragma: no cover
             print(f"Could not updateOTP UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
     
-    def updateUserModel(self,userID,column:PKUserModel,columnValue=None):
+    def updateUserModel(self, userID, column:PKUserModel, columnValue=None):
+        """Update a specific column for a user.
+        
+        Args:
+            userID (int): User ID to update
+            column (PKUserModel): Enum specifying which column to update
+            columnValue: New value for the column (type depends on column)
+        """
         try:
-            result = self.connection().execute(f"UPDATE users SET {column.name}={self.sanitisedStrValue(columnValue) if type(columnValue) == str else self.sanitisedIntValue(columnValue)} WHERE userid={self.sanitisedIntValue(userID)}")
-            if result.rows_affected > 0:
+            query = f"UPDATE users SET {column.name} = ? WHERE userid = ?"
+            params = (columnValue, userID)
+            
+            result = self.execute_query(query, params)
+            if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} updated with {column.name}: {columnValue}!")
         except Exception as e: # pragma: no cover
             print(f"Could not updateUserModel UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
 
-    def getUsers(self,fieldName=None,where=None):
+    def getUsers(self, fieldName=None, where=None):
+        """Retrieve users with optional field filtering and WHERE conditions.
+        
+        Args:
+            fieldName (str, optional): Specific field(s) to retrieve
+            where (str, optional): WHERE clause conditions
+            
+        Returns:
+            list[PKUser]: List of matching user objects
         """
-        Returns all active PKUser instances in the database or an empty list if none is found.
-        Returns only the fieldName if requested.
-        """
+        users = []
         try:
-            users = []
-            cursor = self.connection() #.cursor()
-            records = cursor.execute(f"SELECT {'*' if fieldName is None else fieldName} FROM users {where if where is not None else ''}") #.fetchall()
-            for row in records.rows:
-                users.append(PKUser.userFromDBRecord(row))
-            # cursor.close()
-            if len(records.columns) > 0 and len(records.rows) <= 0:
-                # Let's tell the user
-                default_logger().debug(f"Users not found!")
+            query = f"SELECT {'*' if fieldName is None else fieldName} FROM users {where if where is not None else ''}"
+            result = self.execute_query(query)
+            if result:
+                for row in result.fetchall():
+                    users.append(PKUser.userFromDBRecord(row))
+                if not users:
+                    default_logger().debug("Users not found!")
         except Exception as e: # pragma: no cover
             print(f"Could not getUsers\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return users
 
-    def alertsForUser(self,userID:int,user:PKUser=None):
-        """
-        Returns a PKUser instance with user's updated balance for daily alerts 
-        and relevant subscribed scannerJobs for a given userID or None.
+    def alertsForUser(self, userID:int, user:PKUser=None):
+        """Retrieve alert subscription info for a user.
+        
+        Args:
+            userID (int): User ID to lookup
+            user (PKUser, optional): Existing user object to augment
+            
+        Returns:
+            PKUser: User object with alert subscription data or None
         """
         try:
             users = []
-            cursor = self.connection()
-            records = cursor.execute(f"SELECT * FROM alertsubscriptions where userId={self.sanitisedIntValue(userID if user is None else user.userid)}")
-            for row in records.rows:
-                users.append(PKUser.userFromAlertsRecord(row,user=user))
-            # cursor.close()
-            if len(records.columns) > 0 and len(records.rows) <= 0:
-                default_logger().debug(f"Users not found!")
+            query = "SELECT * FROM alertsubscriptions where userId = ?"
+            result = self.execute_query(query, (userID if user is None else user.userid,))
+            if result:
+                for row in result.fetchall():
+                    users.append(PKUser.userFromAlertsRecord(row, user=user))
+                if not users:
+                    default_logger().debug("Users not found!")
         except Exception as e: # pragma: no cover
             print(f"Could not get alertsForUser\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return users[0] if len(users) > 0 else None
 
     def scannerJobsWithActiveUsers(self):
+        """Retrieve all scanner jobs that have subscribed users.
+        
+        Returns:
+            list[PKScannerJob]: List of active scanner jobs
         """
-        Returns all such PKScannerJob instances with (scannerIDs and subscribed userIds)
-        where there's at least one subscribed user.
-        """
+        scanners = []
         try:
-            scanners = []
-            cursor = self.connection()
-            records = cursor.execute(f"SELECT * FROM scannerjobs where users != ''")
-            for row in records.rows:
-                scanners.append(PKScannerJob.scannerJobFromRecord(row))
-            if len(records.columns) > 0 and len(records.rows) <= 0:
-                default_logger().debug(f"Scanners not found!")
+            result = self.execute_query("SELECT * FROM scannerjobs where users != ''")
+            if result:
+                for row in result.fetchall():
+                    scanners.append(PKScannerJob.scannerJobFromRecord(row))
+                if not scanners:
+                    default_logger().debug("Scanners not found!")
         except Exception as e: # pragma: no cover
             print(f"Could not get scannerJobsWithActiveUsers\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return scanners
     
-    def usersForScannerJobId(self,scannerJobId:str):
+    def usersForScannerJobId(self, scannerJobId:str):
+        """Get all user IDs subscribed to a specific scanner job.
+        
+        Args:
+            scannerJobId (str): Scanner job ID (case-insensitive)
+            
+        Returns:
+            list[int]: List of subscribed user IDs
         """
-        Returns userIds that are subscribed to a given scannerJobId or an 
-        empty list if that scannerJobId is not found.
-        """
+        scanners = []
         try:
-            scanners = []
-            cursor = self.connection()
-            records = cursor.execute(f"SELECT * FROM scannerjobs where scannerId = {self.sanitisedStrValue(str(scannerJobId).upper())}")
-            for row in records.rows:
-                scanners.append(PKScannerJob.scannerJobFromRecord(row))
-            if len(records.columns) > 0 and len(records.rows) <= 0:
-                default_logger().debug(f"Scanners not found!")
+            query = "SELECT * FROM scannerjobs where scannerId = ?"
+            result = self.execute_query(query, (str(scannerJobId).upper(),))
+            if result:
+                for row in result.fetchall():
+                    scanners.append(PKScannerJob.scannerJobFromRecord(row))
+                if not scanners:
+                    default_logger().debug("Scanners not found!")
         except Exception as e: # pragma: no cover
             print(f"Could not get scannerJobsWithActiveUsers\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return scanners[0].userIds if len(scanners) > 0 else []
 
-    def updateAlertSubscriptionModel(self,userID,charge:float,scanId:str):
+    def updateAlertSubscriptionModel(self, userID, charge:float, scanId:str):
+        """Update user's balance and scanner job subscriptions.
+        
+        Args:
+            userID (int): User ID to update
+            charge (float): Amount to deduct from balance
+            scanId (str): Scanner job ID to add
+            
+        Returns:
+            bool: True if update was successful
         """
-        Updates alertsubscriptions with balance update as well as scanner jobs 
-        for a given user in the same table
-        """
+        success = False
         try:
-            success = False
-            result = self.connection().execute("""
-                                            UPDATE alertsubscriptions
-                                            SET 
-                                                balance = balance - ?,
-                                                scannerJobs = scannerJobs || ';' || ?
-                                            WHERE userId = ?;
-                                        """, (charge, scanId, userID))
-            if result.rows_affected > 0:
+            query = """
+                UPDATE alertsubscriptions
+                SET 
+                    balance = balance - ?,
+                    scannerJobs = scannerJobs || ';' || ?
+                WHERE userId = ?;
+            """
+            result = self.execute_query(query, (charge, scanId, userID))
+            if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} updated with balance and scannerJobs!")
-                success = self.topUpScannerJobs(scanId,userID)
+                success = self.topUpScannerJobs(scanId, userID)
         except Exception as e: # pragma: no cover
             print(f"Could not updateAlertSubscriptionModel UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return success
 
-    def topUpAlertSubscriptionBalance(self,userID,topup:float):
+    def topUpAlertSubscriptionBalance(self, userID, topup:float):
+        """Add funds to user's alert subscription balance.
+        
+        Args:
+            userID (int): User ID to update
+            topup (float): Amount to add to balance
+            
+        Returns:
+            bool: True if operation succeeded
         """
-        Handles a new user insertion as well as update.
-
-        If UserID does not exist, a new row is inserted with the given Balance.
-        If UserID already exists, only the Balance is updated by adding the new amount 
-        (Balance + excluded.Balance).
-        """
+        success = False
         try:
-            success = False
-            result = self.connection().execute("""
-                                            INSERT INTO alertsubscriptions (userId, balance) 
-                                            VALUES (?, ?) 
-                                            ON CONFLICT(userId) DO UPDATE 
-                                            SET balance = balance + excluded.balance;
-                                        """, (userID,topup))
-            if result.rows_affected > 0:
-                default_logger().debug(f"User: {userID} topped up with balance !")
+            query = """
+                INSERT INTO alertsubscriptions (userId, balance) 
+                VALUES (?, ?) 
+                ON CONFLICT(userId) DO UPDATE 
+                SET balance = balance + excluded.balance;
+            """
+            result = self.execute_query(query, (userID, topup))
+            if result and result.rowcount > 0:
+                default_logger().debug(f"User: {userID} topped up with balance!")
                 success = True
         except Exception as e: # pragma: no cover
             print(f"Could not topUpAlertSubscriptionBalance UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return success
 
-    def topUpScannerJobs(self,scanId,userID):
+    def topUpScannerJobs(self, scanId, userID):
+        """Subscribe user to a scanner job.
+        
+        Args:
+            scanId (str): Scanner job ID
+            userID (int): User ID to subscribe
+            
+        Returns:
+            bool: True if subscription succeeded
         """
-        Handles a new user insertion as well as update for a given scanId.
-
-        If scanId does not exist, a new row is inserted with the given userId.
-        If scanId already exists, only the users is updated by adding the new userId 
-        """
+        success = False
         try:
-            success = False
-            result = self.connection().execute("""
-                                            INSERT INTO scannerjobs (scannerId, users) 
-                                            VALUES (?, ?) 
-                                            ON CONFLICT(scannerId) DO UPDATE 
-                                            SET users = users || ';' || excluded.users;
-                                        """, (scanId,userID))
-            if result.rows_affected > 0:
-                default_logger().debug(f"User: {userID} added to scanId !")
+            query = """
+                INSERT INTO scannerjobs (scannerId, users) 
+                VALUES (?, ?) 
+                ON CONFLICT(scannerId) DO UPDATE 
+                SET users = users || ';' || excluded.users;
+            """
+            result = self.execute_query(query, (scanId, userID))
+            if result and result.rowcount > 0:
+                default_logger().debug(f"User: {userID} added to scanId!")
                 success = True
         except Exception as e: # pragma: no cover
             print(f"Could not topUpScannerJobs UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return success
 
     def resetScannerJobs(self):
+        """Clear all scanner jobs and user subscriptions.
+        
+        Returns:
+            bool: True if both truncation and updates succeeded
         """
-        Truncates scannerJobs and clears all jobs from users' alert subscriptions
-        """
+        success1 = False
+        success2 = False
         try:
-            success1 = False
-            result = self.connection().execute("DELETE from scannerjobs")
-            if result.rows_affected > 0:
-                default_logger().debug(f"scannerJobs truncated !")
+            result = self.execute_query("DELETE from scannerjobs")
+            if result:
+                print(f"{result.rowcount} rows deleted from scannerjobs")
                 success1 = True
-            print(f"{result.rows_affected} rows deleted from scannerjobs")
         except Exception as e: # pragma: no cover
             print(f"Could not deleteScannerJobs \n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
+        
         try:
-            success2 = False
-            result = self.connection().execute("""
-                                            UPDATE alertsubscriptions
-                                            SET scannerJobs = ''
-                                        """)
-            if result.rows_affected > 0:
-                default_logger().debug(f"alertsubscriptions updated with cleaned up scannerJobs!")
+            result = self.execute_query("UPDATE alertsubscriptions SET scannerJobs = ''")
+            if result:
+                print(f"{result.rowcount} rows updated in alertsubscriptions")
                 success2 = True
-            print(f"{result.rows_affected} rows updated in alertsubscriptions")
         except Exception as e: # pragma: no cover
             print(f"Could not deleteScannerJobs \n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
+        
         return success1 and success2
 
-    def removeScannerJob(self,userID, scanId):
-        """
-        Removes scanId from scannerJobs column in alertsubscriptions
+    def removeScannerJob(self, userID, scanId):
+        """Unsubscribe user from scanner job and clean up empty jobs.
         
-        Removes userID from the users column in scannerJobs
-
-        Deletes the row in scannerJobs if no more userIds are left
+        Args:
+            userID (int): User ID to unsubscribe
+            scanId (str): Scanner job ID to remove
+            
+        Returns:
+            bool: True if all steps completed successfully
         """
+        success = False
         try:
-            success = False
             # Step 1: Remove job from user's alertsubscriptions table
             query_alertsubscriptions = """
                 UPDATE alertsubscriptions
                 SET scannerJobs = 
                     CASE 
-                        WHEN scannerJobs = ? THEN ''  -- If the only job, set to empty string
+                        WHEN scannerJobs = ? THEN ''
                         ELSE 
                             TRIM(
                                 REPLACE(
                                     REPLACE(
-                                        ';' || scannerJobs || ';',  -- Add extra delimiters to prevent partial replacements
+                                        ';' || scannerJobs || ';',
                                         ';' || ? || ';', 
                                         ';'
                                     ), 
-                                    ';;', ';'  -- Fix extra semicolons
+                                    ';;', ';'
                                 ),
                                 ';'
-                            )  -- Trim leading/trailing semicolon
+                            )
                     END
                 WHERE userId = ?;
-                """
-            result = self.connection().execute(query_alertsubscriptions, (scanId,scanId,userID))
-            if result.rows_affected > 0:
+            """
+            result = self.execute_query(query_alertsubscriptions, (scanId, scanId, userID))
+            if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} removed {scanId} from alertsubscriptions!")
                 success = True
+            
             if success:
                 # Step 2: Remove userId from scannerJobs table
                 query_scanner_jobs = """
                     UPDATE scannerJobs
                     SET users = 
                         CASE 
-                            WHEN users = ? THEN ''  -- If the only user, set to empty string
+                            WHEN users = ? THEN ''
                             ELSE 
                                 TRIM(
                                     REPLACE(
@@ -616,86 +726,73 @@ class DBManager:
                                         ';;', ';'
                                     ),
                                     ';'
-                                )  -- Trim leading/trailing semicolon
+                                )
                         END
                     WHERE scannerId = ?;
-                    """
-                result = self.connection().execute(query_scanner_jobs, (str(userID),str(userID),scanId))
-                if result.rows_affected > 0:
+                """
+                result = self.execute_query(query_scanner_jobs, (str(userID), str(userID), scanId))
+                if result and result.rowcount > 0:
                     default_logger().debug(f"User: {userID} removed {scanId} from scannerJobs!")
                     success = True
+            
             if success:
                 # Step 3: Delete row from scannerJobs if users column is empty
                 query_delete_empty = """
                 DELETE FROM scannerJobs WHERE scannerId = ? AND (users IS NULL OR users = '');
                 """
-                result = self.connection().execute(query_delete_empty, (scanId,))
-                if result.rows_affected > 0:
-                    default_logger().debug(f"{scanId} deleted from scannerJobs by User: {userID} !")
+                result = self.execute_query(query_delete_empty, (scanId,))
+                if result and result.rowcount > 0:
+                    default_logger().debug(f"{scanId} deleted from scannerJobs by User: {userID}!")
                     success = True
         except Exception as e: # pragma: no cover
             print(f"Could not removeScannerJob: {scanId} for UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return success
 
     def getPayingUsers(self):
+        """Retrieve all users with active subscriptions or positive balance.
+        
+        Returns:
+            list[PKUser]: List of paying users with subscription info
         """
-        Returns all active PKUser instances in the database who either have a subscription model
-        or have a alerts balance.
-        """
+        users = []
         try:
-            users = []
-            cursor = self.connection() #.cursor()
-            query_paying_users = """
+            query = """
                 SELECT DISTINCT u.userId, u.subscriptionmodel, a.balance
                 FROM users u
                 LEFT JOIN alertsubscriptions a ON u.userId = a.userId
                 WHERE COALESCE(a.balance, 0) > 0 OR (u.subscriptionmodel != '' and u.subscriptionmodel != '0');
-
             """
-            records = cursor.execute(query_paying_users)
-            for row in records.rows:
-                users.append(PKUser.payingUserFromDBRecord(row))
-            # cursor.close()
-            if len(records.columns) > 0 and len(records.rows) <= 0:
-                # Let's tell the user
-                default_logger().debug(f"Paying Users not found!")
+            result = self.execute_query(query)
+            if result:
+                for row in result.fetchall():
+                    users.append(PKUser.payingUserFromDBRecord(row))
+                if not users:
+                    default_logger().debug("Paying Users not found!")
         except Exception as e: # pragma: no cover
             print(f"Could not getPayingUsers\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
         return users
 
-    def addAlertSummary(self,user_id,scanner_id,timestamp=None):
-        """
-        Adds a new row as an alert summary when an alert is sent to the user_id
-        for a subscribed scanner_id at a given timestamp.
+    def addAlertSummary(self, user_id, scanner_id, timestamp=None):
+        """Record that an alert was sent to a user.
+        
+        Args:
+            user_id (int): Recipient user ID
+            scanner_id (str): Scanner job ID that triggered alert
+            timestamp (str, optional): Time of alert (defaults to now)
         """
         try:
             if timestamp is None:
-                timestamp = PKDateUtilities.currentDateTime().strftime("%Y-%m-%d %H:%M:%S")  # Current timestamp
-            result = self.connection().execute("""
-                    INSERT INTO alertssummary (userId, scannerId, timestamp)
-                    VALUES (?, ?, ?)
-                """, (user_id, scanner_id, timestamp))
-            if result.rows_affected > 0 and result.last_insert_rowid is not None:
-                default_logger().debug(f"addAlertSummary:User: {user_id} inserted as last row ID: {result.last_insert_rowid}!")
-            # self.connection().commit()
-            # self.connection().sync()
+                timestamp = PKDateUtilities.currentDateTime().strftime("%Y-%m-%d %H:%M:%S")
+            
+            query = """
+                INSERT INTO alertssummary (userId, scannerId, timestamp)
+                VALUES (?, ?, ?)
+            """
+            result = self.execute_query(query, (user_id, scanner_id, timestamp))
+            if result and result.rowcount > 0:
+                default_logger().debug(f"addAlertSummary:User: {user_id} inserted!")
         except Exception as e: # pragma: no cover
             print(f"Could not addAlertSummary UserID: {user_id}\n{e}")
             default_logger().debug(e, exc_info=True)
-            pass
-        finally:
-            if self.conn is not None:
-                self.conn.close()
-                self.conn = None
