@@ -193,6 +193,11 @@ jobs:
         run: |
           # Non-macos arm64 environments already have conda installed
           echo "CONDA_HOME=/usr/local/miniconda" >> $GITHUB_ENV
+      
+      - name: Install dependencies only for Windows
+        if: ${{ matrix.platform_id == 'win_amd64' }}
+        run: |
+          pip3.12 install https://github.com/pkjmesra/libsql-python/releases/download/released/libsql-0.1.6-cp312-cp312-win_amd64.whl
 
       - name: Install Python Dependencies
         run: |
