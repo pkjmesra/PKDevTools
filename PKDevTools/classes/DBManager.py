@@ -168,30 +168,43 @@ class DBManager:
         
         Args:
             query (str): The SQL query to execute
-            params (tuple, optional): Parameters for parameterized query. Defaults to None.
+            params (tuple, optional): Parameters for parameterized query
             
         Returns:
-            libsql.Cursor: A cursor object with query results if successful, None otherwise.
+            libsql.Cursor: A cursor object if successful
+            None: If execution fails
+            
+        Raises:
+            RuntimeError: If there's a database error
         """
         try:
             conn = self.connection()
             if conn is None:
-                return None
+                raise RuntimeError("Database connection failed")
                 
             cursor = conn.cursor()
+            
+            # Ensure params is always a tuple or None
+            if params is not None and not isinstance(params, (tuple, list)):
+                params = (params,)
+                
+            # Execute with appropriate parameters
             if params:
                 result = cursor.execute(query, params)
             else:
                 result = cursor.execute(query)
-            
+                
             return result
+        
         except Exception as e:
-            print(f"Database error: {e}")
-            default_logger().debug(e, exc_info=True)
-            return None
+            # Handle specific libsql errors
+            if "panicked at" in str(e):
+                raise RuntimeError("Database operation failed: internal error") from e
+            default_logger().debug(f"Database error in query '{query}': {e}", exc_info=True)
+            raise RuntimeError(f"Database operation failed: {str(e)}") from e
         finally:
-            if conn:
-                conn.close()
+            # Don't close connection here - let the caller manage it
+            pass
 
     def validateOTP(self, userIDOrName, otp, validityIntervalInSeconds=30):
         """Validate a one-time password for a user.
