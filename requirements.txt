@@ -6,7 +6,7 @@ bs4
 cloudscraper
 filelock
 gitpython
-libsql_client
+libsql
 mistletoe
 numpy
 pandas
