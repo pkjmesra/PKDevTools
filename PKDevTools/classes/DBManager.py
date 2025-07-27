@@ -26,6 +26,7 @@ try:
 except: # pragma: no cover
     print("Error loading libsql")
     pass
+import contextlib
 import pyotp
 from time import sleep
 from enum import Enum
@@ -163,12 +164,13 @@ class DBManager:
             default_logger().debug(e, exc_info=True)
         return self.conn
 
-    def execute_query(self, query, params=None):
-        """Execute a SQL query with proper error handling and connection management.
+    def execute_query(self, query: str, params=None, commit: bool = False):
+        """Execute a SQL query with proper error handling and connection management as well as with transaction control.
         
         Args:
             query (str): The SQL query to execute
             params (tuple, optional): Parameters for parameterized query
+            commit: Whether to commit after execution (for writes)
             
         Returns:
             libsql.Cursor: A cursor object if successful
@@ -193,10 +195,12 @@ class DBManager:
                 result = cursor.execute(query, params)
             else:
                 result = cursor.execute(query)
-                
+            if commit:
+                conn.commit()  # Explicit commit for writes
             return result
         
         except Exception as e:
+            conn.rollback()  # Revert on error
             # Handle specific libsql errors
             if "panicked at" in str(e):
                 raise RuntimeError("Database operation failed: internal error") from e
@@ -299,11 +303,13 @@ class DBManager:
                             return self.getOTP(userID, username, name, retry=True)
                     else:
                         user = PKUser.userFromDBRecord([userID, str(username).lower(), name, None, None, None, pyotp.random_base32(), None, None])
-                        self.insertUser(user)
+                        if not self.insertUser(user):
+                            raise RuntimeError("Insert failed")
                         return self.getOTP(userID, username, name, retry=True)
             else:
                 user = PKUser.userFromDBRecord([userID, str(username).lower(), name, None, None, None, pyotp.random_base32(), None, None])
-                self.insertUser(user)
+                if not self.insertUser(user):
+                    raise RuntimeError("Insert failed")
                 return self.getOTP(userID, username, name, retry=True)
         except Exception as e: # pragma: no cover
             print(f"Could not get OTP (getOTP) for user: {user.userid if user else 'unknown'}\n{e}")
@@ -398,12 +404,14 @@ class DBManager:
                 user.subscriptionmodel
             )
             
-            result = self.execute_query(query, params)
+            result = self.execute_query(query, params, commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {user.userid} inserted!")
+            return result.rowcount == 1
         except Exception as e: # pragma: no cover
             print(f"Could not insertUser UserID: {user.userid}\n{e}")
             default_logger().debug(e, exc_info=True)
+            return False
 
     def updateUser(self, user:PKUser):
         """Update all fields of an existing user record.
@@ -433,12 +441,14 @@ class DBManager:
                 user.userid
             )
             
-            result = self.execute_query(query, params)
+            result = self.execute_query(query, params, commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {user.userid} updated!")
+            return result.rowcount == 1
         except Exception as e: # pragma: no cover
             print(f"Could not updateUser UserID: {user.userid}\n{e}")
             default_logger().debug(e, exc_info=True)
+            return False
 
     def updateOTP(self, userID, otp, otpValidUntilDate=None):
         """Update the OTP and optionally its validity date for a user.
@@ -456,12 +466,14 @@ class DBManager:
                 query = "UPDATE users SET otpvaliduntil = ?, lastotp = ? WHERE userid = ?"
                 params = (otpValidUntilDate, otp, userID)
             
-            result = self.execute_query(query, params)
+            result = self.execute_query(query, params, commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} updated with otp: {otp}!")
+            return result.rowcount == 1
         except Exception as e: # pragma: no cover
             print(f"Could not updateOTP UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
+            return False
     
     def updateUserModel(self, userID, column:PKUserModel, columnValue=None):
         """Update a specific column for a user.
@@ -475,12 +487,14 @@ class DBManager:
             query = f"UPDATE users SET {column.name} = ? WHERE userid = ?"
             params = (columnValue, userID)
             
-            result = self.execute_query(query, params)
+            result = self.execute_query(query, params, commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} updated with {column.name}: {columnValue}!")
+            return result.rowcount == 1
         except Exception as e: # pragma: no cover
             print(f"Could not updateUserModel UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
+            return False
 
     def getUsers(self, fieldName=None, where=None):
         """Retrieve users with optional field filtering and WHERE conditions.
@@ -592,7 +606,7 @@ class DBManager:
                     scannerJobs = scannerJobs || ';' || ?
                 WHERE userId = ?;
             """
-            result = self.execute_query(query, (charge, scanId, userID))
+            result = self.execute_query(query, (charge, scanId, userID), commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} updated with balance and scannerJobs!")
                 success = self.topUpScannerJobs(scanId, userID)
@@ -619,7 +633,7 @@ class DBManager:
                 ON CONFLICT(userId) DO UPDATE 
                 SET balance = balance + excluded.balance;
             """
-            result = self.execute_query(query, (userID, topup))
+            result = self.execute_query(query, (userID, topup), commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} topped up with balance!")
                 success = True
@@ -646,7 +660,7 @@ class DBManager:
                 ON CONFLICT(scannerId) DO UPDATE 
                 SET users = users || ';' || excluded.users;
             """
-            result = self.execute_query(query, (scanId, userID))
+            result = self.execute_query(query, (scanId, userID), commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} added to scanId!")
                 success = True
@@ -664,7 +678,7 @@ class DBManager:
         success1 = False
         success2 = False
         try:
-            result = self.execute_query("DELETE from scannerjobs")
+            result = self.execute_query("DELETE from scannerjobs", commit=True)
             if result:
                 print(f"{result.rowcount} rows deleted from scannerjobs")
                 success1 = True
@@ -673,7 +687,7 @@ class DBManager:
             default_logger().debug(e, exc_info=True)
         
         try:
-            result = self.execute_query("UPDATE alertsubscriptions SET scannerJobs = ''")
+            result = self.execute_query("UPDATE alertsubscriptions SET scannerJobs = ''",commit=True)
             if result:
                 print(f"{result.rowcount} rows updated in alertsubscriptions")
                 success2 = True
@@ -716,7 +730,7 @@ class DBManager:
                     END
                 WHERE userId = ?;
             """
-            result = self.execute_query(query_alertsubscriptions, (scanId, scanId, userID))
+            result = self.execute_query(query_alertsubscriptions, (scanId, scanId, userID),commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"User: {userID} removed {scanId} from alertsubscriptions!")
                 success = True
@@ -743,7 +757,7 @@ class DBManager:
                         END
                     WHERE scannerId = ?;
                 """
-                result = self.execute_query(query_scanner_jobs, (str(userID), str(userID), scanId))
+                result = self.execute_query(query_scanner_jobs, (str(userID), str(userID), scanId),commit=True)
                 if result and result.rowcount > 0:
                     default_logger().debug(f"User: {userID} removed {scanId} from scannerJobs!")
                     success = True
@@ -753,7 +767,7 @@ class DBManager:
                 query_delete_empty = """
                 DELETE FROM scannerJobs WHERE scannerId = ? AND (users IS NULL OR users = '');
                 """
-                result = self.execute_query(query_delete_empty, (scanId,))
+                result = self.execute_query(query_delete_empty, (scanId,),commit=True)
                 if result and result.rowcount > 0:
                     default_logger().debug(f"{scanId} deleted from scannerJobs by User: {userID}!")
                     success = True
@@ -803,9 +817,25 @@ class DBManager:
                 INSERT INTO alertssummary (userId, scannerId, timestamp)
                 VALUES (?, ?, ?)
             """
-            result = self.execute_query(query, (user_id, scanner_id, timestamp))
+            result = self.execute_query(query, (user_id, scanner_id, timestamp), commit=True)
             if result and result.rowcount > 0:
                 default_logger().debug(f"addAlertSummary:User: {user_id} inserted!")
+            return result.rowcount == 1
         except Exception as e: # pragma: no cover
             print(f"Could not addAlertSummary UserID: {user_id}\n{e}")
             default_logger().debug(e, exc_info=True)
+            return False
+
+    @contextlib.contextmanager
+    def transaction(self):
+        """Provides a transactional scope around a series of operations."""
+        conn = self.connection()
+        try:
+            yield conn  # The block of code inside 'with' runs here
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            default_logger().error(f"Transaction failed: {e}")
+            raise
+        finally:
+            pass  # Don't close connection - let the pool manage it
