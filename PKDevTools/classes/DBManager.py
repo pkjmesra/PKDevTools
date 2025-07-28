@@ -35,6 +35,19 @@ from PKDevTools.classes.Environment import PKEnvironment
 from PKDevTools.classes.PKDateUtilities import PKDateUtilities
 
 class PKUserModel(Enum):
+    """Enumeration representing the field mapping for User model database columns.
+    
+    Attributes:
+        userid: Primary key identifier for the user
+        username: Unique username/login identifier
+        name: Full name of the user
+        email: User's email address
+        mobile: User's mobile number
+        otpvaliduntil: Expiration timestamp for OTP validity
+        totptoken: Secret token for TOTP generation
+        subscriptionmodel: Type of subscription plan
+        lastotp: Last generated OTP code
+    """
     userid = 0
     username = 1
     name = 2
@@ -45,12 +58,34 @@ class PKUserModel(Enum):
     subscriptionmodel = 7
     lastotp = 8
 
+
 class PKScannerJob:
-    scannerId=''
-    userIds=[]
+    """Represents a scanner job with associated user subscriptions.
+    
+    Attributes:
+        scannerId: Unique identifier for the scanner job
+        userIds: List of user IDs subscribed to this scanner job
+    """
+    scannerId = ''
+    userIds = []
 
     @staticmethod
     def scannerJobFromRecord(row):
+        """Creates a PKScannerJob instance from a database record.
+        
+        Args:
+            row: Database row tuple containing (scannerId, semicolon-separated userIds)
+            
+        Returns:
+            PKScannerJob: Configured scanner job instance
+            
+        Example:
+            >>> job = PKScannerJob.scannerJobFromRecord(('SCAN1', '123;456;123'))
+            >>> job.scannerId
+            'SCAN1'
+            >>> job.userIds
+            ['123', '456']
+        """
         scanner = PKScannerJob()
         scanner.scannerId = row[0]
         scanner.userIds = []
@@ -59,23 +94,54 @@ class PKScannerJob:
         if len(scanner.userIds) > 0:
             scanner.userIds = list(set(scanner.userIds))
         return scanner
-    
+
+
 class PKUser:
-    userid=0
-    username=""
-    name=""
-    email=""
-    mobile=0
-    otpvaliduntil=""
-    totptoken=""
-    subscriptionmodel=""
-    lastotp=""
+    """Data model representing a user in the system.
+    
+    Attributes:
+        userid: Unique user identifier
+        username: Login username
+        name: Full name
+        email: Email address
+        mobile: Mobile number
+        otpvaliduntil: OTP expiration timestamp
+        totptoken: TOTP secret token
+        subscriptionmodel: Subscription type
+        lastotp: Last generated OTP
+        balance: Account balance for alerts
+        scannerJobs: List of subscribed scanner jobs
+        customeField: Custom field placeholder
+    """
+    userid = 0
+    username = ""
+    name = ""
+    email = ""
+    mobile = 0
+    otpvaliduntil = ""
+    totptoken = ""
+    subscriptionmodel = ""
+    lastotp = ""
     balance = 0
     scannerJobs = []
     customeField = None
 
     @staticmethod
     def userFromDBRecord(row):
+        """Creates a PKUser instance from a full database user record.
+        
+        Args:
+            row: Database row tuple containing all user fields in PKUserModel order
+            
+        Returns:
+            PKUser: Configured user instance
+            
+        Note:
+            Handles rows with fewer than 9 fields by mapping remaining fields to None
+            
+        Example:
+            >>> user = PKUser.userFromDBRecord((123, 'testuser', ...))
+        """
         user = PKUser()
         user.userid = row[0] if len(row) > 0 else None
         if len(row) < 9:
@@ -92,14 +158,38 @@ class PKUser:
 
     @staticmethod
     def payingUserFromDBRecord(row):
+        """Creates a PKUser instance from a limited payment-related record.
+        
+        Args:
+            row: Database row tuple containing (userid, username, subscriptionmodel, balance)
+            
+        Returns:
+            PKUser: User instance with payment-related fields populated
+            
+        Example:
+            >>> user = PKUser.payingUserFromDBRecord((123, 'premium_user', 'premium', 100))
+        """
         user = PKUser()
         user.userid = row[0] if len(row) > 0 else None
-        user.subscriptionmodel = row[1] if len(row) > 1 else None
-        user.balance = row[2] if len(row) > 2 else None
+        user.username = row[1] if len(row) > 1 else None
+        user.subscriptionmodel = row[2] if len(row) > 2 else None
+        user.balance = row[3] if len(row) > 3 else None
         return user
 
     @staticmethod
     def userFromAlertsRecord(row, user=None):
+        """Enriches a user instance with alert subscription data.
+        
+        Args:
+            row: Database row tuple containing (userid, balance, semicolon-separated scanner jobs)
+            user: Optional existing PKUser instance to enrich
+            
+        Returns:
+            PKUser: User instance with alert data
+            
+        Example:
+            >>> user = PKUser.userFromAlertsRecord((123, 50, 'SCAN1;SCAN2'))
+        """
         if user is None:
             user = PKUser()
             user.userid = row[0]
@@ -785,7 +875,7 @@ class DBManager:
         users = []
         try:
             query = """
-                SELECT DISTINCT u.userId, u.subscriptionmodel, a.balance
+                SELECT DISTINCT u.userId, u.username, u.subscriptionmodel, a.balance
                 FROM users u
                 LEFT JOIN alertsubscriptions a ON u.userId = a.userId
                 WHERE COALESCE(a.balance, 0) > 0 OR (u.subscriptionmodel != '' and u.subscriptionmodel != '0');
