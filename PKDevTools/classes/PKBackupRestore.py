@@ -95,14 +95,14 @@ def backup_to_github():
     # OutputControls().printOutput("⏳ Starting DB Cache backup ...")
     zip_sqlite_file()
     commit_and_push()
-    OutputControls().printOutput(f"✅ Backup to {REPO_URL.split('/')[3]} completed.")
+    # OutputControls().printOutput(f"✅ Backup to {REPO_URL.split('/')[3]} completed.")
 
 def restore_from_github():
     """Background function to download and unzip database."""
     # OutputControls().printOutput("⏳ Starting restore ...")
     download_zip_from_github()
     unzip_file()
-    OutputControls().printOutput(f"✅ Restore DB Cache completed from {REPO_URL.split('/')[3]}.")
+    # OutputControls().printOutput(f"✅ Restore DB Cache completed from {REPO_URL.split('/')[3]}.")
 
 def start_backup():
     """Trigger backup as a background thread."""
