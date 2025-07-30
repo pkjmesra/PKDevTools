@@ -58,10 +58,10 @@ SYS_MAJOR_VERSION = str(sys.version_info.major)
 SYS_VERSION = SYS_MAJOR_VERSION + "." + str(sys.version_info.minor)
 
 WHEEL_NAME = (
-    __PACKAGENAME__ + "-" + VERSION + "-py" + SYS_MAJOR_VERSION + "-none-any.whl"
+    __PACKAGENAME__.lower() + "-" + VERSION + "-py" + SYS_MAJOR_VERSION + "-none-any.whl"
 )
-TAR_FILE = __PACKAGENAME__ + "-" + VERSION + ".tar.gz"
-EGG_FILE = __PACKAGENAME__ + "-" + VERSION + "-py" + SYS_VERSION + ".egg"
+TAR_FILE = __PACKAGENAME__.lower() + "-" + VERSION + ".tar.gz"
+EGG_FILE = __PACKAGENAME__.lower() + "-" + VERSION + "-py" + SYS_VERSION + ".egg"
 DIST_FILES = [WHEEL_NAME, TAR_FILE, EGG_FILE]
 DIST_DIR = "dist/"
 
@@ -93,7 +93,7 @@ if os.path.exists(package_dir):
         if os.path.isfile(srcFile):
             shutil.copy(srcFile,os.path.join(package_dir,targetFileName))
 setup(
-    name=__PACKAGENAME__,
+    name=__PACKAGENAME__.lower(),
     packages=setuptools.find_packages(where=".", exclude=["docs", "test"]),
     cmdclass={'bdist_wheel': bdist_wheel},
     include_package_data=True,  # include everything in source control
