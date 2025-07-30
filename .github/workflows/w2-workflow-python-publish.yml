@@ -252,6 +252,30 @@ jobs:
           ls -l dist
           mv dist/pkdevtools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-linux_x86_64.whl dist/pkdevtools-${{ steps.vars.outputs.THIS_VERSION }}-cp${{ matrix.python }}-cp${{ matrix.python }}-manylinux2014_x86_64.whl
 
+      - name: Ensure compatibility to PyPi distribution
+        shell: bash
+        run: |
+            # Navigate to the dist directory
+            cd dist || exit 1
+            # Loop through all files and rename them to lowercase
+            for file in *; do
+                if [ -f "$file" ]; then  # Only process files (not directories)
+                    # Convert filename to lowercase (including extension)
+                    newname=$(echo "$file" | tr '[:upper:]' '[:lower:]')
+                    
+                    # Only rename if the new name is different
+                    if [ "$file" != "$newname" ]; then
+                        # Check if target filename already exists
+                        if [ -e "$newname" ]; then
+                            echo "Warning: $newname already exists - skipping $file"
+                        else
+                            mv -v "$file" "$newname"
+                        fi
+                    fi
+                fi
+            done
+            echo "Filename lowercase conversion complete"
+
       - name: Build and publish distribution 📦 to Test PyPI
         env:
           TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
