@@ -257,6 +257,12 @@ jobs:
         run: |
             # Navigate to the dist directory
             cd dist || exit 1
+            # Function to check if lowercase version exists (case-sensitive check)
+            case_sensitive_exists() {
+                local name="$1"
+                # List all files and check for exact lowercase match
+                find . -maxdepth 1 -type f -name "$name" | grep -q "^\./$name$"
+            }
             # Loop through all files and rename them to lowercase
             for file in *; do
                 if [ -f "$file" ]; then  # Only process files (not directories)
@@ -265,8 +271,8 @@ jobs:
                     
                     # Only rename if the new name is different
                     if [ "$file" != "$newname" ]; then
-                        # Check if target filename already exists
-                        if [ -e "$newname" ]; then
+                        # Case-sensitive check if target exists
+                        if case_sensitive_exists "$newname"; then
                             echo "Warning: $newname already exists - skipping $file"
                         else
                             mv -v "$file" "$newname"
