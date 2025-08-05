@@ -206,6 +206,8 @@ class filterlogger(metaclass=SingletonType):
             h.flush()
 
     def addHandlers(self, log_file_path=None, levelname=logging.NOTSET):
+        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+            return
         if log_file_path is None:
             log_file_path = os.path.join(tempfile.gettempdir(), "PKDevTools-logs.txt")
         trace_formatter = logging.Formatter(
@@ -217,7 +219,7 @@ class filterlogger(metaclass=SingletonType):
         filehandler.setFormatter(trace_formatter)
         filehandler.setLevel(levelname)
         self.logger.addHandler(filehandler)
-        if levelname == logging.DEBUG:
+        if 'PKDevTools_Default_Log_Level' in os.environ.keys():
             consolehandler = logging.StreamHandler()
             consolehandler.setFormatter(trace_formatter)
             consolehandler.setLevel(levelname)
@@ -228,6 +230,8 @@ class filterlogger(metaclass=SingletonType):
         return consolehandler, filehandler
 
     def debug(self, e, exc_info=False):
+        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+            return
         global __filter__
         __DEBUG__ = self.level == logging.DEBUG
         if not self.level == logging.DEBUG:
@@ -253,10 +257,9 @@ class filterlogger(metaclass=SingletonType):
             self.info(line)
 
     def info(self, line):
-        global __filter__, __DEBUG__
-        __DEBUG__ = self.level <= logging.INFO and self.level > logging.NOTSET
-        if not self.logger.level > logging.INFO:
+        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
             return
+        global __filter__
         frame = inspect.stack()[1]
         # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
         components = str(frame).split(",")
@@ -269,6 +272,8 @@ class filterlogger(metaclass=SingletonType):
             self.logger.info(line)
 
     def warn(self, line):
+        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+            return
         global __filter__
         if __filter__ is None:
             self.logger.warn(line)
@@ -278,12 +283,16 @@ class filterlogger(metaclass=SingletonType):
             self.logger.warn(line)
 
     def error(self, line):
+        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+            return
         self.logger.error(line)
 
     def setLevel(self, level):
         self.logger.setLevel(level)
 
     def critical(self, line):
+        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+            return
         self.logger.critical(line)
 
     def addHandler(self, hdl):
