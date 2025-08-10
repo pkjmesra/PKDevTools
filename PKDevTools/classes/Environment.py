@@ -25,29 +25,57 @@
 from PKDevTools.classes.Singleton import SingletonType
 from dotenv import dotenv_values
 
-def get_secrets():
-    local_secrets = dotenv_values(".env.dev")
-    keys = ["GITHUB_TOKEN","CHAT_ID","TOKEN","chat_idADMIN"]
-    for key in keys:
-        if key not in local_secrets.keys():
-            local_secrets[key] = ""
-    return (
-        local_secrets["CHAT_ID"],
-        local_secrets["TOKEN"],
-        local_secrets["chat_idADMIN"],
-        local_secrets["GITHUB_TOKEN"],
-    )
-
 class PKEnvironment(metaclass=SingletonType):
     def __init__(self):
         super(PKEnvironment, self).__init__()
-        self._secrets = get_secrets()
+        self._load_secrets()
+        
+    def _load_secrets(self):
+        """Load all secrets from .env.dev file and expose as attributes"""
         self._allSecrets = dotenv_values(".env.dev")
-
+        
+        # Ensure required keys exist with empty defaults
+        required_keys = ["GITHUB_TOKEN", "CHAT_ID", "TOKEN", "chat_idADMIN"]
+        for key in required_keys:
+            if key not in self._allSecrets:
+                self._allSecrets[key] = ""
+        
+        # Dynamically create attributes for all keys
+        for key, value in self._allSecrets.items():
+            # Convert key to valid Python identifier if needed
+            attr_name = self._sanitize_key(key)
+            setattr(self, attr_name, value)
+    
+    def _sanitize_key(self, key: str) -> str:
+        """Convert environment key to valid Python attribute name"""
+        # Replace invalid characters with underscore
+        sanitized = ''.join([c if c.isalnum() else '_' for c in key])
+        # Ensure it doesn't start with number
+        if sanitized[0].isdigit():
+            sanitized = f"_{sanitized}"
+        return sanitized
+    
+    def __getattr__(self, name):
+        """Handle access to undefined attributes (for new keys added later)"""
+        if name in self._allSecrets:
+            return self._allSecrets[name]
+        raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{name}'")
+    
     @property
     def secrets(self):
-        return self._secrets
-
+        """Legacy property returning tuple of main secrets"""
+        return (
+            self.CHAT_ID,
+            self.TOKEN,
+            self.chat_idADMIN,
+            self.GITHUB_TOKEN,
+        )
+    
     @property
     def allSecrets(self):
+        """Property returning all secrets as dict"""
         return self._allSecrets
+    
+    def refresh(self):
+        """Reload secrets from file (for detecting new keys)"""
+        self._load_secrets()
