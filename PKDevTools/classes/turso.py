@@ -53,7 +53,7 @@ class TursoHybridClient:
         auth_token: str,
         telegram_bot_token: Optional[str] = None,
         telegram_chat_id: Optional[str] = None,
-        sync_interval: int = 30,
+        sync_interval: int = 3000,
     ):
         """
         Args:

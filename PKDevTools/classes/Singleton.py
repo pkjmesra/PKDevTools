@@ -29,7 +29,11 @@ class SingletonType(type):
         # Assume the target class is created (i.e. this method to be called) in the main thread.
         cls = super(SingletonType, mcs).__new__(mcs, name, bases, attrs)
         from multiprocessing import Lock
-        cls.__shared_instance_lock__ = Lock()
+        try:
+            cls.__shared_instance_lock__ = Lock()
+        except BlockingIOError as e:
+            print(f"BlockingIOError: {e}")
+        
         return cls
 
     def __call__(self, *args, **kwargs):
