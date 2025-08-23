@@ -1,43 +1,47 @@
 # vim : fileencoding=UTF-8 :
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
+
 from __future__ import absolute_import, division, unicode_literals
-import warnings
-import os
-warnings.simplefilter("ignore", UserWarning)
-os.environ["PYTHONWARNINGS"]="ignore::UserWarning"
 
 import logging
 import multiprocessing
+import os
 import threading
+import warnings
+
+warnings.simplefilter("ignore", UserWarning)
+os.environ["PYTHONWARNINGS"] = "ignore::UserWarning"
+
 
 try:
     from queue import Empty
 except ImportError:  # Python 2.
     from Queue import Empty  # type: ignore[no-redef]
 __version__ = "0.3.4"
+
 
 class SubProcessLogHandler(logging.Handler):
     """handler used by subprocesses
@@ -66,7 +70,8 @@ class SubProcessLogHandler(logging.Handler):
             record.exc_info = None
 
         return record
-    
+
+
 class LogQueueReader(threading.Thread):
     """thread to write subprocesses log records to main process log
 
@@ -100,9 +105,12 @@ class LogQueueReader(threading.Thread):
                 raise
             except EOFError:
                 break
-            except:
-                import traceback, sys
+            except BaseException:
+                import sys
+                import traceback
+
                 traceback.print_exc(file=sys.stderr)
+
 
 def install_mp_handler(logger=None):
     """Wraps the handlers in the given Logger with an MultiProcessingHandler.
@@ -151,7 +159,8 @@ class MultiProcessingHandler(logging.Handler):
         self.queue = multiprocessing.Queue(-1)
         self._is_closed = False
         # The thread handles receiving records asynchronously.
-        self._receive_thread = threading.Thread(target=self._receive, name=name)
+        self._receive_thread = threading.Thread(
+            target=self._receive, name=name)
         self._receive_thread.daemon = True
         self._receive_thread.start()
 

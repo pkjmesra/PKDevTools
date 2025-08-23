@@ -1,70 +1,97 @@
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
 
 from __future__ import print_function
+
+import functools
 import os
 import sys
 import threading
 import time
-import functools
 from time import sleep
+
 try:
     import thread
 except ImportError:
     import _thread as thread
 
-INTERMEDIATE_NUM_SECONDS_WARN=30
+INTERMEDIATE_NUM_SECONDS_WARN = 30
 if "RUNNER" in os.environ.keys():
     try:
-        owner = os.popen('git ls-remote --get-url origin | cut -d/ -f4').read().replace("\n","")
-        repo = os.popen('git ls-remote --get-url origin | cut -d/ -f5').read().replace(".git","").replace("\n","")
-        if owner.lower() not in ["pkjmesra","pkscreener"]:
+        owner = (
+            os.popen("git ls-remote --get-url origin | cut -d/ -f4")
+            .read()
+            .replace("\n", "")
+        )
+        repo = (
+            os.popen("git ls-remote --get-url origin | cut -d/ -f5")
+            .read()
+            .replace(".git", "")
+            .replace("\n", "")
+        )
+        if owner.lower() not in ["pkjmesra", "pkscreener"]:
             sys.exit(0)
-    except:
+    except BaseException:
         pass
+
+
 def cdquit(fn_name):
     # print to stderr, unbuffered in Python 2.
-    print('{0} took too long. Handle KeyboardInterrupt if you do not want to exit'.format(fn_name), file=sys.stderr)
-    sys.stderr.flush() # Python 3 stderr is likely buffered.
-    thread.interrupt_main() # raises KeyboardInterrupt
+    print(
+        "{0} took too long. Handle KeyboardInterrupt if you do not want to exit".format(
+            fn_name
+        ),
+        file=sys.stderr,
+    )
+    sys.stderr.flush()  # Python 3 stderr is likely buffered.
+    thread.interrupt_main()  # raises KeyboardInterrupt
+
 
 def intermediateMessage(fn_name):
     # print to stderr, unbuffered in Python 2.
-    print('{0} is taking too long...Let the developer know!\n'.format(fn_name), file=sys.stderr)
-    sys.stderr.flush() # Python 3 stderr is likely buffered.
+    print(
+        "{0} is taking too long...Let the developer know!\n".format(fn_name),
+        file=sys.stderr,
+    )
+    sys.stderr.flush()  # Python 3 stderr is likely buffered.
+
 
 def exit_after(s):
-    '''
-    use as decorator to exit process if 
+    """
+    use as decorator to exit process if
     function takes longer than s seconds
-    '''
+    """
+
     def outer(fn):
         def inner(*args, **kwargs):
             timer = threading.Timer(s, cdquit, args=[fn.__name__])
             timer.start()
-            timer_mid = threading.Timer(INTERMEDIATE_NUM_SECONDS_WARN, intermediateMessage, args=[fn.__name__])
+            timer_mid = threading.Timer(
+                INTERMEDIATE_NUM_SECONDS_WARN, intermediateMessage, args=[
+                    fn.__name__]
+            )
             timer_mid.start()
             try:
                 result = None
@@ -73,11 +100,15 @@ def exit_after(s):
                 timer.cancel()
                 timer_mid.cancel()
             return result
+
         return inner
+
     return outer
 
-def ping(interval=60,instance=None,prefix=""):
+
+def ping(interval=60, instance=None, prefix=""):
     """Decorator to run a ping function in a background thread."""
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -86,7 +117,8 @@ def ping(interval=60,instance=None,prefix=""):
             def send_ping():
                 while not stop_event.is_set():
                     time.sleep(interval)
-                    if instance is not None and hasattr(instance, "send_event"):
+                    if instance is not None and hasattr(
+                        instance, "send_event"):
                         instance.send_event(f"{prefix}ping")
 
             # Start ping thread
@@ -99,10 +131,11 @@ def ping(interval=60,instance=None,prefix=""):
                 stop_event.set()
                 try:
                     ping_thread.join(timeout=1)
-                except:
+                except BaseException:
                     pass
             finally:
                 stop_event.set()  # Ensure ping thread stops even if func exits normally
 
         return wrapper
+
     return decorator

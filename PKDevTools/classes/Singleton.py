@@ -1,39 +1,42 @@
 #!/usr/bin/python3
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
 
+
 class SingletonType(type):
     def __new__(mcs, name, bases, attrs):
-        # Assume the target class is created (i.e. this method to be called) in the main thread.
+        # Assume the target class is created (i.e. this method to be called) in
+        # the main thread.
         cls = super(SingletonType, mcs).__new__(mcs, name, bases, attrs)
         from multiprocessing import Lock
+
         try:
             cls.__shared_instance_lock__ = Lock()
         except BlockingIOError as e:
             print(f"BlockingIOError: {e}")
-        
+
         return cls
 
     def __call__(self, *args, **kwargs):
@@ -41,10 +44,15 @@ class SingletonType(type):
             try:
                 return self.__shared_instance__
             except AttributeError:
-                self.__shared_instance__ = super(SingletonType, self).__call__(*args, **kwargs)
+                self.__shared_instance__ = super(SingletonType, self).__call__(
+                    *args, **kwargs
+                )
                 self.__shared_instance__.attributes = {}
-                self.__shared_instance__.attributes["lock"] = self.__shared_instance_lock__
+                self.__shared_instance__.attributes["lock"] = (
+                    self.__shared_instance_lock__
+                )
                 return self.__shared_instance__
+
 
 class SingletonMixin:
     def __getstate__(self):
@@ -54,6 +62,7 @@ class SingletonMixin:
         attributes, __dict__ = state
         self.__dict__.update(__dict__)
         self.__class__.attributes = attributes
+
 
 # from multiprocessing.dummy import Pool as ThreadPool
 # from threading import get_ident
@@ -125,4 +134,3 @@ class SingletonMixin:
 #     print("Normal ============================================")
 #     run(NonSingletonDatabase)
 #     print("Normal ============================================\n\n")
-        

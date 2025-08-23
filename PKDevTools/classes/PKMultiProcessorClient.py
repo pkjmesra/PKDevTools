@@ -1,37 +1,45 @@
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
-import pickle
-import warnings
-warnings.simplefilter("ignore", UserWarning)
+
 import logging
-import os
-import sys
-from queue import Empty
-from filelock import FileLock
-os.environ["PYTHONWARNINGS"]="ignore::UserWarning"
 import multiprocessing
+import os
+import pickle
+import sys
+import warnings
+from queue import Empty
+
+from filelock import FileLock
+
+from PKDevTools.classes import Archiver
+from PKDevTools.classes.multiprocessing_logging import SubProcessLogHandler
+
+warnings.simplefilter("ignore", UserWarning)
+
+
+os.environ["PYTHONWARNINGS"] = "ignore::UserWarning"
 
 # usage: pkscreenercli.exe [-h] [-a ANSWERDEFAULT] [-c CRONINTERVAL] [-d] [-e] [-o OPTIONS] [-p] [-t] [-l] [-v]
 # pkscreenercli.exe: error: unrecognized arguments: --multiprocessing-fork parent_pid=4620 pipe_handle=708
@@ -46,8 +54,6 @@ try:
 except ImportError:
     print("Contact developer! Your platform does not support multiprocessing!")
 
-from PKDevTools.classes.multiprocessing_logging import SubProcessLogHandler
-from PKDevTools.classes import Archiver
 
 class PKMultiProcessorClient(multiprocessing.Process):
     def __init__(
@@ -73,13 +79,13 @@ class PKMultiProcessorClient(multiprocessing.Process):
         dataCallbackHandler=None,
         progressCallbackHandler=None,
         processorArgs=None,
-        rs_strange_index=-1
+        rs_strange_index=-1,
     ):
         multiprocessing.Process.__init__(self)
         self.multiprocessingForWindows()
-        assert (
-            processorMethod is not None
-        ), "processorMethod argument must not be None. This is the meyhod that will do the processing."
+        assert processorMethod is not None, (
+            "processorMethod argument must not be None. This is the meyhod that will do the processing."
+        )
         # assert keyboardInterruptEvent is not None, "keyboardInterruptEvent argument must not be None."
         # assert task_queue is not None, "task_queue argument must not be None."
         # assert (result_queue is not None or dataCallbackHandler is not None), "result_queue or dataCallbackHandler argument must not be None."
@@ -108,7 +114,9 @@ class PKMultiProcessorClient(multiprocessing.Process):
         # and can be accessed using hostRef.default_logger
         # within processorMethod
         self.default_logger = None
-        self.logLevel = defaultLogger.level if defaultLogger is not None else logging.NOTSET
+        self.logLevel = (
+            defaultLogger.level if defaultLogger is not None else logging.NOTSET
+        )
 
         self.keyboardInterruptEvent = keyboardInterruptEvent
         self.stockList = stockList
@@ -119,10 +127,14 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.configManager = configManager
         self.candlePatterns = candlePatterns
         self.screener = screener
-        self.refreshDatabase = (self.dbFileNamePrimary is not None) or (self.dbFileNameSecondary is not None)
+        self.refreshDatabase = (self.dbFileNamePrimary is not None) or (
+            self.dbFileNameSecondary is not None
+        )
         self.paused = False
         self.processorArgs = processorArgs
-        self.queueProcessingMode = (self.task_queue is not None) and (self.result_queue is not None)
+        self.queueProcessingMode = (self.task_queue is not None) and (
+            self.result_queue is not None
+        )
         self.rs_strange_index = rs_strange_index
 
     def _clear(self):
@@ -147,7 +159,7 @@ class PKMultiProcessorClient(multiprocessing.Process):
 
     def _setupLogger(self):
         # create the logger to use.
-        logger = logging.getLogger('PKDevTools.subprocess')
+        logger = logging.getLogger("PKDevTools.subprocess")
         # The only handler desired is the SubProcessLogHandler.  If any others
         # exist, remove them. In this case, on Unix and Linux the StreamHandler
         # will be inherited.
@@ -178,22 +190,37 @@ class PKMultiProcessorClient(multiprocessing.Process):
             # Let's load the saved stocks' data
             cache_file_primary = self.dbFileNamePrimary
             try:
-                fileName = os.path.join(Archiver.get_user_data_dir(), f"{cache_file_primary}")
-                with FileLock(f'{fileName}.lck'):
-                    with open(os.path.join(Archiver.get_user_data_dir(), cache_file_primary), "rb") as f:
+                fileName = os.path.join(
+                    Archiver.get_user_data_dir(), f"{cache_file_primary}"
+                )
+                with FileLock(f"{fileName}.lck"):
+                    with open(
+                        os.path.join(
+    Archiver.get_user_data_dir(),
+     cache_file_primary),
+                        "rb",
+                    ) as f:
                         self.objectDictionaryPrimary = pickle.load(f)
-            except:
+            except BaseException:
                 self.objectDictionaryPrimary = multiprocessing.Manager().dict()
                 pass
         if self.refreshDatabase and self.dbFileNameSecondary is not None:
             try:
                 cache_file_secondary = self.dbFileNameSecondary
-                fileName = os.path.join(Archiver.get_user_data_dir(), f"{cache_file_secondary}")
-                with FileLock(f'{fileName}.lck'):
-                    with open(os.path.join(Archiver.get_user_data_dir(), f"{cache_file_secondary}"), "rb") as f:
+                fileName = os.path.join(
+                    Archiver.get_user_data_dir(), f"{cache_file_secondary}"
+                )
+                with FileLock(f"{fileName}.lck"):
+                    with open(
+                        os.path.join(
+                            Archiver.get_user_data_dir(
+                            ), f"{cache_file_secondary}"
+                        ),
+                        "rb",
+                    ) as f:
                         self.objectDictionarySecondary = pickle.load(f)
 
-            except:
+            except BaseException:
                 self.objectDictionarySecondary = multiprocessing.Manager().dict()
                 pass
         self.refreshDatabase = False
@@ -248,9 +275,11 @@ class PKMultiProcessorClient(multiprocessing.Process):
                             if self.processorMethod is not None and not self.paused:
                                 try:
                                     import tensorflow as tf
+
                                     with tf.device("/device:GPU:0"):
-                                        self.processorMethod(self.processorArgs)
-                                except:
+                                        self.processorMethod(
+                                            self.processorArgs)
+                                except BaseException:
                                     self.processorMethod(self.processorArgs)
                                     pass
                         except KeyboardInterrupt:

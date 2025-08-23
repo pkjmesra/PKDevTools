@@ -1,44 +1,50 @@
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
+
 import argparse
 import os
 from time import sleep
 
 argParser = argparse.ArgumentParser()
 required = False
-argParser.add_argument("-m", "--message", help="Commit message to look for", required=required)
+argParser.add_argument(
+    "-m", "--message", help="Commit message to look for", required=required
+)
 argParser.add_argument(
     "-b", "--branch", help="Origin branch name to push to", required=required
 )
 args = argParser.parse_args()
 
+
 def squash(message, branch):
     global args
     args.message = message
     args.branch = branch
-    c_msg = args.message #"GitHub Action Workflow - Market Data Download (Default Config)"
+    c_msg = (
+        args.message
+    )  # "GitHub Action Workflow - Market Data Download (Default Config)"
 
     print(f"[+] === SQUASHING COMMITS : {branch} branch ===")
     print("[+] Saving Commit messages log..")
@@ -60,7 +66,6 @@ def squash(message, branch):
             cnt -= 1
             break
 
-
     print(f"[+] Reset at HEAD~{cnt}")
     print(f"[+] Reset hash = {commit_hash}")
     print(f"git reset --soft {commit_hash}")
@@ -71,12 +76,14 @@ def squash(message, branch):
     else:
         os.system(f"git reset --soft HEAD~{cnt}")
         os.system(f"git commit -m '{c_msg}'")
-        os.system(f"git push -f -u origin {args.branch}") # actions-data-download
+        # actions-data-download
+        os.system(f"git push -f -u origin {args.branch}")
 
     os.remove("msg.log")
     sleep(5)
 
     print("[+] === SQUASHING COMMITS : DONE ===")
+
 
 if __name__ == "__main__":
     if args.message is not None and args.branch is not None:

@@ -1,40 +1,41 @@
 # -*- coding: utf-8 -*-
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
+
+import atexit
 import inspect
 import logging
 import os
 import sys
 import tempfile
+import threading
 import time
 import warnings
-import atexit
 from collections import OrderedDict
 from functools import wraps
-from threading import get_ident, Lock
-import threading
+from threading import Lock, get_ident
 
 try:
     from collections.abc import Iterable
@@ -64,6 +65,7 @@ _logger_lock = Lock()
 _handlers_configured = False
 _console_handler = None
 _file_handler = None
+
 
 class colors:
     """Colors class:
@@ -111,9 +113,10 @@ class colors:
         cyan = "\033[46m"
         lightgrey = "\033[47m"
 
-class emptylogger():
+
+class emptylogger:
     """Null logger that does nothing when PKDevTools_Default_Log_Level is not set"""
-    
+
     @property
     def logger(self):
         return None
@@ -133,7 +136,7 @@ class emptylogger():
     @staticmethod
     def getlogger(logger):
         return emptylogger()
-    
+
     def flush(self):
         return
 
@@ -164,27 +167,28 @@ class emptylogger():
     def removeHandler(self, hdl):
         return
 
+
 class filterlogger:
     """Thread-safe logger that handles multi-process environments"""
-    
+
     _instance = None
     _lock = Lock()
-    
+
     def __new__(cls, logger=None):
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
                 cls._instance._initialized = False
             return cls._instance
-    
+
     def __init__(self, logger=None):
-        if getattr(self, '_initialized', False):
+        if getattr(self, "_initialized", False):
             return
-            
+
         with self._lock:
-            if getattr(self, '_initialized', False):
+            if getattr(self, "_initialized", False):
                 return
-                
+
             self._logger = logger or logging.getLogger("PKDevTools")
             self._initialized = True
             # Ensure we have a unique logger name for multi-process safety
@@ -192,7 +196,7 @@ class filterlogger:
 
     def __repr__(self):
         return f"LogLevel: {self.level}, isDebugging: {self.isDebugging}"
-    
+
     @property
     def logger(self):
         return self._logger
@@ -214,9 +218,9 @@ class filterlogger:
     @staticmethod
     def getlogger(logger):
         # Check if logging should be enabled
-        if 'PKDevTools_Default_Log_Level' not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ:
             return emptylogger()
-        
+
         return filterlogger(logger=logger)
 
     def flush(self):
@@ -224,19 +228,21 @@ class filterlogger:
             for h in self.logger.handlers:
                 try:
                     h.flush()
-                except:
+                except BaseException:
                     pass
 
     def addHandlers(self, log_file_path=None, levelname=logging.NOTSET):
         global _handlers_configured, _console_handler, _file_handler
-        
+
         with _logger_lock:
             if _handlers_configured:
                 return _console_handler, _file_handler
-                
+
             if log_file_path is None:
-                log_file_path = os.path.join(tempfile.gettempdir(), f"PKDevTools-logs-{os.getpid()}.txt")
-            
+                log_file_path = os.path.join(
+                    tempfile.gettempdir(), f"PKDevTools-logs-{os.getpid()}.txt"
+                )
+
             trace_formatter = logging.Formatter(
                 fmt="%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d - %(message)s"
             )
@@ -246,7 +252,9 @@ class filterlogger:
                 self.logger.removeHandler(handler)
 
             # Create file handler (always created if logging is enabled)
-            _file_handler = logging.FileHandler(log_file_path, mode='a', encoding='utf-8')
+            _file_handler = logging.FileHandler(
+                log_file_path, mode="a", encoding="utf-8"
+            )
             _file_handler.setFormatter(trace_formatter)
             _file_handler.setLevel(levelname)
             self.logger.addHandler(_file_handler)
@@ -258,7 +266,7 @@ class filterlogger:
             self.logger.addHandler(_console_handler)
 
             _handlers_configured = True
-            
+
             return _console_handler, _file_handler
 
     def _should_log(self, message):
@@ -269,9 +277,9 @@ class filterlogger:
         return __filter__ in message.upper()
 
     def debug(self, e, exc_info=False):
-        if 'PKDevTools_Default_Log_Level' not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ:
             return
-            
+
         line = str(e)
         try:
             frame = inspect.stack()[1]
@@ -279,47 +287,47 @@ class filterlogger:
             line = f"{filename} - {frame.function} - {frame.lineno} - {line}"
         except Exception:
             pass
-        
+
         if not self._should_log(line):
             return
-            
+
         with self._lock:
             self.logger.debug(line, exc_info=exc_info)
 
     def info(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ:
             return
-            
+
         try:
             frame = inspect.stack()[1]
             filename = os.path.basename(frame.filename)
             line = f"{filename} - {frame.function} - {frame.lineno} - {line}"
         except Exception:
             pass
-        
+
         if not self._should_log(line):
             return
-            
+
         with self._lock:
             self.logger.info(line)
 
     def warn(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ:
             return
-            
+
         if not self._should_log(line):
             return
-            
+
         with self._lock:
             self.logger.warning(line)
 
     def error(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ:
             return
-            
+
         if not self._should_log(line):
             return
-            
+
         with self._lock:
             self.logger.error(line)
 
@@ -328,12 +336,12 @@ class filterlogger:
             self.logger.setLevel(level)
 
     def critical(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ:
             return
-            
+
         if not self._should_log(line):
             return
-            
+
         with self._lock:
             self.logger.critical(line)
 
@@ -345,6 +353,7 @@ class filterlogger:
         with self._lock:
             self.logger.removeHandler(hdl)
 
+
 def setup_custom_logger(
     name,
     levelname=logging.DEBUG,
@@ -353,56 +362,65 @@ def setup_custom_logger(
     filter=None,
 ):
     global __trace__, __filter__
-    
+
     __trace__ = trace
     __filter__ = filter.upper() if filter else None
-    
+
     # Only setup logging if environment variable is set
-    if 'PKDevTools_Default_Log_Level' not in os.environ:
+    if "PKDevTools_Default_Log_Level" not in os.environ:
         return emptylogger()
-    
+
     logger = filterlogger.getlogger(logging.getLogger(name))
-    
+
     # Set the log level from environment variable
     try:
-        env_level = int(os.environ['PKDevTools_Default_Log_Level'])
+        env_level = int(os.environ["PKDevTools_Default_Log_Level"])
         logger.level = env_level
     except (ValueError, KeyError):
         logger.level = levelname
-    
+
     # Configure handlers
     logger.addHandlers(log_file_path=log_file_path, levelname=logger.level)
-    
+
     # Setup trace logger if tracing is enabled
     if trace:
-        trace_logger = filterlogger.getlogger(logging.getLogger("PKDevTools_file_logger"))
+        trace_logger = filterlogger.getlogger(
+            logging.getLogger("PKDevTools_file_logger")
+        )
         trace_logger.level = logging.DEBUG  # Tracing always uses DEBUG level
-        trace_logger.addHandlers(log_file_path=log_file_path, levelname=logging.DEBUG)
+        trace_logger.addHandlers(
+    log_file_path=log_file_path,
+     levelname=logging.DEBUG)
         logger.info("Tracing started")
-    
+
     # Turn off warnings
     warnings.simplefilter("ignore", DeprecationWarning)
     warnings.simplefilter("ignore", FutureWarning)
 
     return logger
 
+
 def default_logger():
-    if 'PKDevTools_Default_Log_Level' in os.environ:
+    if "PKDevTools_Default_Log_Level" in os.environ:
         return filterlogger.getlogger(logging.getLogger("PKDevTools"))
     else:
         return emptylogger()
 
+
 def file_logger():
-    if 'PKDevTools_Default_Log_Level' in os.environ:
-        return filterlogger.getlogger(logging.getLogger("PKDevTools_file_logger"))
+    if "PKDevTools_Default_Log_Level" in os.environ:
+        return filterlogger.getlogger(
+            logging.getLogger("PKDevTools_file_logger"))
     else:
         return emptylogger()
+
 
 def trace_log(line):
     """Log tracing information - always works if tracing is enabled"""
     global __trace__
     if __trace__:
         file_logger().info(f"TRACE: {line}")
+
 
 def flatten(line):
     """Flatten a list (or other iterable) recursively"""
@@ -412,6 +430,7 @@ def flatten(line):
                 yield sub
         else:
             yield el
+
 
 def getargnames(func):
     """Return an iterator over all arg names, including nested arg names and varargs.
@@ -428,16 +447,20 @@ def getargnames(func):
     ) = inspect.getfullargspec(func)
     return chain(flatten(args), filter(None, [varargs, varkw]))
 
+
 def getcallargs_ordered(func, *args, **kwargs):
     """Return an OrderedDict of all arguments to a function.
     Items are ordered by the function's argspec."""
     argdict = inspect.getcallargs(func, *args, **kwargs)
     return OrderedDict((name, argdict[name]) for name in getargnames(func))
 
+
 def describe_call(func, *args, **kwargs):
     yield "Calling %s with args:" % func.__name__
-    for argname, argvalue in getcallargs_ordered(func, *args, **kwargs).items():
+    for argname, argvalue in getcallargs_ordered(
+        func, *args, **kwargs).items():
         yield "\t%s = %s" % (argname, repr(argvalue))
+
 
 def log_to(logger_func):
     """A decorator to log every call to function (function name and arg values).
@@ -447,7 +470,7 @@ def log_to(logger_func):
     This is much more efficient than providing a no-op logger
     function: @log_to(lambda x: None).
     """
-    if logger_func is not None and 'PKDevTools_Default_Log_Level' in os.environ:
+    if logger_func is not None and "PKDevTools_Default_Log_Level" in os.environ:
 
         def decorator(func):
             @wraps(func)
@@ -456,17 +479,25 @@ def log_to(logger_func):
                     try:
                         frame = inspect.stack()[1]
                         filename = os.path.basename(frame.filename)
-                        func_description = f"{filename} - {frame.function} - {frame.lineno}"
-                        
+                        func_description = (
+                            f"{filename} - {frame.function} - {frame.lineno}"
+                        )
+
                         description = f"Calling {func.__name__} with args:"
-                        for argname, argvalue in inspect.getcallargs(func, *args, **kwargs).items():
+                        for argname, argvalue in inspect.getcallargs(
+                            func, *args, **kwargs
+                        ).items():
                             description += f"\n\t{argname} = {repr(argvalue)}"
-                            
+
                         logger_func(f"{func_description} - {description}")
                         startTime = time.time()
                         ret_val = func(*args, **kwargs)
                         time_spent = time.time() - startTime
-                        logger_func(f"{func_description} - {func.__name__} completed: {time_spent:.3f}s (TIME_TAKEN)")
+                        logger_func(
+                            f"{func_description} - {func.__name__} completed: {
+                                time_spent:.3f
+                            }s (TIME_TAKEN)"
+                        )
                         return ret_val
                     except Exception:
                         return func(*args, **kwargs)
@@ -475,10 +506,12 @@ def log_to(logger_func):
 
             return wrapper
     else:
+
         def decorator(func):
             return func
 
     return decorator
+
 
 def measure_time(f):
     def timed(*args, **kw):
@@ -488,12 +521,18 @@ def measure_time(f):
 
         # print('%r (%r, %r) %2.2f sec' % \
         #     (f.__name__, args, kw, te-ts))
-        print('%r %2.2f sec' % \
-            (f.__name__, te-ts))
+        print("%r %2.2f sec" % (f.__name__, te - ts))
         return result
+
     return timed if default_logger().level == logging.DEBUG else log_to(None)
 
-tracelog = log_to(trace_log) if 'PKDevTools_Default_Log_Level' in os.environ and (default_logger().level == logging.DEBUG or __trace__) else log_to(None)
+
+tracelog = (
+    log_to(trace_log)
+    if "PKDevTools_Default_Log_Level" in os.environ
+    and (default_logger().level == logging.DEBUG or __trace__)
+    else log_to(None)
+)
 
 # def timeit(method):
 #     def timed(*args, **kw):
@@ -561,12 +600,13 @@ def redForegroundText(text):
 def greenForegroundText(text):
     print("" + colors.fg.green + text + colors.reset)
 
+
 # Register cleanup function
 @atexit.register
 def cleanup_logging():
     """Clean up logging handlers on exit"""
-    if 'PKDevTools_Default_Log_Level' in os.environ:
+    if "PKDevTools_Default_Log_Level" in os.environ:
         logger = default_logger()
-        if hasattr(logger, 'flush'):
+        if hasattr(logger, "flush"):
             logger.flush()
         logging.shutdown()

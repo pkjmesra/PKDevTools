@@ -1,45 +1,51 @@
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
 # Use this token to access the HTTP API: <Token>
 # Keep your token secure and store it safely, it can be used by anyone to control your bot.
-# For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+# For a description of the Bot API, see this page:
+# https://core.telegram.org/bots/api
 
 # https://medium.com/codex/using-python-to-send-telegram-messages-in-3-simple-steps-419a8b5e5e2
 
+import json
+
 # Get from telegram
-# See tutorial https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
+# See tutorial
+# https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
 import os
+import urllib.parse
+from io import BytesIO
+
 import requests
 from PIL import Image
-import urllib.parse
-import json
-from io import BytesIO
+from telegram import InputMediaDocument
+
 from PKDevTools.classes.Environment import PKEnvironment
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.OutputControls import OutputControls
-from telegram import InputMediaDocument
+
 # from io import BytesIO
 # from PIL import Image
 
@@ -71,12 +77,13 @@ MAX_CAPTION_LENGTH = 1024
 # chat_idUser3= "495000000"
 LIST_PEOPLE_IDS_CHAT = [Channel_Id]
 
+
 def initTelegram():
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
     if chat_idADMIN == "" or botsUrl == "":
         TOKEN = "00000000xxxxxxx"
         try:
-            Channel_Id, TOKEN, chat_idADMIN,_ = get_secrets()
+            Channel_Id, TOKEN, chat_idADMIN, _ = get_secrets()
         except Exception as e:
             # default_logger().debug(e, exc_info=True)
             # print(
@@ -90,6 +97,7 @@ def initTelegram():
 
 def get_secrets():
     return PKEnvironment().secrets
+
 
 def is_token_telegram_configured():
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
@@ -108,9 +116,16 @@ def send_exception(ex, extra_mes=""):
         return
 
 
-def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial=False,reply_markup=None):
+def send_message(
+    message,
+    userID=None,
+    parse_type="HTML",
+    list_png=None,
+    retrial=False,
+    reply_markup=None,
+):
     """
-    To use Telegram's sendMessage API with chat_id, text, parse_mode, and 
+    To use Telegram's sendMessage API with chat_id, text, parse_mode, and
     reply_markup, ensuring they are URL encoded, follow these steps:
 
     # 1. Basic API Structure
@@ -173,8 +188,8 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
     #     ]
     # }
     global chat_idADMIN, botsUrl, Channel_Id, LIST_PEOPLE_IDS_CHAT, TOKEN
-    if userID is not None and userID !="":
-        LIST_PEOPLE_IDS_CHAT = [int(str(userID).replace("\"",""))]
+    if userID is not None and userID != "":
+        LIST_PEOPLE_IDS_CHAT = [int(str(userID).replace('"', ""))]
     reply_markup_encoded = ""
     if reply_markup is not None and len(reply_markup) > 0:
         # Convert reply_markup to JSON and URL encode it
@@ -183,7 +198,6 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
     if message is not None and len(message) > 0:
         escaped_text = urllib.parse.quote(message)
 
-
     if list_png is None or any(elem is None for elem in list_png):
         resp = None
         for people_id in LIST_PEOPLE_IDS_CHAT:
@@ -191,7 +205,10 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
                 url = (
                     botsUrl
                     + "/sendMessage?chat_id={}&text={}&reply_markup={reply_markup_encoded}&parse_mode={parse_mode}".format(
-                        people_id, escaped_text[:MAX_MSG_LENGTH], reply_markup_encoded=reply_markup_encoded,parse_mode=parse_type
+                        people_id,
+                        escaped_text[:MAX_MSG_LENGTH],
+                        reply_markup_encoded=reply_markup_encoded,
+                        parse_mode=parse_type,
                     )
                 )
             else:
@@ -203,14 +220,22 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
                 )
             try:
                 resp = requests.get(
-                    url, timeout=2 # 2 sec timeout
+                    url,
+                    timeout=2,  # 2 sec timeout
                 )  # headers={'Connection': 'Close'})
             except Exception as e:
                 default_logger().debug(e, exc_info=True)
                 if not retrial:
                     from time import sleep
+
                     sleep(2)
-                    resp = send_message(message=message, userID=userID, parse_type=parse_type, list_png=list_png, retrial=True)
+                    resp = send_message(
+                        message=message,
+                        userID=userID,
+                        parse_type=parse_type,
+                        list_png=list_png,
+                        retrial=True,
+                    )
         return resp
     # else:
     #     for people_id in LIST_PEOPLE_IDS_CHAT:
@@ -222,7 +247,8 @@ def send_message(message, userID=None, parse_type="HTML", list_png=None, retrial
     #     # print(telegram_msg.content)
 
 
-def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=False):
+def send_photo(photoFilePath, message="", message_id=None,
+               userID=None, retrial=False):
     initTelegram()
     if not is_token_telegram_configured():
         return
@@ -250,14 +276,21 @@ def send_photo(photoFilePath, message="", message_id=None, userID=None, retrial=
             botsUrl + method,
             params,
             files=files,
-            timeout=2 * 2, # 2 sec timeout
+            timeout=2 * 2,  # 2 sec timeout
         )  # headers={'Connection': 'Close'})
     except Exception as e:
         default_logger().debug(e, exc_info=True)
         if not retrial:
             from time import sleep
+
             sleep(2)
-            resp = send_photo(photoFilePath=photoFilePath, message=message, message_id=message_id, userID=userID, retrial=True)
+            resp = send_photo(
+                photoFilePath=photoFilePath,
+                message=message,
+                message_id=message_id,
+                userID=userID,
+                retrial=True,
+            )
     return resp
 
 
@@ -290,7 +323,7 @@ def send_document(
             botsUrl + method,
             params,
             files=files,
-            timeout=3 * 2, # 2 sec timeout
+            timeout=3 * 2,  # 2 sec timeout
         )  # headers={'Connection': 'Close'})
     except Exception as e:
         default_logger().debug(e, exc_info=True)
@@ -309,7 +342,14 @@ def send_document(
 
 # https://stackoverflow.com/questions/58893142/how-to-send-telegram-mediagroup-with-caption-text
 # https://stackoverflow.com/questions/74851187/send-multiple-files-to-a-telegram-channel-in-a-single-message-using-bot
-def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], file_captions=[],reply_to_message_id=None):
+def send_media_group(
+    user,
+    png_paths=[],
+    png_album_caption=None,
+    file_paths=[],
+    file_captions=[],
+    reply_to_message_id=None,
+):
     """
     Use this method to send an album of photos. On success, an array of Messages that were sent is returned.
     :param user: chat id
@@ -322,32 +362,39 @@ def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], 
     if not is_token_telegram_configured():
         return
     global TOKEN, Channel_Id
-    SEND_MEDIA_GROUP = f'https://api.telegram.org/bot{TOKEN}/sendMediaGroup'
+    SEND_MEDIA_GROUP = f"https://api.telegram.org/bot{TOKEN}/sendMediaGroup"
     files = {}
     media = []
     if len(png_paths) > 0:
         list_image_bytes = []
-        list_image_bytes = [Image.open(x if os.sep in x else os.path.join(os.getcwd(),x)) for x in png_paths]
+        list_image_bytes = [
+            Image.open(x if os.sep in x else os.path.join(os.getcwd(), x))
+            for x in png_paths
+        ]
         for i, img in enumerate(list_image_bytes):
             if img is not None and img.size[0] > 0:
                 with BytesIO() as output:
-                    img.save(output, format='PNG')
+                    img.save(output, format="PNG")
                     output.seek(0)
                     name = png_paths[i].split(os.sep)[-1]
                     files[name] = output.read()
-                    # a list of InputMediaPhoto. attach refers to the name of the file in the files dict
-                    media.append(dict(type='document', media=f'attach://{name}'))
-        media[0]['caption'] = png_album_caption[:MAX_CAPTION_LENGTH]
-        media[0]['parse_mode'] = "HTML"
+                    # a list of InputMediaPhoto. attach refers to the name of
+                    # the file in the files dict
+                    media.append(
+    dict(
+        type="document",
+         media=f"attach://{name}"))
+        media[0]["caption"] = png_album_caption[:MAX_CAPTION_LENGTH]
+        media[0]["parse_mode"] = "HTML"
 
     if len(file_paths) > 0:
-        fileIndex  = 0
+        fileIndex = 0
         prevMediaIndex = len(media)
         # From 2 to 10 items in one media group
         # https://core.telegram.org/bots/api#sendmediagroup
         # media_group = list()
         for f in file_paths:
-            x = f if os.sep in f else os.path.join(os.getcwd(),f)
+            x = f if os.sep in f else os.path.join(os.getcwd(), f)
             filesize = os.stat(x).st_size if os.path.exists(x) else 0
             if filesize > 0:
                 with open(x, "rb") as output:
@@ -362,12 +409,24 @@ def send_media_group(user, png_paths=[], png_album_caption=None, file_paths=[], 
                     # media_group.append(InputMediaDocument(output, caption=caption))
                     name = file_paths[fileIndex].split(os.sep)[-1]
                     files[name] = output.read()
-                    # a list of InputMediaDocument. attach refers to the name of the file in the files dict
-                    media.append(dict(type='document', media=f'attach://{name}'))
-                    media[len(media)-1]['caption'] = caption[:MAX_CAPTION_LENGTH]
-                    media[len(media)-1]['parse_mode'] = "HTML"
+                    # a list of InputMediaDocument. attach refers to the name
+                    # of the file in the files dict
+                    media.append(
+    dict(
+        type="document",
+         media=f"attach://{name}"))
+                    media[len(media) -
+     1]["caption"] = caption[:MAX_CAPTION_LENGTH]
+                    media[len(media) - 1]["parse_mode"] = "HTML"
             fileIndex += 1
     if len(media) > 0:
-        return requests.post(SEND_MEDIA_GROUP, data={'chat_id': (user if user is not None else Channel_Id), 'media': json.dumps(media),
-                                                    'reply_to_message_id': reply_to_message_id }, files=files )
+        return requests.post(
+            SEND_MEDIA_GROUP,
+            data={
+                "chat_id": (user if user is not None else Channel_Id),
+                "media": json.dumps(media),
+                "reply_to_message_id": reply_to_message_id,
+            },
+            files=files,
+        )
     return None

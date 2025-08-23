@@ -1,27 +1,28 @@
 """
-    The MIT License (MIT)
+The MIT License (MIT)
 
-    Copyright (c) 2023 pkjmesra
+Copyright (c) 2023 pkjmesra
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
+
 from enum import Enum
 
 from PKDevTools.classes.ColorText import colorText
@@ -61,7 +62,10 @@ class menu:
             cmdText = f"/{self.menuKey}"
             return cmdText
         else:
-            cmdText = f"{self.parent.commandTextKey(hasChildren=True)}_{self.menuKey}"
+            cmdText = f"{
+    self.parent.commandTextKey(
+        hasChildren=True)}_{
+            self.menuKey}"
             return cmdText
 
     def commandTextLabel(self, hasChildren=False):
@@ -71,7 +75,10 @@ class menu:
             return cmdText
         else:
             cmdText = (
-                f"{self.parent.commandTextLabel(hasChildren=True)} > {self.menuText}"
+                f"{
+    self.parent.commandTextLabel(
+        hasChildren=True)} > {
+            self.menuText}"
             )
             return f"{cmdText}"
 
@@ -98,13 +105,13 @@ class menu:
 
 # This Class manages application menus
 class menus:
-    def __init__(self,menuDictionaryList):
+    def __init__(self, menuDictionaryList):
         self.level = 0
         self.menuDict = {}
         if menuDictionaryList is None:
             menuDictionaryList = []
         if len(menuDictionaryList) < 5:
-            menuDictionaryList.extend([{},{},{},{},{}])
+            menuDictionaryList.extend([{}, {}, {}, {}, {}])
         self.menuDictionaryList = menuDictionaryList
 
     def fromDictionary(
@@ -144,7 +151,8 @@ class menus:
                 menuText = menuText + m.render()
         return menuText
 
-    def renderForMenu(self, selectedMenu=None, skip=[], asList=False, renderStyle=None):
+    def renderForMenu(self, selectedMenu=None, skip=[],
+                      asList=False, renderStyle=None):
         if selectedMenu is None and self.level == 0:
             # Top level Application Main menu
             return self.renderLevel0Menus(
@@ -197,7 +205,8 @@ class menus:
                 return None
         return None
 
-    def renderLevel0Menus(self, asList=False, renderStyle=None, parent=None, skip=None):
+    def renderLevel0Menus(self, asList=False,
+                          renderStyle=None, parent=None, skip=None):
         menuText = self.fromDictionary(
             self.menuDictionaryList[0],
             renderExceptionKeys=["T", "E", "U"],
