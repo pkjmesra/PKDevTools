@@ -30,11 +30,10 @@ import sys
 import tempfile
 import time
 import warnings
-# from inspect import getcallargs, getfullargspec
+import atexit
 from collections import OrderedDict
 from functools import wraps
-from PKDevTools.classes.Singleton import SingletonType
-from threading import get_ident
+from threading import get_ident, Lock
 import threading
 
 try:
@@ -60,6 +59,11 @@ __trace__ = False
 __filter__ = None
 __DEBUG__ = False
 
+# Global lock for thread-safe operations
+_logger_lock = Lock()
+_handlers_configured = False
+_console_handler = None
+_file_handler = None
 
 class colors:
     """Colors class:
@@ -108,7 +112,8 @@ class colors:
         lightgrey = "\033[47m"
 
 class emptylogger():
-        
+    """Null logger that does nothing when PKDevTools_Default_Log_Level is not set"""
+    
     @property
     def logger(self):
         return None
@@ -133,7 +138,7 @@ class emptylogger():
         return
 
     def addHandlers(self, log_file_path=None, levelname=logging.NOTSET):
-        return
+        return None, None
 
     def debug(self, e, exc_info=False):
         return
@@ -159,16 +164,35 @@ class emptylogger():
     def removeHandler(self, hdl):
         return
 
-    logging.shutdown()
-
-class filterlogger(metaclass=SingletonType):
+class filterlogger:
+    """Thread-safe logger that handles multi-process environments"""
+    
+    _instance = None
+    _lock = Lock()
+    
+    def __new__(cls, logger=None):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance._initialized = False
+            return cls._instance
+    
     def __init__(self, logger=None):
-        super(filterlogger, self).__init__()
-        self._logger = logger
+        if getattr(self, '_initialized', False):
+            return
+            
+        with self._lock:
+            if getattr(self, '_initialized', False):
+                return
+                
+            self._logger = logger or logging.getLogger("PKDevTools")
+            self._initialized = True
+            # Ensure we have a unique logger name for multi-process safety
+            self._logger.name = f"PKDevTools_{os.getpid()}_{get_ident()}"
 
     def __repr__(self):
-            return f"LogLevel: {self.level}, isDebugging: {self.isDebugging}"
-        
+        return f"LogLevel: {self.level}, isDebugging: {self.isDebugging}"
+    
     @property
     def logger(self):
         return self._logger
@@ -183,126 +207,143 @@ class filterlogger(metaclass=SingletonType):
 
     @level.setter
     def level(self, level):
-        diff = (level != self.level)
-        if diff:
-            self.logger.setLevel(level)
-            default_logger().debug(f"{self}\nCreated in thread: {get_ident()}")
+        with self._lock:
+            if level != self.level:
+                self.logger.setLevel(level)
 
     @staticmethod
     def getlogger(logger):
-        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+        # Check if logging should be enabled
+        if 'PKDevTools_Default_Log_Level' not in os.environ:
             return emptylogger()
         
-        global __filter__
-        # if __filter__ is not None:
-        lgr = filterlogger(logger=logger)
-        lgr.level = int(os.environ['PKDevTools_Default_Log_Level'])
-        return lgr
-        # else:
-        #   return logger
+        return filterlogger(logger=logger)
 
     def flush(self):
-        for h in self.logger.handlers:
-            h.flush()
+        with self._lock:
+            for h in self.logger.handlers:
+                try:
+                    h.flush()
+                except:
+                    pass
 
     def addHandlers(self, log_file_path=None, levelname=logging.NOTSET):
-        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
-            return
-        if log_file_path is None:
-            log_file_path = os.path.join(tempfile.gettempdir(), "PKDevTools-logs.txt")
-        trace_formatter = logging.Formatter(
-            fmt="\n%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d\n%(message)s\n"
-        )
+        global _handlers_configured, _console_handler, _file_handler
+        
+        with _logger_lock:
+            if _handlers_configured:
+                return _console_handler, _file_handler
+                
+            if log_file_path is None:
+                log_file_path = os.path.join(tempfile.gettempdir(), f"PKDevTools-logs-{os.getpid()}.txt")
+            
+            trace_formatter = logging.Formatter(
+                fmt="%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d - %(message)s"
+            )
 
-        consolehandler = None
-        filehandler = logging.FileHandler(log_file_path)
-        filehandler.setFormatter(trace_formatter)
-        filehandler.setLevel(levelname)
-        self.logger.addHandler(filehandler)
-        if 'PKDevTools_Default_Log_Level' in os.environ.keys():
-            consolehandler = logging.StreamHandler()
-            consolehandler.setFormatter(trace_formatter)
-            consolehandler.setLevel(levelname)
-            self.logger.addHandler(consolehandler)
-            global __DEBUG__
-            __DEBUG__ = True
-            default_logger().debug("PKDevTools: Logging started. Filter:{}".format(filter))
-        return consolehandler, filehandler
+            # Remove existing handlers to avoid duplicates
+            for handler in self.logger.handlers[:]:
+                self.logger.removeHandler(handler)
+
+            # Create file handler (always created if logging is enabled)
+            _file_handler = logging.FileHandler(log_file_path, mode='a', encoding='utf-8')
+            _file_handler.setFormatter(trace_formatter)
+            _file_handler.setLevel(levelname)
+            self.logger.addHandler(_file_handler)
+
+            # Create console handler only if explicitly enabled
+            _console_handler = logging.StreamHandler()
+            _console_handler.setFormatter(trace_formatter)
+            _console_handler.setLevel(levelname)
+            self.logger.addHandler(_console_handler)
+
+            _handlers_configured = True
+            
+            return _console_handler, _file_handler
+
+    def _should_log(self, message):
+        """Check if message should be logged based on filter"""
+        global __filter__
+        if __filter__ is None:
+            return True
+        return __filter__ in message.upper()
 
     def debug(self, e, exc_info=False):
-        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+        if 'PKDevTools_Default_Log_Level' not in os.environ:
             return
-        global __filter__
-        __DEBUG__ = self.level == logging.DEBUG
-        if not self.level == logging.DEBUG:
-            return
+            
         line = str(e)
         try:
             frame = inspect.stack()[1]
-            # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
-            components = str(frame).split(",")
-            filename = components[4].split("/")[-1].split("\\")[-1]
-            line = "{} - {} - {}\n{}".format(
-                filename, components[5], components[6], line
-            )
-        except Exception as e:
+            filename = os.path.basename(frame.filename)
+            line = f"{filename} - {frame.function} - {frame.lineno} - {line}"
+        except Exception:
             pass
-        if __DEBUG__:
-            if __filter__ is None:
-                self.logger.debug(line, exc_info=exc_info)
-                return
-            if __filter__ in line.upper():
-                self.logger.debug(line, exc_info=exc_info)
-        elif self.level <= logging.INFO and self.level > logging.NOTSET:
-            self.info(line)
+        
+        if not self._should_log(line):
+            return
+            
+        with self._lock:
+            self.logger.debug(line, exc_info=exc_info)
 
     def info(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+        if 'PKDevTools_Default_Log_Level' not in os.environ:
             return
-        global __filter__
-        frame = inspect.stack()[1]
-        # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
-        components = str(frame).split(",")
-        filename = components[4].split("/")[-1].split("\\")[-1]
-        line = "{} - {} - {}\n{}".format(filename, components[5], components[6], line)
-        if __filter__ is None:
-            self.logger.info(line)
+            
+        try:
+            frame = inspect.stack()[1]
+            filename = os.path.basename(frame.filename)
+            line = f"{filename} - {frame.function} - {frame.lineno} - {line}"
+        except Exception:
+            pass
+        
+        if not self._should_log(line):
             return
-        if __filter__ in line.upper():
+            
+        with self._lock:
             self.logger.info(line)
 
     def warn(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+        if 'PKDevTools_Default_Log_Level' not in os.environ:
             return
-        global __filter__
-        if __filter__ is None:
-            self.logger.warn(line)
+            
+        if not self._should_log(line):
             return
-
-        if __filter__ in line.upper():
-            self.logger.warn(line)
+            
+        with self._lock:
+            self.logger.warning(line)
 
     def error(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+        if 'PKDevTools_Default_Log_Level' not in os.environ:
             return
-        self.logger.error(line)
+            
+        if not self._should_log(line):
+            return
+            
+        with self._lock:
+            self.logger.error(line)
 
     def setLevel(self, level):
-        self.logger.setLevel(level)
+        with self._lock:
+            self.logger.setLevel(level)
 
     def critical(self, line):
-        if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
+        if 'PKDevTools_Default_Log_Level' not in os.environ:
             return
-        self.logger.critical(line)
+            
+        if not self._should_log(line):
+            return
+            
+        with self._lock:
+            self.logger.critical(line)
 
     def addHandler(self, hdl):
-        self.logger.addHandler(hdl)
+        with self._lock:
+            self.logger.addHandler(hdl)
 
     def removeHandler(self, hdl):
-        self.logger.removeHandler(hdl)
-
-    logging.shutdown()
-
+        with self._lock:
+            self.logger.removeHandler(hdl)
 
 def setup_custom_logger(
     name,
@@ -311,55 +352,57 @@ def setup_custom_logger(
     log_file_path="PKDevTools-logs.txt",
     filter=None,
 ):
-    # console_info_formatter = logging.Formatter(fmt='\n%(levelname)s - %(filename)s(%(funcName)s - %(lineno)d)\n%(message)s\n')
-    global __trace__
+    global __trace__, __filter__
+    
     __trace__ = trace
-
-    global __filter__
-    __filter__ = filter if filter is None else filter.upper()
-    logger = logging.getLogger(name)
-    logger.setLevel(levelname)
-    if 'PKDevTools_Default_Log_Level' not in os.environ.keys():
-        os.environ["PKDevTools_Default_Log_Level"] = str(levelname)
-
-    consolehandler, filehandler = default_logger().addHandlers(
-        log_file_path=log_file_path, levelname=levelname
-    )
-    if levelname == logging.DEBUG:
-        global __DEBUG__
-        __DEBUG__ = True
+    __filter__ = filter.upper() if filter else None
+    
+    # Only setup logging if environment variable is set
+    if 'PKDevTools_Default_Log_Level' not in os.environ:
+        return emptylogger()
+    
+    logger = filterlogger.getlogger(logging.getLogger(name))
+    
+    # Set the log level from environment variable
+    try:
+        env_level = int(os.environ['PKDevTools_Default_Log_Level'])
+        logger.level = env_level
+    except (ValueError, KeyError):
+        logger.level = levelname
+    
+    # Configure handlers
+    logger.addHandlers(log_file_path=log_file_path, levelname=logger.level)
+    
+    # Setup trace logger if tracing is enabled
     if trace:
-        tracelogger = logging.getLogger("PKDevTools_file_logger")
-        tracelogger.setLevel(levelname)
-        tracelogger.addHandler(consolehandler)
-        if levelname == logging.DEBUG:
-            tracelogger.addHandler(filehandler)
-        logger.debug("Tracing started")
-    # Turn off pystan warnings
+        trace_logger = filterlogger.getlogger(logging.getLogger("PKDevTools_file_logger"))
+        trace_logger.level = logging.DEBUG  # Tracing always uses DEBUG level
+        trace_logger.addHandlers(log_file_path=log_file_path, levelname=logging.DEBUG)
+        logger.info("Tracing started")
+    
+    # Turn off warnings
     warnings.simplefilter("ignore", DeprecationWarning)
     warnings.simplefilter("ignore", FutureWarning)
 
     return logger
 
-
 def default_logger():
-    if 'PKDevTools_Default_Log_Level' in os.environ.keys():
+    if 'PKDevTools_Default_Log_Level' in os.environ:
         return filterlogger.getlogger(logging.getLogger("PKDevTools"))
     else:
         return emptylogger()
 
-
 def file_logger():
-    return filterlogger.getlogger(logging.getLogger("PKDevTools_file_logger"))
-
+    if 'PKDevTools_Default_Log_Level' in os.environ:
+        return filterlogger.getlogger(logging.getLogger("PKDevTools_file_logger"))
+    else:
+        return emptylogger()
 
 def trace_log(line):
+    """Log tracing information - always works if tracing is enabled"""
     global __trace__
-    if default_logger().level == logging.DEBUG:
-        default_logger().info(line)
-    else:
-        file_logger().info(line)
-
+    if __trace__:
+        file_logger().info(f"TRACE: {line}")
 
 def flatten(line):
     """Flatten a list (or other iterable) recursively"""
@@ -369,7 +412,6 @@ def flatten(line):
                 yield sub
         else:
             yield el
-
 
 def getargnames(func):
     """Return an iterator over all arg names, including nested arg names and varargs.
@@ -386,19 +428,16 @@ def getargnames(func):
     ) = inspect.getfullargspec(func)
     return chain(flatten(args), filter(None, [varargs, varkw]))
 
-
 def getcallargs_ordered(func, *args, **kwargs):
     """Return an OrderedDict of all arguments to a function.
     Items are ordered by the function's argspec."""
     argdict = inspect.getcallargs(func, *args, **kwargs)
     return OrderedDict((name, argdict[name]) for name in getargnames(func))
 
-
 def describe_call(func, *args, **kwargs):
     yield "Calling %s with args:" % func.__name__
     for argname, argvalue in getcallargs_ordered(func, *args, **kwargs).items():
         yield "\t%s = %s" % (argname, repr(argvalue))
-
 
 def log_to(logger_func):
     """A decorator to log every call to function (function name and arg values).
@@ -408,42 +447,36 @@ def log_to(logger_func):
     This is much more efficient than providing a no-op logger
     function: @log_to(lambda x: None).
     """
-    if logger_func is not None:
+    if logger_func is not None and 'PKDevTools_Default_Log_Level' in os.environ:
 
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                global __DEBUG__
-                if __DEBUG__:
-                    frame = inspect.stack()[1]
-                    components = str(frame).split(",")
-                    filename = components[
-                        4
-                    ]  # (frame[0].f_code.co_filename).rsplit('/', 1)[1]
-                    func_description = "{} - {} - {}".format(
-                        filename, components[5], components[6]
-                    )
-                    description = func_description
-                    for line in describe_call(func, *args, **kwargs):
-                        description = description + "\n" + line
-                    logger_func(description)
-                    startTime = time.time()
-                    ret_val = func(*args, **kwargs)
-                    time_spent = time.time() - startTime
-                    logger_func(
-                        "\n%s called (%s): %.3f  (TIME_TAKEN)"
-                        % (func_description, func.__name__, time_spent)
-                    )
-                    return ret_val
+                if default_logger().level == logging.DEBUG or __trace__:
+                    try:
+                        frame = inspect.stack()[1]
+                        filename = os.path.basename(frame.filename)
+                        func_description = f"{filename} - {frame.function} - {frame.lineno}"
+                        
+                        description = f"Calling {func.__name__} with args:"
+                        for argname, argvalue in inspect.getcallargs(func, *args, **kwargs).items():
+                            description += f"\n\t{argname} = {repr(argvalue)}"
+                            
+                        logger_func(f"{func_description} - {description}")
+                        startTime = time.time()
+                        ret_val = func(*args, **kwargs)
+                        time_spent = time.time() - startTime
+                        logger_func(f"{func_description} - {func.__name__} completed: {time_spent:.3f}s (TIME_TAKEN)")
+                        return ret_val
+                    except Exception:
+                        return func(*args, **kwargs)
                 else:
                     return func(*args, **kwargs)
 
             return wrapper
-
     else:
-
-        def decorator(x):
-            return x
+        def decorator(func):
+            return func
 
     return decorator
 
@@ -460,7 +493,7 @@ def measure_time(f):
         return result
     return timed if default_logger().level == logging.DEBUG else log_to(None)
 
-tracelog = log_to(trace_log) if default_logger().level == logging.DEBUG else log_to(None)
+tracelog = log_to(trace_log) if 'PKDevTools_Default_Log_Level' in os.environ and (default_logger().level == logging.DEBUG or __trace__) else log_to(None)
 
 # def timeit(method):
 #     def timed(*args, **kw):
@@ -522,8 +555,18 @@ def set_cursor():
 
 
 def redForegroundText(text):
-    print("\n" + colors.fg.red + text + colors.reset)
+    print("" + colors.fg.red + text + colors.reset)
 
 
 def greenForegroundText(text):
-    print("\n" + colors.fg.green + text + colors.reset)
+    print("" + colors.fg.green + text + colors.reset)
+
+# Register cleanup function
+@atexit.register
+def cleanup_logging():
+    """Clean up logging handlers on exit"""
+    if 'PKDevTools_Default_Log_Level' in os.environ:
+        logger = default_logger()
+        if hasattr(logger, 'flush'):
+            logger.flush()
+        logging.shutdown()

@@ -1,12 +1,12 @@
 # Enable Pyflakes and pycodestyle rules.
-select = ["E", "F"]
+lint.select = ["E", "F"]
 
 # Never enforce `E501` (line length violations). E402:Module level import not at top of file
-ignore = ["E501", "E402","F403","F405"]
+lint.ignore = ["E501", "E402","F403","F405"]
 
 # Always autofix, but never try to fix `F401` (unused imports).
 fix = true
-unfixable = ["F401"]
+lint.unfixable = ["F401"]
 
 # Ignore 
-[per-file-ignores]
+[lint.per-file-ignores]
