@@ -30,7 +30,7 @@ import logging
 import os
 import sys
 import tempfile
-import threading
+import traceback
 import time
 import warnings
 from collections import OrderedDict
@@ -404,9 +404,15 @@ class filterlogger:
             Formatted message with caller information
         """
         try:
-            frame = inspect.stack()[2]  # Skip logger method and caller
-            filename = os.path.basename(frame.filename)
-            return f"{filename} - {frame.function} - {frame.lineno} - {message}"
+            frame_1 = inspect.stack()[1]
+            # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
+            components = str(frame_1).split(",")
+            filename_1 = components[4].split("/")[-1].split("\\")[-1]
+            message = f"{filename_1} - {components[5]} - {components[6]} - {message}"
+
+            frame_2 = inspect.stack()[2]  # Skip logger method and caller
+            filename_2 = os.path.basename(frame_2.filename)
+            return f"{filename_2} - {frame_2.function} - {frame_2.lineno} - {message}"
         except Exception:
             return message
 
@@ -457,11 +463,12 @@ class filterlogger:
         if "PKDevTools_Default_Log_Level" not in os.environ:
             return
 
-        if not self._should_log(line):
+        formatted_line = self._format_message_with_caller_info(line)
+        if not self._should_log(formatted_line):
             return
 
         with _thread_lock:
-            self.logger.warning(line)
+            self.logger.warning(formatted_line)
 
     def error(self, line):
         """
@@ -473,11 +480,13 @@ class filterlogger:
         if "PKDevTools_Default_Log_Level" not in os.environ:
             return
 
-        if not self._should_log(line):
+        formatted_line = self._format_message_with_caller_info(line)
+        if not self._should_log(formatted_line):
             return
 
         with _thread_lock:
-            self.logger.error(line)
+            self.logger.error(f"{formatted_line}:{traceback.format_exc()}")
+            
 
     def setLevel(self, level):
         """
