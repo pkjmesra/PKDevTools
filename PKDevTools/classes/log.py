@@ -301,7 +301,7 @@ class filterlogger:
         Returns:
             emptylogger or filterlogger instance
         """
-        if "PKDevTools_Default_Log_Level" not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ.keys():
             return emptylogger()
 
         return filterlogger(logger=logger)
@@ -424,7 +424,7 @@ class filterlogger:
             e: Message or exception to log
             exc_info: If True, include exception information
         """
-        if "PKDevTools_Default_Log_Level" not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ.keys():
             return
 
         line = self._format_message_with_caller_info(str(e))
@@ -442,7 +442,7 @@ class filterlogger:
         Args:
             line: Message to log
         """
-        if "PKDevTools_Default_Log_Level" not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ.keys():
             return
 
         formatted_line = self._format_message_with_caller_info(line)
@@ -460,7 +460,7 @@ class filterlogger:
         Args:
             line: Message to log
         """
-        if "PKDevTools_Default_Log_Level" not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ.keys():
             return
 
         formatted_line = self._format_message_with_caller_info(line)
@@ -477,7 +477,7 @@ class filterlogger:
         Args:
             line: Message to log
         """
-        if "PKDevTools_Default_Log_Level" not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ.keys():
             return
 
         formatted_line = self._format_message_with_caller_info(line)
@@ -505,7 +505,7 @@ class filterlogger:
         Args:
             line: Message to log
         """
-        if "PKDevTools_Default_Log_Level" not in os.environ:
+        if "PKDevTools_Default_Log_Level" not in os.environ.keys():
             return
 
         if not self._should_log(line):
@@ -561,7 +561,7 @@ def setup_custom_logger(
     __filter__ = filter.upper() if filter else None
 
     # Only setup logging if environment variable is set
-    if "PKDevTools_Default_Log_Level" not in os.environ:
+    if "PKDevTools_Default_Log_Level" not in os.environ.keys():
         return emptylogger()
 
     logger = filterlogger.getlogger(logging.getLogger(name))
@@ -601,7 +601,7 @@ def default_logger():
     Returns:
         filterlogger instance if logging enabled, otherwise emptylogger
     """
-    if "PKDevTools_Default_Log_Level" in os.environ:
+    if "PKDevTools_Default_Log_Level" in os.environ.keys():
         return filterlogger.getlogger(logging.getLogger("PKDevTools"))
     else:
         return emptylogger()
@@ -614,7 +614,7 @@ def file_logger():
     Returns:
         filterlogger instance if logging enabled, otherwise emptylogger
     """
-    if "PKDevTools_Default_Log_Level" in os.environ:
+    if "PKDevTools_Default_Log_Level" in os.environ.keys():
         return filterlogger.getlogger(
             logging.getLogger("PKDevTools_file_logger"))
     else:
@@ -717,7 +717,7 @@ def log_to(logger_func):
     Returns:
         Decorator function
     """
-    if logger_func is not None and "PKDevTools_Default_Log_Level" in os.environ:
+    if logger_func is not None and "PKDevTools_Default_Log_Level" in os.environ.keys():
 
         def decorator(func):
             @wraps(func)
@@ -785,7 +785,7 @@ def measure_time(f):
 # Conditional tracelog decorator
 tracelog = (
     log_to(trace_log)
-    if "PKDevTools_Default_Log_Level" in os.environ
+    if "PKDevTools_Default_Log_Level" in os.environ.keys()
     and (default_logger().level == logging.DEBUG or __trace__)
     else log_to(None)
 )
@@ -853,7 +853,7 @@ def cleanup_logging():
 
     Flushes all loggers and performs proper logging shutdown.
     """
-    if "PKDevTools_Default_Log_Level" in os.environ:
+    if "PKDevTools_Default_Log_Level" in os.environ.keys():
         logger = default_logger()
         if hasattr(logger, "flush"):
             logger.flush()
