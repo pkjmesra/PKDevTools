@@ -404,11 +404,11 @@ class filterlogger:
             Formatted message with caller information
         """
         try:
-            frame_1 = inspect.stack()[1]
-            # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
-            components = str(frame_1).split(",")
-            filename_1 = components[4].split("/")[-1].split("\\")[-1]
-            message = f"{filename_1} - {components[5]} - {components[6]} - {message}"
+            # frame_1 = inspect.stack()[1]
+            # # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
+            # components = str(frame_1).split(",")
+            # filename_1 = components[4].split("/")[-1].split("\\")[-1]
+            # message = f"{filename_1} - {components[5]} - {components[6]} - {message}"
 
             frame_2 = inspect.stack()[2]  # Skip logger method and caller
             filename_2 = os.path.basename(frame_2.filename)
