@@ -348,9 +348,7 @@ class DBManager:
             isValid = pyotp.TOTP(token, interval=int(validityIntervalInSeconds)).verify(
                 otp=otp, valid_window=60
             )
-            default_logger().debug(
-                f"User entered OTP: {otp} did not match machine generated OTP: {otpValue} while the DB OTP was: {lastOTP} with local config interval:{validityIntervalInSeconds}"
-            )
+            default_logger().debug(f"User entered OTP: {otp} did not match machine generated OTP: {otpValue} while the DB OTP was: {lastOTP} with local config interval:{validityIntervalInSeconds}")
             if not isValid and len(str(lastOTP)) > 0 and len(str(otp)) > 0:
                 isValid = (
     str(otp) == str(lastOTP)) or (
@@ -375,11 +373,7 @@ class DBManager:
             self.updateOTP(user.userid, otpValue, user.otpvaliduntil)
             return True, otpValue
         except Exception as e:  # pragma: no cover
-            print(
-                f"Could not refresh OTP (refreshOTPForUser) for user: {user.userid}\n{
-                    e
-                }"
-            )
+            print(f"Could not refresh OTP (refreshOTPForUser) for user: {user.userid}: {e}")
             default_logger().debug(e, exc_info=True)
             return False, otpValue
 
@@ -481,17 +475,13 @@ class DBManager:
                     raise RuntimeError("Insert failed")
                 return self.getOTP(userID, username, name, retry=True)
         except Exception as e:  # pragma: no cover
-            print(
-                f"Could not get OTP (getOTP) for user: {
-                    user.userid if user else 'unknown'
-                }\n{e}"
-            )
+            print(f"Could not get OTP (getOTP) for user: {user.userid if user else 'unknown'}:{e}")
             default_logger().debug(e, exc_info=True)
 
         try:
             self.updateOTP(userID, otpValue)
         except Exception as e:  # pragma: no cover
-            print(f"Could not get/update (getOTP) OTP for user: {userID}\n{e}")
+            print(f"Could not get/update (getOTP) OTP for user: {userID}:{e}")
             default_logger().debug(e, exc_info=True)
 
         alertUser = self.alertsForUser(userID, user=user)
@@ -515,11 +505,9 @@ class DBManager:
                 for row in result.fetchall():
                     users.append(PKUser.userFromDBRecord(row))
                 if not users:
-                    default_logger().debug(
-                        f"User: {userID} not found! Probably needs registration?"
-                    )
+                    default_logger().debug(f"User: {userID} not found! Probably needs registration?")
         except Exception as e:  # pragma: no cover
-            print(f"Could not find user getUserByID: {userID}\n{e}")
+            print(f"Could not find user getUserByID: {userID}:{e}")
             default_logger().debug(e, exc_info=True)
         return users
 
@@ -547,16 +535,11 @@ class DBManager:
                 for row in result.fetchall():
                     users.append(PKUser.userFromDBRecord(row))
                 if not users:
-                    default_logger().debug(
-                        f"User: {userIDOrusername} not found! Probably needs registration?"
-                    )
-                    print(
-                        f"Could not locate user: {userIDOrusername}. Please reach out to the developer!"
-                    )
+                    default_logger().debug(f"User: {userIDOrusername} not found! Probably needs registration?")
+                    print(f"Could not locate user: {userIDOrusername}. Please reach out to the developer!")
                     sleep(3)
         except Exception as e:  # pragma: no cover
-            print(
-    f"Could not getUserByIDorUsername UserID: {userIDOrusername}\n{e}")
+            print(f"Could not getUserByIDorUsername UserID: {userIDOrusername}\n{e}")
             default_logger().debug(e, exc_info=True)
         return users
 
@@ -652,8 +635,7 @@ class DBManager:
 
             result = self.execute_query(query, params, commit=True)
             if result and result.rowcount > 0:
-                default_logger().debug(
-    f"User: {userID} updated with otp: {otp}!")
+                default_logger().debug(f"User: {userID} updated with otp: {otp}!")
             return result.rowcount == 1
         except Exception as e:  # pragma: no cover
             print(f"Could not updateOTP UserID: {userID}\n{e}")
@@ -674,10 +656,7 @@ class DBManager:
 
             result = self.execute_query(query, params, commit=True)
             if result and result.rowcount > 0:
-                default_logger().debug(
-                    f"User: {userID} updated with {
-    column.name}: {columnValue}!"
-                )
+                default_logger().debug(f"User: {userID} updated with {column.name}: {columnValue}!")
             return result.rowcount == 1
         except Exception as e:  # pragma: no cover
             print(f"Could not updateUserModel UserID: {userID}\n{e}")
@@ -802,13 +781,10 @@ class DBManager:
             result = self.execute_query(
     query, (charge, scanId, userID), commit=True)
             if result and result.rowcount > 0:
-                default_logger().debug(
-                    f"User: {userID} updated with balance and scannerJobs!"
-                )
+                default_logger().debug(f"User: {userID} updated with balance and scannerJobs!")
                 success = self.topUpScannerJobs(scanId, userID)
         except Exception as e:  # pragma: no cover
-            print(
-    f"Could not updateAlertSubscriptionModel UserID: {userID}\n{e}")
+            print(f"Could not updateAlertSubscriptionModel UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
         return success
 
@@ -832,12 +808,10 @@ class DBManager:
             """
             result = self.execute_query(query, (userID, topup), commit=True)
             if result and result.rowcount > 0:
-                default_logger().debug(
-    f"User: {userID} topped up with balance!")
+                default_logger().debug(f"User: {userID} topped up with balance!")
                 success = True
         except Exception as e:  # pragma: no cover
-            print(
-    f"Could not topUpAlertSubscriptionBalance UserID: {userID}\n{e}")
+            print(f"Could not topUpAlertSubscriptionBalance UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
         return success
 
@@ -935,9 +909,7 @@ class DBManager:
                 query_alertsubscriptions, (scanId, scanId, userID), commit=True
             )
             if result and result.rowcount > 0:
-                default_logger().debug(
-                    f"User: {userID} removed {scanId} from alertsubscriptions!"
-                )
+                default_logger().debug(f"User: {userID} removed {scanId} from alertsubscriptions!")
                 success = True
 
             if success:
@@ -966,9 +938,7 @@ class DBManager:
                     query_scanner_jobs, (str(userID), str(userID), scanId), commit=True
                 )
                 if result and result.rowcount > 0:
-                    default_logger().debug(
-                        f"User: {userID} removed {scanId} from scannerJobs!"
-                    )
+                    default_logger().debug(f"User: {userID} removed {scanId} from scannerJobs!")
                     success = True
 
             if success:
@@ -979,13 +949,10 @@ class DBManager:
                 result = self.execute_query(
     query_delete_empty, (scanId,), commit=True)
                 if result and result.rowcount > 0:
-                    default_logger().debug(
-                        f"{scanId} deleted from scannerJobs by User: {userID}!"
-                    )
+                    default_logger().debug(f"{scanId} deleted from scannerJobs by User: {userID}!")
                     success = True
         except Exception as e:  # pragma: no cover
-            print(
-    f"Could not removeScannerJob: {scanId} for UserID: {userID}\n{e}")
+            print(f"Could not removeScannerJob: {scanId} for UserID: {userID}\n{e}")
             default_logger().debug(e, exc_info=True)
         return success
 
@@ -1036,8 +1003,7 @@ class DBManager:
                 query, (user_id, scanner_id, timestamp), commit=True
             )
             if result and result.rowcount > 0:
-                default_logger().debug(
-    f"addAlertSummary:User: {user_id} inserted!")
+                default_logger().debug(f"addAlertSummary:User: {user_id} inserted!")
             return result.rowcount == 1
         except Exception as e:  # pragma: no cover
             print(f"Could not addAlertSummary UserID: {user_id}\n{e}")

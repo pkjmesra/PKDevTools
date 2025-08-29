@@ -249,9 +249,7 @@ class filterlogger:
             if getattr(self, "_initialized", False):
                 return
 
-            self._logger = logger or logging.getLogger(
-                f"PKDevTools_{current_process().pid}_{get_ident()}"
-            )
+            self._logger = logger or logging.getLogger(f"PKDevTools_{current_process().pid}_{get_ident()}")
             self._initialized = True
             # Store process ID for handler management
             self._process_id = current_process().pid

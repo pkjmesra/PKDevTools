@@ -407,9 +407,7 @@ class PKDateUtilities:
 
     def holidayList():
         pickler = PKPickler()
-        keyName = f"{
-    __class__.__name__}>{
-        PKDateUtilities.holidayList.__name__}"
+        keyName = f"{__class__.__name__}>{PKDateUtilities.holidayList.__name__}"
         if keyName in pickler.pickledDict.keys():
             return pickler.pickledDict[keyName]
         url = "https://raw.githubusercontent.com/pkjmesra/PKScreener/main/.github/dependencies/nse-holidays.json"

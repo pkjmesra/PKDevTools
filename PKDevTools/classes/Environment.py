@@ -62,8 +62,7 @@ class PKEnvironment(metaclass=SingletonType):
         """Handle access to undefined attributes (for new keys added later)"""
         if name in self._allSecrets:
             return self._allSecrets[name]
-        raise AttributeError(
-            f"'{self.__class__.__name__}' has no attribute '{name}'")
+        raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{name}'")
 
     @property
     def secrets(self):
