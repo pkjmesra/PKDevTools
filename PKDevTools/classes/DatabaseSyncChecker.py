@@ -77,8 +77,7 @@ class DatabaseSyncChecker:
 
             # Get row counts for each table
             for table in tables:
-                result = client.execute(
-    f"SELECT COUNT(1) FROM {table};").fetchall()
+                result = client.execute(f"SELECT COUNT(1) FROM {table};").fetchall()
                 counts[table] = result[0][0]
 
             client.close()

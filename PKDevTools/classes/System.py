@@ -89,9 +89,7 @@ class PKSystem:
             "true",
             "1",
         )
-        sysVersion = f"{sys.version_info.major}.{sys.version_info.minor}.{
-            sys.version_info.micro
-        }"
+        sysVersion = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         sysVersion = sysVersion if not inContainer else f"{sysVersion} (Docker)"
         useableArch = (
             "arm64"

@@ -101,9 +101,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                 if overWriteConfirmationFunc(cache_file):
                     self._dumpPickle(dataDict, cache_file, fileName)
                 else:
-                    default_logger().debug(
-                        f"User aborted pickling/overwriting because file {cache_file} already existed!"
-                    )
+                    default_logger().debug(f"User aborted pickling/overwriting because file {cache_file} already existed!")
 
     def _dumpPickle(self, dataDict, cache_file, fileName):
         try:
@@ -178,9 +176,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
         cache_file = os.path.join(Archiver.get_user_data_dir(), fileName)
         filePath = f"results/Data/{fileName}"
         exists = os.path.isfile(cache_file)
-        default_logger().info(
-            f"Stock data cache file:{cache_file} exists ->{str(exists)}"
-        )
+        default_logger().info(f"Stock data cache file:{cache_file} exists ->{str(exists)}")
         error = None
         if exists:
             dataDict = {}
@@ -193,14 +189,12 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                                     dataDict = pickle.load(pfile)
                         dataLoaded = True
                 except pickle.UnpicklingError as e:
-                    default_logger().debug(
-    f"File: {filePath}\n{e}", exc_info=True)
+                    default_logger().debug(f"File: {filePath}\n{e}", exc_info=True)
                     default_logger().debug(e, exc_info=True)
                     f.close()
                     error = e
                 except EOFError as e:  # pragma: no cover
-                    default_logger().debug(
-    f"File: {filePath}\n{e}", exc_info=True)
+                    default_logger().debug(f"File: {filePath}\n{e}", exc_info=True)
                     f.close()
                     error = e
 
@@ -234,9 +228,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
             resp = self.fetcher.fetchURL(
     url=cache_url, headers=headers, stream=True)
             if resp is not None:
-                default_logger().info(
-                    f"Data cache file:{filePath} request status ->{resp.status_code}"
-                )
+                default_logger().info(f"Data cache file:{filePath} request status ->{resp.status_code}")
                 if resp.status_code == 200:
                     try:
                         contentLength = resp.headers.get("content-length")
@@ -256,19 +248,12 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                             with self.attributes["lock"]:
                                 if not os.path.isfile(
                                     cache_file) and not dataLoaded:
-                                    f = open(
-    cache_file, "wb")  # .split(os.sep)[-1]
+                                    f = open(cache_file, "wb")  # .split(os.sep)[-1]
                                     dl = 0
                                     lastPath = (cache_file.split(os.sep)[-1]).replace(
                                         "DB.pkl", ""
                                     )
-                                    OutputControls().printOutput(
-                                        f"{colorText.GREEN}[+] Downloading {
-                                            lastPath
-                                        } cache from pkscreener server...{
-                                            colorText.END
-                                        }"
-                                    )
+                                    OutputControls().printOutput(f"{colorText.GREEN}[+] Downloading {lastPath} cache from pkscreener server...{colorText.END}")
                                     with alive_bar(
                                         filesize, bar=bar, spinner=spinner, manual=True
                                     ) as progressbar:
@@ -284,9 +269,7 @@ class PKPickler(SingletonMixin, metaclass=SingletonType):
                                     # sys.stdout.write(f"\x1b[2A")
                                 dataLoaded = True
                         else:
-                            default_logger().debug(
-                                f"Data cache file:{filePath} on server has length ->{filesize}"
-                            )
+                            default_logger().debug( f"Data cache file:{filePath} on server has length ->{filesize}")
                     except Exception as e:  # pragma: no cover
                         default_logger().debug(e, exc_info=True)
                         f.close()

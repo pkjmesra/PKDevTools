@@ -62,10 +62,7 @@ class menu:
             cmdText = f"/{self.menuKey}"
             return cmdText
         else:
-            cmdText = f"{
-    self.parent.commandTextKey(
-        hasChildren=True)}_{
-            self.menuKey}"
+            cmdText = f"{self.parent.commandTextKey(hasChildren=True)}_{self.menuKey}"
             return cmdText
 
     def commandTextLabel(self, hasChildren=False):
@@ -74,12 +71,7 @@ class menu:
             cmdText = f"{self.menuText}" if hasChildren else f"{self.menuText}"
             return cmdText
         else:
-            cmdText = (
-                f"{
-    self.parent.commandTextLabel(
-        hasChildren=True)} > {
-            self.menuText}"
-            )
+            cmdText = (f"{self.parent.commandTextLabel(hasChildren=True)} > {self.menuText}")
             return f"{cmdText}"
 
     def render(self):

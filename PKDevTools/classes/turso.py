@@ -159,10 +159,7 @@ class TursoHybridClient:
 
         try:
             async with aiohttp.ClientSession() as session:
-                url = (
-                    f"https://api.telegram.org/bot{
-    self.telegram_bot_token}/sendMessage"
-                )
+                url = (f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage")
                 await session.post(
                     url,
                     json={
@@ -367,8 +364,7 @@ class TursoHybridClient:
             cursor = await self.local_conn.execute(query, params or ())
             await self.local_conn.commit()
         except aiosqlite.OperationalError as e:
-            message = f"🔴 execute_local: Sync/Execution failed: {
-    str(query)}:\n{e}"
+            message = f"🔴 execute_local: Sync/Execution failed: {str(query)}:\n{e}"
             await self._send_telegram_alert(message)
 
         """
@@ -540,8 +536,7 @@ async def main():
     checker.print_counts()
 
     messages.append(
-    f"\nSync needed:{
-        '🔴 ' if needs_sync else '🟢 '} {needs_sync}")
+    f"\nSync needed:{'🔴 ' if needs_sync else '🟢 '} {needs_sync}")
 
     client = TursoHybridClient(
         local_path=local_path,

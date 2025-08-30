@@ -214,13 +214,7 @@ def generateBacktestReportMainPage():
     TD_GENERAL = "\n                <td>{}</td>"
     TD_LINK = "\n                <td><a href='https://pkjmesra.github.io/PKScreener/Backtest-Reports/PKScreener_{}{}_StockSorted.html' target='_blank'>{}</a></td>"
 
-    f = open(
-        os.path.join(
-            os.getcwd(), f"BacktestReports{
-    'Intraday' if args.intraday else ''}.html"
-        ),
-        "w",
-    )
+    f = open(os.path.join(os.getcwd(), f"BacktestReports{'Intraday' if args.intraday else ''}.html"),"w",)
     f.write(HTMLHEAD_TEXT)
     for key in objectDictionary.keys():
         td2 = " > <br />".join(objectDictionary[key]["td2"])
@@ -229,17 +223,9 @@ def generateBacktestReportMainPage():
             [
                 TR_OPENER,
                 f"{TD_GENERAL}".format(str(key)),
-                f"{TD_GENERAL}".format(
-                    f"{td2}{' (Intraday)' if args.intraday else ''}"
-                ),
-                f"{TD_LINK}".format(
-                    td3, f"{
-    '_i' if args.intraday else ''}_backtest_result", td3
-                ),
-                f"{TD_LINK}".format(
-                    td3, f"{'_i' if args.intraday else ''}_Summary", td3
-                ),
-                TR_CLOSER,
+                f"{TD_GENERAL}".format(f"{td2}{' (Intraday)' if args.intraday else ''}"),
+                f"{TD_LINK}".format(td3, f"{'_i' if args.intraday else ''}_backtest_result", td3),
+                f"{TD_LINK}".format(td3, f"{'_i' if args.intraday else ''}_Summary", td3),TR_CLOSER,
             ]
         )
     f.write(HTMLFOOTER_TEXT)

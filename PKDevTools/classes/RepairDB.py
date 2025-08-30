@@ -20,10 +20,7 @@ class RepairDB:
         conn = None
         try:
             # Connect with aggressive error detection
-            conn = sqlite3.connect(
-    f"file:{
-        self.local_db_path}?mode=rw",
-         uri=True)
+            conn = sqlite3.connect(f"file:{self.local_db_path}?mode=rw",uri=True)
             # Disable FK checks during rebuild
             conn.execute("PRAGMA foreign_keys=OFF")
             conn.execute("PRAGMA journal_mode=WAL")
@@ -87,10 +84,7 @@ class RepairDB:
         try:
             # Attempt quick recovery
             temp_db = f"{self.local_db_path}.recovered"
-            conn = sqlite3.connect(
-    f"file:{
-        self.local_db_path}?mode=rw",
-         uri=True)
+            conn = sqlite3.connect(f"file:{self.local_db_path}?mode=rw",uri=True)
             conn.execute("PRAGMA wal_checkpoint(FULL)")
 
             if "ok" not in conn.execute("PRAGMA quick_check").fetchone()[0]:

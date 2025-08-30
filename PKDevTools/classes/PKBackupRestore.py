@@ -53,11 +53,7 @@ BRANCH = os.getenv("BRANCH", "main")  # Git branch (default: main)
 GITHUB_TOKEN = PKEnvironment().allSecrets.get(
     "GITHUB_TOKEN", ""
 )  # GitHub Personal Access Token
-GITHUB_ZIP_URL = f"{
-    REPO_URL.lower()
-    .replace('.git', '')
-    .replace('github.com', 'raw.githubusercontent.com')
-}/refs/heads/{BRANCH}/{DATA_DIR}/{ZIP_FILE_NAME}"  # URL to fetch the zip file
+GITHUB_ZIP_URL = f"{REPO_URL.lower().replace('.git', '').replace('github.com', 'raw.githubusercontent.com')}/refs/heads/{BRANCH}/{DATA_DIR}/{ZIP_FILE_NAME}"  # URL to fetch the zip file
 
 # Thread Lock for thread-safe operations
 pk_backup_restore_lock = threading.Lock()
@@ -175,9 +171,7 @@ def download_zip_from_github(retries=3, chunk_size=8192):
                     time.sleep(1)  # Small delay before retrying
             else:
                 OutputControls().printOutput(
-                    f"❌ Failed to download DB Cache: {response.status_code}, {
-                        response.text
-                    }"
+                    f"❌ Failed to download DB Cache: {response.status_code}, {response.text}"
                 )
         OutputControls().printOutput(
     f"❌ Download failed after {retries} attempts.")

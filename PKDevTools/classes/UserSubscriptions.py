@@ -57,8 +57,7 @@ class PKUserSusbscriptions:
             models.sort()  # Ensure the list is sorted
             idx = bisect.bisect_right(models, int(subValue)) - 1
             modelValue = models[idx] if idx >= 0 else 0
-            print(
-    f"The best model for {subValue} was found to be {modelValue}")
+            print(f"The best model for {subValue} was found to be {modelValue}")
             model = PKSubscriptionModel(modelValue)
         except Exception as e:
             pass
@@ -134,23 +133,11 @@ class PKUserSusbscriptions:
             # no_subscription
             PKPikey.removeSavedFile(str(user.userid))
             if len(str(user.subscriptionmodel)) > 0:
-                print(
-                    f"Subscription being updated/removed for user:{
-                        user.userid
-                    }, subscription: {user.subscriptionmodel}, validity: {
-                        user.otpvaliduntil
-                    }"
-                )
+                print(f"Subscription being updated/removed for user:{user.userid}, subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}")
                 user.subscriptionmodel = "0"
                 user.otpvaliduntil = ""
                 otpUpdated, _ = dbManager.refreshOTPForUser(user)
-                print(
-                    f"Subscription {
-                        'updated/removed'
-                        if otpUpdated
-                        else 'could NOT be updated/removed'
-                    } for user:{user.userid}"
-                )
+                print(f"Subscription {'updated/removed'if otpUpdated else 'could NOT be updated/removed'} for user:{user.userid}")
 
         # Users having a valid existing subscription
         if (
@@ -162,11 +149,7 @@ class PKUserSusbscriptions:
             # Update validity of subscription that are pre-existing
             # We just need to periodically update the OTP, leaving the
             # validity and subscription type unchanged.
-            print(
-                f"OTP being updated for user:{user.userid}, subscription: {
-                    user.subscriptionmodel
-                }, validity: {user.otpvaliduntil}"
-            )
+            print(f"OTP being updated for user:{user.userid}, subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}")
             created, fileKey = dbManager.refreshOTPForUser(user)
             if created:
                 fileCreated = PKPikey.createFile(
@@ -174,15 +157,11 @@ class PKUserSusbscriptions:
                 )
                 print(f"OTP updated for user:{user.userid}")
                 print(
-                    f"Subscription file {
-                        'updated' if fileCreated else 'could NOT be updated'
-                    } for user:{user.userid}"
+                    f"Subscription file {'updated' if fileCreated else 'could NOT be updated'} for user:{user.userid}"
                 )
             else:
                 print(f"OTP could NOT be updated for user:{user.userid}")
-                print(
-    f"Subscription file could NOT be updated for user:{
-        user.userid}")
+                print(f"Subscription file could NOT be updated for user:{user.userid}")
 
         # Users having a valid existing subscription, probably the first time
         # subscription users
@@ -223,26 +202,16 @@ class PKUserSusbscriptions:
                     str(user.userid), fileKey, "PKScreener"
                 )
                 print(
-                    f"Subscription updated for user:{user.userid} to subscription: {
-                        user.subscriptionmodel
-                    }, validity: {user.otpvaliduntil}"
+                    f"Subscription updated for user:{user.userid} to subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}"
                 )
                 print(
-                    f"Subscription file {
-                        'updated' if fileCreated else 'could NOT be updated'
-                    } for user:{user.userid}"
+                    f"Subscription file {'updated' if fileCreated else 'could NOT be updated'} for user:{user.userid}"
                 )
             else:
                 print(
-                    f"Subscription could NOT be updated for user:{
-                        user.userid
-                    } to subscription: {user.subscriptionmodel}, validity: {
-                        user.otpvaliduntil
-                    }"
+                    f"Subscription could NOT be updated for user:{user.userid} to subscription: {user.subscriptionmodel}, validity: {user.otpvaliduntil}"
                 )
-                print(
-    f"Subscription file could NOT be updated for user:{
-        user.userid}")
+                print(f"Subscription file could NOT be updated for user:{user.userid}")
 
     @classmethod
     def userExists(self, userID):

@@ -302,9 +302,7 @@ class DBManager:
             if "panicked at" in str(e):
                 raise RuntimeError(
                     "Database operation failed: internal error") from e
-            default_logger().debug(
-                f"Database error in query '{query}': {e}", exc_info=True
-            )
+            default_logger().debug(f"Database error in query '{query}': {e}", exc_info=True)
             raise RuntimeError(f"Database operation failed: {str(e)}") from e
         finally:
             # Don't close connection here - let the caller manage it

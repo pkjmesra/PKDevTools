@@ -28,9 +28,7 @@ from PKDevTools.classes.pubsub.events import globalEventsSignal
 
 class PKUserService:
     def notify_user(self, scannerID=None, notification=None):
-        print(
-            f"[UserService] Notifying for scanner: {scannerID} with notification: {notification}"
-        )
+        print(f"[UserService] Notifying for scanner: {scannerID} with notification: {notification}")
         # Publish the event
         globalEventsSignal.send(
     self,

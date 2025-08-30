@@ -380,10 +380,7 @@ def send_media_group(
                     files[name] = output.read()
                     # a list of InputMediaPhoto. attach refers to the name of
                     # the file in the files dict
-                    media.append(
-    dict(
-        type="document",
-         media=f"attach://{name}"))
+                    media.append(dict(type="document",media=f"attach://{name}"))
         media[0]["caption"] = png_album_caption[:MAX_CAPTION_LENGTH]
         media[0]["parse_mode"] = "HTML"
 
@@ -411,12 +408,8 @@ def send_media_group(
                     files[name] = output.read()
                     # a list of InputMediaDocument. attach refers to the name
                     # of the file in the files dict
-                    media.append(
-    dict(
-        type="document",
-         media=f"attach://{name}"))
-                    media[len(media) -
-     1]["caption"] = caption[:MAX_CAPTION_LENGTH]
+                    media.append(dict(type="document",media=f"attach://{name}"))
+                    media[len(media) -1]["caption"] = caption[:MAX_CAPTION_LENGTH]
                     media[len(media) - 1]["parse_mode"] = "HTML"
             fileIndex += 1
     if len(media) > 0:

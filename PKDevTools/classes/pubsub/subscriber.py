@@ -89,8 +89,7 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
                                 parse_type="HTML",
                             )
                         send_message(
-                            message=f"{notificationText}\nsent to {
-    ','.join(userIDs)}",
+                            message=f"{notificationText}\nsent to {','.join(userIDs)}",
                             userID=DEV_CHANNEL_ID,
                             parse_type="HTML",
                         )

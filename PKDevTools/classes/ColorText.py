@@ -104,9 +104,7 @@ class tbInternal:
                         ).replace(findCellEnding2, highlightCharacter)
                         tab_line = f"{tab_line}{brandName[col_index: col_index + 1]}{highlightValue}"
                     else:
-                        tab_line = (
-                            f"{tab_line}{brandName[col_index: col_index + 1]}{col}"
-                        )
+                        tab_line = (f"{tab_line}{brandName[col_index: col_index + 1]}{col}")
                     col_index += 1
                     if col_index > maxIndex:
                         col_index = 0

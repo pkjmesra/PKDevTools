@@ -87,31 +87,20 @@ class Committer:
         Committer.execOSCommand(f"git add {addPath} --force")
         Committer.execOSCommand(f"git commit -m '{commitMessage}'")
         # Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
-        Committer.execOSCommand(
-    f"git push -v -u origin +{branchName} {suffix}")
+        Committer.execOSCommand(f"git push -v -u origin +{branchName} {suffix}")
 
     def execOSCommand(command: str):
         try:
-            default_logger().debug(
-                f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}"
-            )
+            default_logger().debug(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
             command.replace(">/dev/null 2>&1", "")
             os.system(f"{command} >/dev/null 2>&1")
         except Exception as e:
             try:
-                print(
-                    f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {
-                        command
-                    }\nException:\n{e}"
-                )
+                print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}\nException:\n{e}")
                 # We probably got into a conflict
                 os.system("git checkout --ours . >/dev/null 2>&1")
                 os.system(f"{command} >/dev/null 2>&1")
             except Exception as ex:
-                print(
-                    f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {
-                        command
-                    }\nException:\n{e}"
-                )
+                print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}\nException:\n{e}")
                 pass
             pass
