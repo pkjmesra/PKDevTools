@@ -178,6 +178,10 @@ class emptylogger:
         """No-op warning logging"""
         return
 
+    def warning(self, line):
+        """No-op warning logging"""
+        return
+    
     def error(self, line):
         """No-op error logging"""
         return
@@ -346,8 +350,7 @@ class filterlogger:
                 )
 
             trace_formatter = logging.Formatter(
-                fmt="%(asctime)s - %(name)s - %(levelname)s - %(filename)s - "
-                "%(module)s - %(funcName)s - %(lineno)d - %(message)s"
+                fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
 
             # Remove existing handlers to avoid duplicates
@@ -450,6 +453,9 @@ class filterlogger:
 
         with _thread_lock:
             self.logger.info(formatted_line)
+
+    def warning(self, line):
+        self.warn(line=line)
 
     def warn(self, line):
         """
