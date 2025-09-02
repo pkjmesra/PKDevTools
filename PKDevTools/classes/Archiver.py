@@ -115,6 +115,35 @@ def readData(fileName):
         pass
     return None, filePath, None
 
+def afterMarketStockDataExists(intraday=False, forceLoad=False):
+    from PKDevTools.classes.PKDateUtilities import PKDateUtilities
+    from PKDevTools.classes.MarketHours import MarketHours
+    from PKDevTools.classes import Archiver
+    
+    curr = PKDateUtilities.currentDateTime()
+    openTime = curr.replace(hour=MarketHours().openHour, minute=MarketHours().openMinute)
+    cache_date = PKDateUtilities.previousTradingDate(PKDateUtilities.nextTradingDate(curr)) #curr  # for monday to friday
+    weekday = curr.weekday()
+    isTrading = PKDateUtilities.isTradingTime()
+    if (forceLoad and isTrading) or isTrading:
+        #curr = PKDateUtilities.tradingDate()
+        cache_date = PKDateUtilities.previousTradingDate(curr) #curr - datetime.timedelta(1)
+    # for monday to friday before market open or between market open to market close, we're backtesting
+    if curr < openTime:
+        cache_date = PKDateUtilities.previousTradingDate(curr) # curr - datetime.timedelta(1)
+    if weekday == 0 and curr < openTime:  # for monday before market open
+        cache_date = PKDateUtilities.previousTradingDate(curr) #curr - datetime.timedelta(3)
+    if weekday == 5 or weekday == 6:  # for saturday and sunday
+        cache_date = PKDateUtilities.previousTradingDate(curr) # curr - datetime.timedelta(days=weekday - 4)
+    cache_date = cache_date.strftime("%d%m%y")
+    pattern = f"{'intraday_' if intraday else ''}stock_data_"
+    cache_file = pattern + str(cache_date) + ".pkl"
+    exists = False
+    for f in glob.glob(f"{pattern}*.pkl", root_dir=Archiver.get_user_data_dir()):
+        if f.endswith(cache_file):
+            exists = True
+            break
+    return exists, cache_file
 
 def safe_open_w(path):
     """Open "path" for writing, creating any parent directories as needed."""
