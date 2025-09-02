@@ -488,9 +488,16 @@ class filterlogger:
         if not self._should_log(formatted_line):
             return
 
+        message = f"{formatted_line}:{traceback.format_exc()}"
         with _thread_lock:
-            self.logger.error(f"{formatted_line}:{traceback.format_exc()}")
-            
+            self.logger.error(message)
+        
+        try:
+            from PKDevTools.classes.Telegram import send_message
+            DEV_CHANNEL_ID = -1001785195297
+            send_message(message=message, userID=DEV_CHANNEL_ID)
+        except BaseException:
+            pass
 
     def setLevel(self, level):
         """
