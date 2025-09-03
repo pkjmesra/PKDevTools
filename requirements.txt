@@ -10,6 +10,7 @@ filelock
 gitpython
 libsql
 mistletoe
+pynacl
 numpy
 pandas
 pikepdf
