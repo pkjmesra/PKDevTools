@@ -5,6 +5,7 @@ blinker
 brotli
 bs4
 cloudscraper
+cryptography
 filelock
 gitpython
 libsql
