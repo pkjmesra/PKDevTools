@@ -56,6 +56,17 @@ class PKDateUtilities:
                 ).astimezone(tz=pytz.timezone("Asia/Kolkata"))
             raise (e)
 
+    def utc_str_to_ist(utc_time_str):
+        # Parse UTC time
+        utc_time = datetime.datetime.fromisoformat(utc_time_str.replace('Z', '+00:00'))
+        # Define timezones
+        utc_zone = pytz.utc
+        ist_zone = pytz.timezone('Asia/Kolkata')
+        # Localize and convert
+        # utc_time = utc_zone.localize(utc_time)
+        ist_time = utc_time.astimezone(ist_zone)
+        return PKDateUtilities.datetimeFromYmdString(ist_time.strftime('%Y-%m-%d %H:%M:%S'))
+
     def last_day_of_month(any_day: datetime.datetime):
         if any_day is None:
             any_day = PKDateUtilities.currentDateTime()
@@ -158,6 +169,11 @@ class PKDateUtilities:
         if isinstance(d2, datetime.datetime):
             d2 = d2.date()
         return d2.strftime("%Y-%m-%d")
+
+    def datetimeFromYmdString(YmdHms=None):
+        today = PKDateUtilities.currentDateTime()
+        return datetime.datetime.strptime(
+            YmdHms, "%Y-%m-%d %H:%M:%S").replace(tzinfo=today.tzinfo)
 
     def dateFromYmdString(Ymd=None):
         today = PKDateUtilities.currentDateTime()
