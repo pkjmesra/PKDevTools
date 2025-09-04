@@ -37,11 +37,11 @@ class PKGitHubSecretsManager:
         Args:
             owner (str): GitHub organization or username (default: pkjmesra)
             repo (str): Repository name (required)
-            token (str): GitHub PAT token. If None, uses PKEnvironment().GITHUB_TOKEN
+            token (str): GitHub PAT token. If None, uses PKEnvironment().CI_PAT
         """
         self.owner = owner
         self.repo = repo
-        self.token = token or PKEnvironment().GITHUB_TOKEN
+        self.token = token or PKEnvironment().CI_PAT
         self.base_url = f"https://api.github.com/repos/{owner}/{repo}"
         self.headers = None
         self._update_headers()
@@ -51,9 +51,9 @@ class PKGitHubSecretsManager:
             raise ValueError("GitHub token not found in environment")
 
     def _update_headers(self):
-        default_logger().info(f"GITHUB-MANAGER: Repo:{self.repo}, token:{len(self.token)}, GITHUB_TOKEN: {len(PKEnvironment().GITHUB_TOKEN)}")
+        default_logger().info(f"GITHUB-MANAGER: Repo:{self.repo}, token:{len(self.token)}, CI_PAT: {len(PKEnvironment().CI_PAT)}")
         self.headers = {
-            "Authorization": f"token {self.token or PKEnvironment().GITHUB_TOKEN}",
+            "Authorization": f"token {self.token or PKEnvironment().CI_PAT}",
             "Accept": "application/vnd.github.v3+json",
             "X-GitHub-Api-Version": "2022-11-28"
         }
