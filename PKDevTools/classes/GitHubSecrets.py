@@ -25,6 +25,7 @@ SOFTWARE.
 
 import requests
 from PKDevTools.classes.Environment import PKEnvironment
+from PKDevTools.classes.log import default_logger
 from base64 import b64encode
 from nacl import encoding, public
 
@@ -42,17 +43,21 @@ class PKGitHubSecretsManager:
         self.repo = repo
         self.token = token or PKEnvironment().GITHUB_TOKEN
         self.base_url = f"https://api.github.com/repos/{owner}/{repo}"
-        self.headers = {
-            "Authorization": f"token {self.token}",
-            "Accept": "application/vnd.github.v3+json",
-            "X-GitHub-Api-Version": "2022-11-28"
-        }
-        
+        self.headers = None
+        self._update_headers()
         if not self.repo:
             raise ValueError("Repository name must be provided")
         if not self.token:
             raise ValueError("GitHub token not found in environment")
 
+    def _update_headers(self):
+        default_logger().info(f"GITHUB-MANAGER: Repo:{self.repo}, token:{len(self.token)}, GITHUB_TOKEN: {len(PKEnvironment().GITHUB_TOKEN)}")
+        self.headers = {
+            "Authorization": f"token {self.token or PKEnvironment().GITHUB_TOKEN}",
+            "Accept": "application/vnd.github.v3+json",
+            "X-GitHub-Api-Version": "2022-11-28"
+        }
+        
     def _get_public_key(self):
         """
         Retrieve the public key for encrypting secrets
@@ -61,6 +66,7 @@ class PKGitHubSecretsManager:
             dict: Public key data with key_id and key content
         """
         url = f"{self.base_url}/actions/secrets/public-key"
+        self._update_headers()
         response = requests.get(url, headers=self.headers)
         
         if response.status_code != 200:
@@ -86,7 +92,7 @@ class PKGitHubSecretsManager:
         encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
         return b64encode(encrypted).decode("utf-8")
 
-    def create_or_update_secret(self, secret_name, secret_value):
+    def create_or_update_secret(self, secret_name, secret_value, retrial=False):
         """
         Create or update a repository secret
         
@@ -112,19 +118,26 @@ class PKGitHubSecretsManager:
             
             # Create or update the secret
             url = f"{self.base_url}/actions/secrets/{secret_name}"
+            self._update_headers()
             response = requests.put(url, json=payload, headers=self.headers)
             
             if response.status_code in [201, 204]:
                 print(f"✅ Successfully set secret: {secret_name}")
                 return True
             else:
-                raise Exception(f"Failed to create/update secret: {response.status_code} - {response.text}")
+                if not retrial:
+                    self.create_or_update_secret(secret_name=secret_name, secret_value=secret_value, retrial=True)
+                else:
+                    raise Exception(f"Failed to create/update secret: {response.status_code} - {response.text}")
                 
         except Exception as e:
-            print(f"❌ Error setting secret {secret_name}: {str(e)}")
+            if not retrial:
+                    self.create_or_update_secret(secret_name=secret_name, secret_value=secret_value, retrial=True)
+            else:
+                print(f"❌ Error setting secret {secret_name}: {str(e)}")
             raise
 
-    def get_secret(self, secret_name):
+    def get_secret(self, secret_name, retrial=False):
         """
         Get a repository secret (metadata only - GitHub doesn't return decrypted values)
         
@@ -135,11 +148,14 @@ class PKGitHubSecretsManager:
             dict: Secret metadata or None if not found
         """
         url = f"{self.base_url}/actions/secrets/{secret_name}"
+        self._update_headers()
         response = requests.get(url, headers=self.headers)
         
         if response.status_code == 404:
             return None  # Secret doesn't exist
         elif response.status_code != 200:
+            if not retrial:
+                return self.get_secret(secret_name=secret_name, retrial=True)
             raise Exception(f"Failed to get secret: {response.status_code} - {response.text}")
         
         return response.json()
@@ -155,6 +171,7 @@ class PKGitHubSecretsManager:
             bool: True if successful
         """
         url = f"{self.base_url}/actions/secrets/{secret_name}"
+        self._update_headers()
         response = requests.delete(url, headers=self.headers)
         
         if response.status_code in [204, 404]:  # 204=Success, 404=Already deleted
@@ -173,7 +190,7 @@ class PKGitHubSecretsManager:
         url = f"{self.base_url}/actions/secrets"
         secrets = []
         page = 1
-        
+        self._update_headers()
         while True:
             response = requests.get(url, headers=self.headers, params={"page": page, "per_page": 100})
             
@@ -210,8 +227,10 @@ class PKGitHubSecretsManager:
             return True
             
         except Exception as e:
-            print(f"❌ Encryption test failed: {str(e)}")
-            raise
+            msg = f"❌ Encryption test failed: {str(e)}"
+            print(msg)
+            default_logger().error(msg)
+            return False
 
 # # Example usage and test
 # if __name__ == "__main__":
