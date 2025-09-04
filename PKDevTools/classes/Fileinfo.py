@@ -23,7 +23,7 @@ SOFTWARE.
 
 """
 import os
-import datetime
+from datetime import datetime
 import pytz
 import tempfile
 import zipfile
