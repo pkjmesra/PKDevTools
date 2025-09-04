@@ -122,7 +122,7 @@ class PKGitHubSecretsManager:
             response = requests.put(url, json=payload, headers=self.headers)
             
             if response.status_code in [201, 204]:
-                print(f"✅ Successfully set secret: {secret_name}")
+                default_logger().info(f"✅ Successfully set secret: {secret_name}")
                 return True
             else:
                 if not retrial:
@@ -134,7 +134,7 @@ class PKGitHubSecretsManager:
             if not retrial:
                     self.create_or_update_secret(secret_name=secret_name, secret_value=secret_value, retrial=True)
             else:
-                print(f"❌ Error setting secret {secret_name}: {str(e)}")
+                default_logger().error(f"❌ Error setting secret {secret_name}: {str(e)}")
             raise
 
     def get_secret(self, secret_name, retrial=False):
@@ -175,7 +175,7 @@ class PKGitHubSecretsManager:
         response = requests.delete(url, headers=self.headers)
         
         if response.status_code in [204, 404]:  # 204=Success, 404=Already deleted
-            print(f"✅ Successfully deleted secret: {secret_name}")
+            default_logger().info(f"✅ Successfully deleted secret: {secret_name}")
             return True
         else:
             raise Exception(f"Failed to delete secret: {response.status_code} - {response.text}")
@@ -213,51 +213,20 @@ class PKGitHubSecretsManager:
         """
         try:
             public_key_data = self._get_public_key()
-            print(f"✅ Public key retrieved successfully")
-            print(f"   Key ID: {public_key_data['key_id']}")
-            print(f"   Key: {public_key_data['key']}")
+            default_logger().info(f"✅ Public key retrieved successfully")
+            default_logger().debug(f"   Key ID: {public_key_data['key_id']}")
+            default_logger().debug(f"   Key: {public_key_data['key']}")
             
             # Test encryption
             test_secret = "test_value_123"
             encrypted = self._encrypt_nacl_secret(public_key_data["key"], test_secret)
-            print(f"✅ Encryption test successful")
-            print(f"   Original: {test_secret}")
-            print(f"   Encrypted: {encrypted}")
+            default_logger().info(f"✅ Encryption test successful")
+            default_logger().debug(f"   Original: {test_secret}")
+            default_logger().debug(f"   Encrypted: {encrypted}")
             
             return True
             
         except Exception as e:
             msg = f"❌ Encryption test failed: {str(e)}"
-            print(msg)
             default_logger().error(msg)
             return False
-
-# # Example usage and test
-# if __name__ == "__main__":
-#     # Initialize with your repository name
-#     secrets_manager = PKGitHubSecretsManager(repo="pkbrokers")
-    
-#     try:
-#         # First test the encryption
-#         print("🧪 Testing encryption...")
-#         secrets_manager.test_encryption()
-        
-#         # Create or update a secret
-#         print("\n🔧 Setting a test secret...")
-#         secrets_manager.create_or_update_secret("TEST_SECRET", "my_test_value_123")
-        
-#         # Get secret metadata
-#         print("\n📋 Getting secret info...")
-#         secret_info = secrets_manager.get_secret("TEST_SECRET")
-#         if secret_info:
-#             print(f"   Secret exists: {secret_info['name']} created at {secret_info['created_at']}")
-        
-#         # List all secrets
-#         print("\n📋 Listing all secrets...")
-#         all_secrets = secrets_manager.list_secrets()
-#         print(f"   Total secrets: {len(all_secrets)}")
-#         for secret in all_secrets:
-#             print(f"   - {secret['name']}")
-            
-#     except Exception as e:
-#         print(f"❌ Error: {str(e)}")
