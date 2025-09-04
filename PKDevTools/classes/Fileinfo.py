@@ -23,10 +23,65 @@ SOFTWARE.
 
 """
 import os
+import datetime
+import pytz
+import tempfile
+import zipfile
+from typing import Tuple
+
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.dictModel import SmartDictModel
+from PKDevTools.classes import Archiver
 
-def get_file_size(file_path):
+def create_zip_file(file_path: str) -> Tuple[str, int]:
+    """Create a zip file from JSON and return (zip_path, file_size)"""
+    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_zip:
+        zip_path = tmp_zip.name
+
+    try:
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(file_path, os.path.basename(file_path))
+
+        file_size = os.path.getsize(zip_path)
+        return zip_path, file_size
+
+    except Exception as e:
+        default_logger().error(f"Error creating zip file: {e}")
+        # Clean up on error
+        if os.path.exists(zip_path):
+            os.unlink(zip_path)
+    return "",0
+
+def split_large_file(file_path: str, max_size: int) -> list:
+    """Split large file into multiple parts and return list of part paths"""
+    part_paths = []
+    part_num = 1
+
+    try:
+        with open(file_path, "rb") as src_file:
+            while True:
+                part_filename = f"{file_path}.part{part_num}"
+                with open(part_filename, "wb") as part_file:
+                    data = src_file.read(max_size)
+                    if not data:
+                        break
+                    part_file.write(data)
+
+                part_paths.append(part_filename)
+                part_num += 1
+
+        return part_paths
+
+    except Exception as e:
+        # Clean up any created parts on error
+        for part_path in part_paths:
+            if os.path.exists(part_path):
+                os.unlink(part_path)
+        default_logger().error(e)
+    
+    return []
+
+def get_file_info(file_path):
     """Get the size of a file in bytes and human-readable format."""
     try:
         # Get size in bytes
@@ -34,11 +89,17 @@ def get_file_size(file_path):
         # Convert to human-readable format
         size_kb = size_bytes / 1024
         size_mb = size_bytes / (1024 * 1024)
+        file_mtime = Archiver.get_last_modified_datetime(file_path)
+        file_mtime_str = file_mtime.strftime("%Y-%m-%d %H:%M:%S %Z")
+        curr = datetime.now(pytz.timezone("Asia/Kolkata"))
+        seconds_ago = (curr - file_mtime).seconds
         return SmartDictModel({
             'bytes': size_bytes,
             'kb': round(size_kb, 2),
             'mb': round(size_mb, 2),
-            'human_readable': f"{size_mb:.2f} MB" if size_mb >= 1 else f"{size_kb:.2f} KB"
+            'human_readable': f"{size_mb:.2f} MB" if size_mb >= 1 else f"{size_kb:.2f} KB",
+            "modified_ist" : file_mtime_str,
+            "seconds_ago": seconds_ago
         })
     except FileNotFoundError:
         default_logger().error(f"File not found: {file_path}")
