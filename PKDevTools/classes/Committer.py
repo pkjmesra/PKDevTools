@@ -41,41 +41,31 @@ from github import Github, InputGitTreeElement, GithubException
 
 from PKDevTools.classes.log import default_logger
 
-
-# argParser = argparse.ArgumentParser()
-# required = False
-# argParser.add_argument("-m", "--message", help="Commit message", required=required)
-# argParser.add_argument(
-#     "-b", "--branch", help="Origin branch name to push to", required=required
-# )
-# args = argParser.parse_known_args()
 class Committer:
-    def copySourceToDestination(srcPath="*.*", destPath=""):
+    def copySourceToDestination(srcPath="*.*", destPath="", showStatus=False):
         COPY_CMD = "cp"
         if "Windows" in platform.system():
             COPY_CMD = "copy"
-        Committer.execOSCommand(f"{COPY_CMD} {srcPath} {destPath}")
+        result = Committer.execOSCommand(f"{COPY_CMD} {srcPath} {destPath}", showStatus=showStatus)
+        return result
 
     def commitTempOutcomes(
         addPath="*.*",
         commitMessage="[Temp-Commit]",
         branchName="gh-pages",
         showStatus=False,
+        timeout = 300
     ):
         """ """
         cwd = os.getcwd()
         if not cwd.endswith(os.sep):
             cwd = f"{cwd}{os.sep}"
         addPath = addPath.replace(cwd, "")
-        suffix = ">/dev/null 2>&1" if not showStatus else "--verbose"
-        Committer.execOSCommand(
-            "git config user.name github-actions >/dev/null 2>&1")
-        Committer.execOSCommand(
-            "git config user.email github-actions@github.com >/dev/null 2>&1"
-        )
-        Committer.execOSCommand(
-            "git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' >/dev/null 2>&1"
-        )
+        
+        # Just execute commands - execOSCommand will handle verbose output capture
+        Committer.execOSCommand("git config user.name github-actions", showStatus=showStatus, timeout=timeout)
+        Committer.execOSCommand("git config user.email github-actions@github.com", showStatus=showStatus, timeout=timeout)
+        Committer.execOSCommand("git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'", showStatus=showStatus, timeout=timeout)
         # git remote update will update all of your branches set to track remote ones,
         # but not merge any changes in. If you've not checkedout all remote branches,
         # this might take a while to update all branches if one of the branches
@@ -83,35 +73,81 @@ class Committer:
         # Committer.execOSCommand("git remote update >/dev/null 2>&1")
         # git fetch will update only the branch you're on, but not merge any changes in.
         # Committer.execOSCommand("git fetch >/dev/null 2>&1")
-        Committer.execOSCommand("git config pull.rebase false >/dev/null 2>&1")
+        Committer.execOSCommand("git config pull.rebase false", showStatus=showStatus, timeout=timeout)
+        
         if showStatus:
-            Committer.execOSCommand("git status")
+            Committer.execOSCommand("git status", showStatus=showStatus, timeout=timeout)
         # git pull will update and merge any remote changes of the current branch you're on.
         # This would be the one you use to update a local branch.
         # Only pull from specific branch in remote origin
-        Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
-        # Committer.execOSCommand("git checkout --ours .")
-        # Committer.execOSCommand("git reset --hard")
-        Committer.execOSCommand(f"git add {addPath} --force")
-        Committer.execOSCommand(f"git commit -m '{commitMessage}'")
-        # Committer.execOSCommand(f"git pull origin +{branchName} {suffix}")
-        Committer.execOSCommand(f"git push -v -u origin +{branchName} {suffix}")
+        Committer.execOSCommand(f"git pull origin +{branchName}", showStatus=showStatus, timeout=timeout)
+        Committer.execOSCommand(f"git add {addPath} --force", showStatus=showStatus, timeout=timeout)
+        Committer.execOSCommand(f"git commit -m '{commitMessage}'", showStatus=showStatus, timeout=timeout)
+        Committer.execOSCommand(f"git push -u origin +{branchName}", showStatus=showStatus, timeout=timeout)
 
-    def execOSCommand(command: str):
+    def execOSCommand(command: str, showStatus=False, timeout=300):
+        """
+        Universal command execution that works with any command
+        """
         try:
-            default_logger().debug(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}")
-            command.replace(">/dev/null 2>&1", "")
-            os.system(f"{command} >/dev/null 2>&1")
+            timestamp = datetime.datetime.now(pytz.timezone('Asia/Kolkata'))
+            default_logger().info(f"{timestamp} : Executing: {command}")
+            
+            clean_command = command.strip()
+            
+            if showStatus:
+                try:
+                    # Always capture output for any command when showStatus=True
+                    process = subprocess.Popen(
+                        clean_command,
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True
+                    )
+                    
+                    stdout, stderr = process.communicate(timeout=timeout)
+                    return_code = process.returncode
+                    
+                    # Log everything
+                    log_message = f"Command executed: {clean_command}\n"
+                    log_message += f"Exit code: {return_code}\n"
+                    
+                    if stdout:
+                        log_message += f"Output:\n{stdout}\n"
+                    if stderr:
+                        log_message += f"Errors:\n{stderr}\n"
+                    
+                    default_logger().info(log_message)
+                    
+                    return {
+                        'command': clean_command,
+                        'return_code': return_code,
+                        'stdout': stdout,
+                        'stderr': stderr,
+                        'success': return_code == 0
+                    }
+                    
+                except subprocess.TimeoutExpired:
+                    error_msg = f"Command timed out: {clean_command}"
+                    default_logger().error(error_msg)
+                    return {
+                        'command': clean_command,
+                        'return_code': -1,
+                        'stdout': '',
+                        'stderr': error_msg,
+                        'success': False
+                    }
+                    
+            else:
+                # Silent execution
+                return_code = os.system(f"{clean_command} >/dev/null 2>&1")
+                return None
+                
         except Exception as e:
-            try:
-                print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}\nException:\n{e}")
-                # We probably got into a conflict
-                os.system("git checkout --ours . >/dev/null 2>&1")
-                os.system(f"{command} >/dev/null 2>&1")
-            except Exception as ex:
-                print(f"{datetime.datetime.now(pytz.timezone('Asia/Kolkata'))} : {command}\nException:\n{e}")
-                pass
-            pass
+            error_msg = f"Unexpected error for {clean_command}: {e}"
+            default_logger().error(error_msg)
+            return None
 
 class GitHubCrossRepoCommitter:
     def __init__(self, github_token, org_name):
