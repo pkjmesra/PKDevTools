@@ -35,7 +35,6 @@ import pytz
 import tempfile
 import subprocess
 import shutil
-from pathlib import Path
 import json
 from github import Github, InputGitTreeElement, GithubException
 
@@ -753,7 +752,8 @@ class GitHubLargeFileCommitter:
             for repo_path, local_data in files_to_commit.items():
                 target_path = os.path.join(repo_dir, repo_path)
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                
+                from pathlib import Path
+                import pathlib
                 if isinstance(local_data, (str, Path)) and os.path.exists(local_data):
                     # Local file path
                     shutil.copy2(local_data, target_path)

@@ -13,7 +13,6 @@ mistletoe
 pynacl
 numpy
 pandas
-pathlib
 pikepdf
 Pillow #==9.5.0 # Keep at this version because getsize_multiline is deprecated/removed in higher versions
 PyGithub
