@@ -673,9 +673,7 @@ class DBManager:
         """
         users = []
         try:
-            query = f"SELECT {'*' if fieldName is None else fieldName} FROM users {
-                where if where is not None else ''
-            }"
+            query = f"SELECT {'*' if fieldName is None else fieldName} FROM users {where if where is not None else ''}"
             result = self.execute_query(query)
             if result:
                 for row in result.fetchall():
