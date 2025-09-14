@@ -250,7 +250,7 @@ class PKDateUtilities:
             PKDateUtilities.currentDateTime().replace(tzinfo=timezone.utc).timestamp()
         )
 
-    def is_extended_market_hours(self):
+    def is_extended_market_hours():
         """Check if current time is within NSE market hours (9:13 AM to 3:32 PM IST)"""
         try:
             from PKDevTools.classes.PKDateUtilities import PKDateUtilities
@@ -273,7 +273,7 @@ class PKDateUtilities:
             print(f"Error checking market hours: {e}")
             return False
 
-    def is_trading_holiday(self):
+    def is_trading_holiday():
         """Check if today is a trading holiday"""
         try:
             # Download holidays JSON
