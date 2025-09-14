@@ -250,6 +250,55 @@ class PKDateUtilities:
             PKDateUtilities.currentDateTime().replace(tzinfo=timezone.utc).timestamp()
         )
 
+    def is_extended_market_hours(self):
+        """Check if current time is within NSE market hours (9:13 AM to 3:32 PM IST)"""
+        try:
+            from PKDevTools.classes.PKDateUtilities import PKDateUtilities
+            from datetime import time as dt_time
+            # Get current time in IST (UTC+5:30)
+            utc_now = datetime.utcnow()
+            ist_now = PKDateUtilities.utc_to_ist(
+                utc_dt=utc_now
+            )  # utc_now.replace(hour=utc_now.hour + 5, minute=utc_now.minute + 30)
+
+            # Market hours: 9:15 AM to 3:30 PM IST
+            market_start = dt_time(9, 13, tzinfo=ist_now.tzinfo)
+            market_end = dt_time(15, 32, tzinfo=ist_now.tzinfo)
+
+            # Check if within market hours
+            current_time = ist_now.time()
+            return market_start <= current_time <= market_end
+
+        except Exception as e:
+            print(f"Error checking market hours: {e}")
+            return False
+
+    def is_trading_holiday(self):
+        """Check if today is a trading holiday"""
+        try:
+            # Download holidays JSON
+            response = requests.get(
+                "https://raw.githubusercontent.com/pkjmesra/PKScreener/main/.github/dependencies/nse-holidays.json",
+                timeout=10,
+            )
+            response.raise_for_status()
+            holidays_data = response.json()
+
+            # Get current date in DD-MMM-YYYY format (e.g., 26-Jan-2025)
+            current_date = datetime.now().strftime("%d-%b-%Y")
+
+            # Check if current date is in holidays list under "CM" key
+            trading_holidays = holidays_data.get("CM", [])
+            for holiday in trading_holidays:
+                if holiday.get("tradingDate") == current_date:
+                    return True
+
+            return False
+
+        except Exception as e:
+            print(f"Error checking trading holidays: {e}")
+            return False  # Assume not holiday if we can't check
+        
     def isTradingTime():
         if "simulation" in os.environ.keys():
             simulatedEnvs = json.loads(os.environ["simulation"])
