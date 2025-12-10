@@ -23,7 +23,7 @@ pytz
 requests
 requests_cache
 tabulate
-telegram
+# telegram removed - conflicts with python-telegram-bot which provides the same 'telegram' namespace
 typing_extensions
 urllib3
 yfinance #==0.1.87
