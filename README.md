@@ -12,6 +12,36 @@
 ## What is PKDevTools?
 Toolset for day-to-day usage in various repos
 
+## Key Components
+
+### PKDataProvider
+Unified high-performance data provider for stock OHLCV data with automatic source selection.
+
+```python
+from PKDevTools.classes.PKDataProvider import get_data_provider
+
+provider = get_data_provider()
+
+# Get stock data with automatic source selection
+# Priority: Real-time (PKBrokers) → Local Pickle → Remote Pickle
+df = provider.get_stock_data("RELIANCE", interval="5m", count=50)
+
+# Get multiple stocks
+data = provider.get_multiple_stocks(["RELIANCE", "TCS"], interval="day")
+
+# Check if real-time data is available
+if provider.is_realtime_available():
+    price = provider.get_latest_price("INFY")
+    ohlcv = provider.get_realtime_ohlcv("INFY")
+```
+
+**Supported Intervals**: 1m, 2m, 3m, 4m, 5m, 10m, 15m, 30m, 60m, day
+
+**Data Sources** (in priority order):
+1. **InMemoryCandleStore** (PKBrokers) - Real-time during market hours
+2. **Local Pickle Files** - Cached historical data
+3. **Remote GitHub Pickle Files** - Fallback
+
 # Building from source repo
 * Install python 3.9 for your OS/CPU. Download the installer from https://www.python.org/downloads/release/python-3913/#Files
 * Just clone the repo with `git clone https://github.com/pkjmesra/PKDevTools.git`
