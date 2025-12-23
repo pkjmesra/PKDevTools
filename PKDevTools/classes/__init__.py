@@ -23,3 +23,12 @@
 
 """
 VERSION='0.13'
+
+# High-performance data provider
+from PKDevTools.classes.PKDataProvider import PKDataProvider, get_data_provider
+
+__all__ = [
+    'VERSION',
+    'PKDataProvider',
+    'get_data_provider',
+]
