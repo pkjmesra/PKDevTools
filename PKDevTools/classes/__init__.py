@@ -27,8 +27,13 @@ VERSION='0.13'
 # High-performance data provider
 from PKDevTools.classes.PKDataProvider import PKDataProvider, get_data_provider
 
+# Scalable data fetcher (GitHub-based, no Telegram dependency)
+from PKDevTools.classes.PKScalableDataFetcher import PKScalableDataFetcher, get_scalable_fetcher
+
 __all__ = [
     'VERSION',
     'PKDataProvider',
     'get_data_provider',
+    'PKScalableDataFetcher',
+    'get_scalable_fetcher',
 ]
