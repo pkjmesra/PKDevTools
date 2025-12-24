@@ -45,15 +45,15 @@ __USERNAME__ = "pkjmesra"
 __PACKAGENAME__ = "PKDevTools"
 install_requires = []
 if os.path.exists("README.md") and os.path.isfile("README.md"):
-    with open("README.md", "r") as fh:
+    with open("README.md", "r", encoding="utf-8") as fh:
         long_description = fh.read()
 if os.path.exists("requirements.txt") and os.path.isfile("requirements.txt"):
-    with open("requirements.txt", "r") as fh:
+    with open("requirements.txt", "r", encoding="utf-8") as fh:
         install_requires = fh.read().splitlines()
 elif os.path.exists(
     os.path.join(__PACKAGENAME__, "requirements.txt")
 ) and os.path.isfile(os.path.join(__PACKAGENAME__, "requirements.txt")):
-    with open(os.path.join(__PACKAGENAME__, "requirements.txt"), "r") as fh:
+    with open(os.path.join(__PACKAGENAME__, "requirements.txt"), "r", encoding="utf-8") as fh:
         install_requires = fh.read().splitlines()
 
 
