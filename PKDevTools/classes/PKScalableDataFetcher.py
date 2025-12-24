@@ -388,17 +388,23 @@ class PKScalableDataFetcher:
         return None
     
     def _fetch_pickle_from_github(self) -> Optional[Dict[str, Any]]:
-        """Fetch pickle format data from GitHub."""
+        """Fetch pickle format data from GitHub for 24x7 availability."""
         # Try to get today's date-suffixed pickle
         today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Paths where pickle files are stored by w9-workflow-download-data.yml
+        # The workflow saves to actions-data-download/ directory
         paths_to_try = [
-            f"stock_data_{today}.pkl",
-            "stock_data_latest.pkl",
-            "afterMarketStockData.pkl",
+            # Primary location: actions-data-download directory
+            f"actions-data-download/stock_data_{today}.pkl",
+            "actions-data-download/stock_data_1y_OHLC.pkl",
+            # Fallback to results/Data
+            f"{self.GITHUB_DATA_PATH}/stock_data_{today}.pkl",
+            f"{self.GITHUB_DATA_PATH}/stock_data_latest.pkl",
         ]
         
         for path in paths_to_try:
-            url = f"{self.GITHUB_RAW_BASE}/{self.GITHUB_DATA_PATH}/{path}"
+            url = f"{self.GITHUB_RAW_BASE}/{path}"
             
             try:
                 request = Request(url, headers={"User-Agent": "PKScreener/2.0"})
@@ -407,10 +413,12 @@ class PKScalableDataFetcher:
                     content = response.read()
                     data = pickle.loads(content)
                     
-                    if isinstance(data, dict):
+                    if isinstance(data, dict) and len(data) > 0:
+                        self.logger.debug(f"Loaded {len(data)} instruments from GitHub pickle: {path}")
                         return data
                     
-            except Exception:
+            except Exception as e:
+                self.logger.debug(f"Could not fetch pickle from {path}: {e}")
                 continue
         
         return None
