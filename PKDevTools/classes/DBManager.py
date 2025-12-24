@@ -25,7 +25,10 @@ SOFTWARE.
 try:
     import libsql
 except BaseException:  # pragma: no cover
-    print("Error loading libsql")
+    import os
+    if os.environ.get("PKDevTools_Default_Log_Level"):
+        from PKDevTools.classes.log import default_logger
+        default_logger().debug("Error loading libsql - will use local database only")
     pass
 import contextlib
 from enum import Enum

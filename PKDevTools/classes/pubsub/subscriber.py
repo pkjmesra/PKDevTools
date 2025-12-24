@@ -114,13 +114,13 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
                         parse_type="HTML",
                     )
             except Exception as e:
-                print(f"Error encountered:\n{e}")
+                from PKDevTools.classes.log import default_logger
+                default_logger().error(f"Error encountered in notification service: {e}")
                 send_message(
                     message=f"Error encountered:\n{e}",
                     userID=DEV_CHANNEL_ID,
                     parse_type="HTML",
                 )
-                pass
 
 
 # Ensure the subscriber is instantiated so it listens to events

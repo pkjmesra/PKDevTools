@@ -198,8 +198,8 @@ class PKDateUtilities:
             import numpy as np
         except Exception as e:
             from PKDevTools.classes.System import PKSystem
-
-            print(f"Error importing numpy on {PKSystem.get_platform()[0]}")
+            from PKDevTools.classes.log import default_logger
+            default_logger().debug(f"Error importing numpy on {PKSystem.get_platform()[0]}: {e}")
         return np.busday_count(
             d1,
             d2,
@@ -270,7 +270,8 @@ class PKDateUtilities:
             return market_start <= current_time <= market_end
 
         except Exception as e:
-            print(f"Error checking market hours: {e}")
+            from PKDevTools.classes.log import default_logger
+            default_logger().debug(f"Error checking market hours: {e}")
             return False
 
     def is_trading_holiday():
@@ -296,7 +297,8 @@ class PKDateUtilities:
             return False
 
         except Exception as e:
-            print(f"Error checking trading holidays: {e}")
+            from PKDevTools.classes.log import default_logger
+            default_logger().debug(f"Error checking trading holidays: {e}")
             return False  # Assume not holiday if we can't check
         
     def isTradingTime():

@@ -35,7 +35,10 @@ class SingletonType(type):
         try:
             cls.__shared_instance_lock__ = Lock()
         except BlockingIOError as e:
-            print(f"BlockingIOError: {e}")
+            import os
+            if os.environ.get("PKDevTools_Default_Log_Level"):
+                from PKDevTools.classes.log import default_logger
+                default_logger().debug(f"BlockingIOError creating lock: {e}")
 
         return cls
 

@@ -3,6 +3,8 @@ from typing import Dict, Optional
 
 import libsql
 
+from PKDevTools.classes.log import default_logger
+
 
 class DatabaseSyncChecker:
     def __init__(
@@ -47,7 +49,7 @@ class DatabaseSyncChecker:
                     counts[table] = cursor.fetchone()[0]
 
         except sqlite3.Error as e:
-            print(f"Error reading local database: {e}")
+            default_logger().error(f"Error reading local database: {e}")
             if "SQLITE_CORRUPT" in str(e.sqlite_errorname):
                 from PKDevTools.classes.RepairDB import RepairDB
 
@@ -59,7 +61,7 @@ class DatabaseSyncChecker:
         """Get row counts for all tables in the remote Turso database using libsql."""
         counts = {}
         if not self.turso_url or not self.turso_auth_token:
-            print("Turso URL or auth token not provided. Skipping remote check.")
+            default_logger().debug("Turso URL or auth token not provided. Skipping remote check.")
             return counts
 
         try:
@@ -82,7 +84,7 @@ class DatabaseSyncChecker:
 
             client.close()
         except Exception as e:
-            print(f"Error reading remote Turso database: {e}")
+            default_logger().error(f"Error reading remote Turso database: {e}")
         return counts
 
     def check_sync_status(self) -> bool:
@@ -109,7 +111,7 @@ class DatabaseSyncChecker:
                 self.mismatch_counts["remote"][table] = remote_count
                 message = f"Mismatch in table '{table}': Local={local_count}, Remote={remote_count}"
                 messages.append(message)
-                print(message)
+                default_logger().info(message)
                 self.needs_sync = True
 
         if not self.needs_sync:
@@ -121,11 +123,11 @@ class DatabaseSyncChecker:
         """Print a comparison of local and remote table counts."""
         all_tables = set(self.local_counts.keys()).union(
             set(self.remote_counts.keys()))
-        print("\nTable Count Comparison:")
-        print(f"{'Table':<20} | {'Local':>10} | {'Remote':>10}")
-        print("-" * 50)
+        default_logger().info("\nTable Count Comparison:")
+        default_logger().info(f"{'Table':<20} | {'Local':>10} | {'Remote':>10}")
+        default_logger().info("-" * 50)
 
         for table in sorted(all_tables):
             local = self.local_counts.get(table, "N/A")
             remote = self.remote_counts.get(table, "N/A")
-            print(f"{table:<20} | {str(local):>10} | {str(remote):>10}")
+            default_logger().info(f"{table:<20} | {str(local):>10} | {str(remote):>10}")

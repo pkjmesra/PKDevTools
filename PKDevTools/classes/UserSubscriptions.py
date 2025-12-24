@@ -47,7 +47,8 @@ class PKUserSusbscriptions:
         try:
             model = PKSubscriptionModel(int(subValue))
         except ValueError:
-            print(f"Value error for {subValue}")
+            from PKDevTools.classes.log import default_logger
+            default_logger().debug(f"Value error for subscription model value: {subValue}")
             models = [
                 int(x)
                 for x in list(PKUserSusbscriptions().subscriptionValueKeyPairs.keys())
