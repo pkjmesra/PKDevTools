@@ -395,9 +395,13 @@ class DBManager:
         Returns:
             tuple: (otp: str, subscriptionModel: str, subscriptionValidity: str, alertUser: PKUser)
         """
+        # Initialize variables to avoid UnboundLocalError
+        otpValue = 0
+        user = None
+        subscriptionModel = None
+        subscriptionValidity = None
+        
         try:
-            otpValue = 0
-            user = None
             dbUsers = self.getUserByID(int(userID))
             if len(dbUsers) > 0:
                 dbUser = dbUsers[0]
