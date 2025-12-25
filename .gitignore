@@ -47,7 +47,6 @@ kite/__pycache__
 *.whl
 kite/*.txt
 *.sh
-.github/
 *.cache
 *.log
 *.dev
