@@ -143,6 +143,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12" # update once build dependencies are available
+
+      - name: Restore pip cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/AppData/Local/pip/Cache
+            ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-pkdevtools-${{ hashFiles('**/setup.py', '**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-pkdevtools-
+            ${{ runner.os }}-pip-
   
       - name: Install conda for macos arm64
         if: ${{ matrix.platform_id == 'macosx_arm64' }}
