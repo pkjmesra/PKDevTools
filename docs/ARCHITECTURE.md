@@ -225,14 +225,70 @@ class filterlogger:
 
 **Connection Strategy**:
 1. Try Turso (libsql) for cloud sync
-2. Fallback to local SQLite
-3. Automatic reconnection on failure
+2. Fallback to local SQLite cache
+3. Emergency GitHub-based OTP for new users
+4. Automatic reconnection on failure
 
 **Key Operations**:
 - User CRUD operations
 - OTP generation and validation
 - Scanner job subscriptions
 - Subscription model management
+
+### Authentication Architecture
+
+**OTP Generation Flow with Fallbacks**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    User requests /otp                            │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 1: Try Turso DB (Primary)                                   │
+│ - Connect via libsql                                             │
+│ - Retrieve user record with TOTP token                           │
+│ - Generate OTP using pyotp.TOTP(token, interval)                │
+└─────────────────────────────────┬───────────────────────────────┘
+           │                      │
+      SUCCESS                 FAILURE
+           │                      │
+           ▼                      ▼
+┌──────────────────┐   ┌──────────────────────────────────────────┐
+│ Cache user in    │   │ Step 2: Try LocalOTPCache (Fallback)     │
+│ LocalOTPCache    │   │ - Check ~/.pkscreener/otp_cache.db       │
+│ (SQLite)         │   │ - Generate OTP from cached TOTP token    │
+└──────────────────┘   └─────────────────────┬────────────────────┘
+                                │             │
+                           CACHE HIT      CACHE MISS
+                                │             │
+                                ▼             ▼
+                       ┌────────────┐  ┌─────────────────────────┐
+                       │ Return OTP │  │ Step 3: GitHub PDF-based│
+                       └────────────┘  │ (Emergency Fallback)    │
+                                       │ - Generate new TOTP     │
+                                       │ - Create OTP            │
+                                       │ - Push password-         │
+                                       │   protected PDF to repo │
+                                       └─────────────────────────┘
+```
+
+**Key Components**:
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `DBManager` | `PKDevTools/classes/DBManager.py` | Primary Turso DB operations |
+| `LocalOTPCache` | `PKDevTools/classes/DBManager.py` | SQLite fallback cache |
+| `PKUserRegistration` | `pkscreener/classes/PKUserRegistration.py` | CLI authentication |
+| `SubData` branch | GitHub repo | Stores password-protected PDFs |
+
+**PDF-based Authentication**:
+1. Bot generates OTP and creates PDF protected with that OTP
+2. PDF is pushed to `SubData` branch as `{userID}.pdf`
+3. Console app downloads PDF from GitHub
+4. App attempts to open PDF with user-provided OTP
+5. Success = authenticated, Failure = bad credentials
 
 ### PKEnvironment
 
@@ -615,4 +671,7 @@ python_requires = >=3.9
 ---
 
 For questions or contributions, please open an issue or submit a pull request on [GitHub](https://github.com/pkjmesra/PKDevTools).
+
+
+
 

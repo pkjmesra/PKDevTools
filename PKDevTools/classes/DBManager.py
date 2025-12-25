@@ -171,6 +171,77 @@ class LocalOTPCache:
                 default_logger().debug(f"LocalOTPCache: Error generating OTP: {e}", exc_info=True)
         return 0, None
 
+    def generate_emergency_otp_with_pdf(self, userid, username=None, validityIntervalInSeconds=86400):
+        """Emergency OTP generation for new users when both Turso and cache are unavailable.
+        
+        This creates a new TOTP token, generates OTP, creates password-protected PDF,
+        and commits it to GitHub for the console app to verify.
+        
+        Args:
+            userid: User ID to generate OTP for
+            username: Username for the new user
+            validityIntervalInSeconds: OTP validity period
+            
+        Returns:
+            tuple: (otp, subscriptionmodel) or (0, None) if failed
+        """
+        try:
+            from PKDevTools.classes.Pikey import PKPikey
+            from PKDevTools.classes.Committer import Committer
+            
+            # Generate new TOTP token for this user
+            new_token = pyotp.random_base32()
+            otp = str(pyotp.TOTP(new_token, interval=int(validityIntervalInSeconds)).now())
+            
+            # Create password-protected PDF
+            pdf_filename = f"{userid}"
+            if PKPikey.createFile(pdf_filename, otp, str(userid)):
+                default_logger().info(f"LocalOTPCache: Created emergency PDF for user {userid}")
+                
+                # Cache the new token locally for future use
+                try:
+                    conn = sqlite3.connect(self.db_path)
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO user_tokens 
+                        (userid, username, name, totptoken, subscriptionmodel, last_synced, lastotp)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        userid,
+                        username,
+                        username,
+                        new_token,
+                        "Free",  # Default to Free subscription for emergency registration
+                        PKDateUtilities.currentDateTime().isoformat(),
+                        otp
+                    ))
+                    conn.commit()
+                    conn.close()
+                except Exception as cache_err:
+                    default_logger().debug(f"LocalOTPCache: Error caching emergency user: {cache_err}")
+                
+                # Commit PDF to GitHub SubData branch
+                try:
+                    pdf_path = PKPikey.savedFilePath(pdf_filename)
+                    Committer.commitTempOutcomes(
+                        addPath=f"-A '{pdf_path}'",
+                        commitMessage=f"[Emergency-OTP-{userid}-{PKDateUtilities.currentDateTime().strftime('%Y%m%d')}]",
+                        branchName="SubData",
+                        showStatus=False,
+                        timeout=120
+                    )
+                    default_logger().info(f"LocalOTPCache: Committed emergency PDF for user {userid} to SubData")
+                except Exception as commit_err:
+                    default_logger().debug(f"LocalOTPCache: Error committing PDF: {commit_err}")
+                    # PDF created locally, user can still be notified
+                
+                return otp, "Free"
+            else:
+                default_logger().debug(f"LocalOTPCache: Failed to create emergency PDF for user {userid}")
+        except Exception as e:
+            default_logger().debug(f"LocalOTPCache: Error in emergency OTP generation: {e}", exc_info=True)
+        return 0, None
+
 
 class PKUserModel(Enum):
     """Enumeration representing the field mapping for User model database columns.
@@ -627,6 +698,16 @@ class DBManager:
                     otpValue = cached_otp
                     subscriptionModel = cached_model
                     default_logger().info(f"Generated OTP from local cache for user {userID}")
+                else:
+                    # Emergency fallback: Generate new OTP and push PDF for new/uncached users
+                    default_logger().info(f"Cache miss for user {userID}, using emergency PDF-based OTP")
+                    emergency_otp, emergency_model = LocalOTPCache().generate_emergency_otp_with_pdf(
+                        userID, username, validityIntervalInSeconds
+                    )
+                    if emergency_otp != 0:
+                        otpValue = emergency_otp
+                        subscriptionModel = emergency_model
+                        default_logger().info(f"Generated emergency OTP with PDF for user {userID}")
 
         try:
             self.updateOTP(userID, otpValue)
