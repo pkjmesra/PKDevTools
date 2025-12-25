@@ -31,14 +31,145 @@ except BaseException:  # pragma: no cover
         default_logger().debug("Error loading libsql - will use local database only")
     pass
 import contextlib
+import os
+import sqlite3
 from enum import Enum
 from time import sleep
 
 import pyotp
 
+from PKDevTools.classes import Archiver
 from PKDevTools.classes.Environment import PKEnvironment
 from PKDevTools.classes.log import default_logger
 from PKDevTools.classes.PKDateUtilities import PKDateUtilities
+
+
+class LocalOTPCache:
+    """Local SQLite cache for OTP generation when Turso DB is unavailable.
+    
+    This provides a fallback mechanism to generate OTPs for registered users
+    even when the remote Turso database is down or unreachable.
+    """
+    
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+        self._initialized = True
+        self.db_path = os.path.join(Archiver.get_user_data_dir(), "otp_cache.db")
+        self._init_db()
+    
+    def _init_db(self):
+        """Initialize the local SQLite database with required tables."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS user_tokens (
+                    userid INTEGER PRIMARY KEY,
+                    username TEXT,
+                    name TEXT,
+                    totptoken TEXT NOT NULL,
+                    subscriptionmodel TEXT,
+                    last_synced TEXT,
+                    lastotp TEXT
+                )
+            ''')
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            default_logger().debug(f"LocalOTPCache: Error initializing DB: {e}", exc_info=True)
+    
+    def cache_user(self, user):
+        """Cache user TOTP token for offline OTP generation.
+        
+        Args:
+            user: PKUser object with totptoken set
+        """
+        if user is None or user.totptoken is None:
+            return
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO user_tokens 
+                (userid, username, name, totptoken, subscriptionmodel, last_synced, lastotp)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                user.userid,
+                user.username,
+                user.name,
+                user.totptoken,
+                user.subscriptionmodel,
+                PKDateUtilities.currentDateTime().isoformat(),
+                user.lastotp
+            ))
+            conn.commit()
+            conn.close()
+            default_logger().debug(f"LocalOTPCache: Cached user {user.userid}")
+        except Exception as e:
+            default_logger().debug(f"LocalOTPCache: Error caching user: {e}", exc_info=True)
+    
+    def get_cached_user(self, userid):
+        """Retrieve cached user data for offline OTP generation.
+        
+        Args:
+            userid: User ID to look up
+            
+        Returns:
+            dict with user data or None if not found
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT userid, username, name, totptoken, subscriptionmodel, lastotp FROM user_tokens WHERE userid = ?',
+                (userid,)
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                return {
+                    'userid': row[0],
+                    'username': row[1],
+                    'name': row[2],
+                    'totptoken': row[3],
+                    'subscriptionmodel': row[4],
+                    'lastotp': row[5]
+                }
+        except Exception as e:
+            default_logger().debug(f"LocalOTPCache: Error getting cached user: {e}", exc_info=True)
+        return None
+    
+    def generate_otp_from_cache(self, userid, validityIntervalInSeconds=86400):
+        """Generate OTP using cached TOTP token when Turso is unavailable.
+        
+        Args:
+            userid: User ID to generate OTP for
+            validityIntervalInSeconds: OTP validity period
+            
+        Returns:
+            tuple: (otp, subscriptionmodel) or (0, None) if not cached
+        """
+        cached = self.get_cached_user(userid)
+        if cached and cached.get('totptoken'):
+            try:
+                otp = str(pyotp.TOTP(
+                    cached['totptoken'],
+                    interval=int(validityIntervalInSeconds)
+                ).now())
+                default_logger().debug(f"LocalOTPCache: Generated OTP for user {userid} from cache")
+                return otp, cached.get('subscriptionmodel')
+            except Exception as e:
+                default_logger().debug(f"LocalOTPCache: Error generating OTP: {e}", exc_info=True)
+        return 0, None
 
 
 class PKUserModel(Enum):
@@ -403,6 +534,7 @@ class DBManager:
         user = None
         subscriptionModel = None
         subscriptionValidity = None
+        turso_succeeded = False
         
         try:
             dbUsers = self.getUserByID(int(userID))
@@ -428,6 +560,9 @@ class DBManager:
                                             validityIntervalInSeconds)
                                     ).now()
                                 )
+                            # Cache user data for offline fallback
+                            turso_succeeded = True
+                            LocalOTPCache().cache_user(dbUser)
                         else:
                             user = PKUser.userFromDBRecord(
                                 [
@@ -480,8 +615,18 @@ class DBManager:
                     raise RuntimeError("Insert failed")
                 return self.getOTP(userID, username, name, retry=True)
         except Exception as e:  # pragma: no cover
-            print(f"Could not get OTP (getOTP) for user: {user.userid if user else 'unknown'}:{e}")
+            print(f"Could not get OTP (getOTP) for user: {user.userid if user else userID}:{e}")
             default_logger().debug(e, exc_info=True)
+            # Fallback to local cache when Turso DB is unavailable
+            if not turso_succeeded and otpValue == 0:
+                default_logger().info(f"Turso DB unavailable, trying local OTP cache for user {userID}")
+                cached_otp, cached_model = LocalOTPCache().generate_otp_from_cache(
+                    userID, validityIntervalInSeconds
+                )
+                if cached_otp != 0:
+                    otpValue = cached_otp
+                    subscriptionModel = cached_model
+                    default_logger().info(f"Generated OTP from local cache for user {userID}")
 
         try:
             self.updateOTP(userID, otpValue)
