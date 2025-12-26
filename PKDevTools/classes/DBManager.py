@@ -189,13 +189,18 @@ class LocalOTPCache:
             from PKDevTools.classes.Pikey import PKPikey
             from PKDevTools.classes.Committer import Committer
             
+            print(f"[EMERGENCY-OTP] Generating emergency OTP for user {userid}")
+            
             # Generate new TOTP token for this user
             new_token = pyotp.random_base32()
             otp = str(pyotp.TOTP(new_token, interval=int(validityIntervalInSeconds)).now())
+            print(f"[EMERGENCY-OTP] Generated OTP: {otp[:3]}*** for user {userid}")
             
             # Create password-protected PDF
             pdf_filename = f"{userid}"
+            print(f"[EMERGENCY-OTP] Creating PDF: {pdf_filename}")
             if PKPikey.createFile(pdf_filename, otp, str(userid)):
+                print(f"[EMERGENCY-OTP] Created emergency PDF for user {userid}")
                 default_logger().info(f"LocalOTPCache: Created emergency PDF for user {userid}")
                 
                 # Cache the new token locally for future use
@@ -528,23 +533,41 @@ class DBManager:
             >>> db.validateOTP(123, "123456")
             True
         """
+        token = ""
+        lastOTP = ""
+        otpValue = 0
+        turso_failed = False
+        
         try:
-            otpValue = 0
             dbUsers = self.getUserByIDorUsername(userIDOrName)
-            token = ""
             if len(dbUsers) > 0:
                 token = dbUsers[0].totptoken
                 lastOTP = dbUsers[0].lastotp
                 if token is not None:
                     otpValue = str(
                         pyotp.TOTP(
-    token, interval=int(validityIntervalInSeconds)).now()
+                            token, interval=int(validityIntervalInSeconds)).now()
                     )
             else:
                 print(f"Could not locate user: {userIDOrName}")
+                turso_failed = True
         except Exception as e:  # pragma: no cover
             print(f"Could not locate user (validateOTP): {userIDOrName}\n{e}")
             default_logger().debug(e, exc_info=True)
+            turso_failed = True
+        
+        # Fallback to local cache when Turso fails
+        if turso_failed or (not token and otpValue == 0):
+            print(f"Turso unavailable, checking local OTP cache for validation...")
+            try:
+                cached = LocalOTPCache().get_cached_user(int(userIDOrName) if str(userIDOrName).isdigit() else 0)
+                if cached and cached.get('totptoken'):
+                    token = cached['totptoken']
+                    lastOTP = cached.get('lastotp', '')
+                    otpValue = str(pyotp.TOTP(token, interval=int(validityIntervalInSeconds)).now())
+                    print(f"Found user in local cache, validating OTP...")
+            except Exception as cache_e:
+                print(f"Local cache lookup failed: {cache_e}")
 
         isValid = (otpValue == str(otp)) and int(otpValue) > 0
         if not isValid and len(token) > 0:
@@ -553,9 +576,7 @@ class DBManager:
             )
             default_logger().debug(f"User entered OTP: {otp} did not match machine generated OTP: {otpValue} while the DB OTP was: {lastOTP} with local config interval:{validityIntervalInSeconds}")
             if not isValid and len(str(lastOTP)) > 0 and len(str(otp)) > 0:
-                isValid = (
-    str(otp) == str(lastOTP)) or (
-        int(otp) == int(lastOTP))
+                isValid = (str(otp) == str(lastOTP)) or (int(otp) == int(lastOTP))
         return isValid
 
     def refreshOTPForUser(self, user: PKUser, validityIntervalInSeconds=30):
@@ -690,6 +711,7 @@ class DBManager:
             default_logger().debug(e, exc_info=True)
             # Fallback to local cache when Turso DB is unavailable
             if not turso_succeeded and otpValue == 0:
+                print(f"[OTP-FALLBACK] Turso DB unavailable, trying local OTP cache for user {userID}")
                 default_logger().info(f"Turso DB unavailable, trying local OTP cache for user {userID}")
                 cached_otp, cached_model = LocalOTPCache().generate_otp_from_cache(
                     userID, validityIntervalInSeconds
@@ -697,9 +719,11 @@ class DBManager:
                 if cached_otp != 0:
                     otpValue = cached_otp
                     subscriptionModel = cached_model
+                    print(f"[OTP-FALLBACK] Generated OTP from local cache for user {userID}")
                     default_logger().info(f"Generated OTP from local cache for user {userID}")
                 else:
                     # Emergency fallback: Generate new OTP and push PDF for new/uncached users
+                    print(f"[OTP-FALLBACK] Cache miss for user {userID}, generating emergency PDF-based OTP")
                     default_logger().info(f"Cache miss for user {userID}, using emergency PDF-based OTP")
                     emergency_otp, emergency_model = LocalOTPCache().generate_emergency_otp_with_pdf(
                         userID, username, validityIntervalInSeconds
@@ -707,7 +731,10 @@ class DBManager:
                     if emergency_otp != 0:
                         otpValue = emergency_otp
                         subscriptionModel = emergency_model
+                        print(f"[OTP-FALLBACK] Generated emergency OTP with PDF for user {userID}")
                         default_logger().info(f"Generated emergency OTP with PDF for user {userID}")
+                    else:
+                        print(f"[OTP-FALLBACK] FAILED to generate emergency OTP for user {userID}")
 
         try:
             self.updateOTP(userID, otpValue)
