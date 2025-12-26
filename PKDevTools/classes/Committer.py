@@ -439,8 +439,8 @@ class SafeGitHubCommitter(GitHubCrossRepoCommitter):
                         sha=default_ref.object.sha
                     )
                 
-                # Get current commit
-                commit = target_repo_obj.get_commit(ref.object.sha)
+                # Get current commit - use get_git_commit() to get GitCommit with tree attribute
+                commit = target_repo_obj.get_git_commit(ref.object.sha)
                 
                 # Read file content as binary
                 with open(local_file_path, 'rb') as f:
@@ -461,10 +461,10 @@ class SafeGitHubCommitter(GitHubCrossRepoCommitter):
                     sha=blob.sha
                 )
                 
-                # Create new tree
+                # Create new tree - use commit.tree.sha to get the tree SHA
                 tree = target_repo_obj.create_git_tree([tree_element], base_tree=commit.tree)
                 
-                # Create new commit
+                # Create new commit - pass the GitCommit object for parent
                 new_commit = target_repo_obj.create_git_commit(
                     commit_message,
                     tree,
