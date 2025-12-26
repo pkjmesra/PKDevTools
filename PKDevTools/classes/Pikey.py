@@ -90,3 +90,56 @@ class PKPikey:
             os.remove(PKPikey.savedFilePath(fileName))
         except BaseException:
             pass
+
+    @staticmethod
+    def validateOTPFromSubData(userid: str, otp: str):
+        """Validate OTP by downloading PDF from SubData branch and trying to open it.
+        
+        When Turso DB is down, the emergency OTP mechanism creates a password-protected
+        PDF and commits it to the SubData branch. The console app can validate the OTP
+        by downloading this PDF and attempting to open it with the user-provided OTP.
+        
+        Args:
+            userid: User ID (PDF filename is {userid}.pdf)
+            otp: OTP entered by user (used as PDF password)
+            
+        Returns:
+            bool: True if OTP is valid (PDF opens successfully), False otherwise
+        """
+        import requests
+        import tempfile
+        
+        try:
+            # Download the PDF from SubData branch
+            pdf_url = f"https://raw.githubusercontent.com/pkjmesra/PKScreener/SubData/results/Data/{userid}.pdf"
+            print(f"[OTP-VALIDATE] Downloading PDF from SubData for user {userid}")
+            
+            response = requests.get(pdf_url, timeout=30)
+            if response.status_code != 200:
+                print(f"[OTP-VALIDATE] PDF not found for user {userid} (status: {response.status_code})")
+                return False
+            
+            # Save to temp file
+            temp_path = os.path.join(tempfile.gettempdir(), f"{userid}_validate.pdf")
+            with open(temp_path, 'wb') as f:
+                f.write(response.content)
+            
+            try:
+                # Try to open PDF with OTP as password
+                pikepdf.Pdf.open(temp_path, password=str(otp))
+                print(f"[OTP-VALIDATE] OTP validated successfully for user {userid}")
+                os.remove(temp_path)
+                return True
+            except pikepdf.PasswordError:
+                print(f"[OTP-VALIDATE] Invalid OTP for user {userid}")
+                os.remove(temp_path)
+                return False
+            except Exception as e:
+                print(f"[OTP-VALIDATE] Error opening PDF: {e}")
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                return False
+                
+        except Exception as e:
+            print(f"[OTP-VALIDATE] Error validating from SubData: {e}")
+            return False

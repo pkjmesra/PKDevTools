@@ -225,18 +225,36 @@ class LocalOTPCache:
                 except Exception as cache_err:
                     default_logger().debug(f"LocalOTPCache: Error caching emergency user: {cache_err}")
                 
-                # Commit PDF to GitHub SubData branch
+                # Commit PDF to GitHub SubData branch using GitHub API
                 try:
+                    import os
                     pdf_path = PKPikey.savedFilePath(pdf_filename)
-                    Committer.commitTempOutcomes(
-                        addPath=f"-A '{pdf_path}'",
-                        commitMessage=f"[Emergency-OTP-{userid}-{PKDateUtilities.currentDateTime().strftime('%Y%m%d')}]",
-                        branchName="SubData",
-                        showStatus=False,
-                        timeout=120
-                    )
-                    default_logger().info(f"LocalOTPCache: Committed emergency PDF for user {userid} to SubData")
+                    
+                    # Use SafeGitHubCommitter to commit directly via GitHub API
+                    github_token = os.environ.get('CI_PAT') or os.environ.get('GITHUB_TOKEN')
+                    if github_token and os.path.exists(pdf_path):
+                        from PKDevTools.classes.Committer import SafeGitHubCommitter
+                        committer = SafeGitHubCommitter(github_token, "pkjmesra")
+                        
+                        # Commit the PDF file to SubData branch
+                        result = committer.commit_large_binary_file(
+                            target_repo="PKScreener",
+                            target_branch="SubData",
+                            local_file_path=pdf_path,
+                            remote_file_path=f"results/Data/{userid}.pdf",
+                            commit_message=f"[Emergency-OTP-{userid}-{PKDateUtilities.currentDateTime().strftime('%Y%m%d')}]"
+                        )
+                        
+                        if result.get('success'):
+                            print(f"[EMERGENCY-OTP] Committed PDF for user {userid} to SubData branch")
+                            default_logger().info(f"LocalOTPCache: Committed emergency PDF for user {userid} to SubData")
+                        else:
+                            print(f"[EMERGENCY-OTP] Failed to commit PDF: {result.get('error')}")
+                            default_logger().debug(f"LocalOTPCache: Failed to commit PDF: {result.get('error')}")
+                    else:
+                        print(f"[EMERGENCY-OTP] No GitHub token available or PDF not found, skipping commit")
                 except Exception as commit_err:
+                    print(f"[EMERGENCY-OTP] Error committing PDF: {commit_err}")
                     default_logger().debug(f"LocalOTPCache: Error committing PDF: {commit_err}")
                     # PDF created locally, user can still be notified
                 
@@ -577,6 +595,20 @@ class DBManager:
             default_logger().debug(f"User entered OTP: {otp} did not match machine generated OTP: {otpValue} while the DB OTP was: {lastOTP} with local config interval:{validityIntervalInSeconds}")
             if not isValid and len(str(lastOTP)) > 0 and len(str(otp)) > 0:
                 isValid = (str(otp) == str(lastOTP)) or (int(otp) == int(lastOTP))
+        
+        # Final fallback: Try validating OTP from SubData PDF
+        # This handles emergency OTP validation when Turso DB was down during OTP generation
+        if not isValid and turso_failed:
+            try:
+                from PKDevTools.classes.Pikey import PKPikey
+                print(f"[OTP-VALIDATE] Trying SubData PDF validation for user {userIDOrName}")
+                isValid = PKPikey.validateOTPFromSubData(str(userIDOrName), str(otp))
+                if isValid:
+                    print(f"[OTP-VALIDATE] Successfully validated OTP from SubData PDF")
+            except Exception as pdf_e:
+                print(f"[OTP-VALIDATE] SubData PDF validation failed: {pdf_e}")
+                default_logger().debug(f"SubData PDF validation failed: {pdf_e}", exc_info=True)
+        
         return isValid
 
     def refreshOTPForUser(self, user: PKUser, validityIntervalInSeconds=30):
