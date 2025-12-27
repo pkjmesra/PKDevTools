@@ -21,17 +21,17 @@ PKDevTools is designed as a modular toolkit with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              Application Layer                               │
-│                    (PKScreener, PKBrokers, PKNSETools)                       │
+│                              Application Layer                              │
+│                    (PKScreener, PKBrokers, PKNSETools)                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                              PKDevTools API Layer                            │
-│          PKDataProvider | DBManager | Telegram | GitHub Integration          │
+│                              PKDevTools API Layer                           │
+│          PKDataProvider | DBManager | Telegram | GitHub Integration         │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                              Core Services Layer                             │
-│      Logging | Environment | Fetcher | Archiver | DateUtilities              │
+│                              Core Services Layer                            │
+│      Logging | Environment | Fetcher | Archiver | DateUtilities             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                           Infrastructure Layer                               │
-│     Multiprocessing | Pub/Sub Events | Singleton | Output Controls           │
+│                           Infrastructure Layer                              │
+│     Multiprocessing | Pub/Sub Events | Singleton | Output Controls          │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -241,14 +241,14 @@ class filterlogger:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    User requests /otp                            │
+│                    User requests /otp                           │
 └─────────────────────────────────┬───────────────────────────────┘
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 1: Try Turso DB (Primary)                                   │
-│ - Connect via libsql                                             │
-│ - Retrieve user record with TOTP token                           │
+│ Step 1: Try Turso DB (Primary)                                  │
+│ - Connect via libsql                                            │
+│ - Retrieve user record with TOTP token                          │
 │ - Generate OTP using pyotp.TOTP(token, interval)                │
 └─────────────────────────────────┬───────────────────────────────┘
            │                      │
@@ -269,7 +269,7 @@ class filterlogger:
                        └────────────┘  │ (Emergency Fallback)    │
                                        │ - Generate new TOTP     │
                                        │ - Create OTP            │
-                                       │ - Push password-         │
+                                       │ - Push password-        │
                                        │   protected PDF to repo │
                                        └─────────────────────────┘
 ```
