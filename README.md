@@ -121,7 +121,7 @@ logger.info("Data fetched successfully!")
 │                                 │                                       │
 │           ┌─────────────────────┼─────────────────────┐                 │
 │           │                     │                     │                 │
-│  ┌────────▼─────────┐  ┌───────▼────────┐  ┌────────▼─────────┐         │
+│  ┌────────▼─────────┐  ┌────────▼───────┐  ┌──────────▼───────┐         │
 │  │   Telegram       │  │  GitHub        │  │  Pub/Sub Events  │         │
 │  │   Integration    │  │  Integration   │  │  (blinker)       │         │
 │  └──────────────────┘  └────────────────┘  └──────────────────┘         │
@@ -133,6 +133,9 @@ logger.info("Data fetched successfully!")
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+See Also: 
+    1. [Architecture](https://github.com/pkjmesra/PKDevTools/blob/main/docs/ARCHITECTURE.md)
+    2. [API Reference](https://github.com/pkjmesra/PKDevTools/blob/main/docs/API_REFERENCE.md)
 
 ---
 
