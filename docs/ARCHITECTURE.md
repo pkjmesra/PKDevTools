@@ -671,20 +671,3 @@ python_requires = >=3.9
 ---
 
 For questions or contributions, please open an issue or submit a pull request on [GitHub](https://github.com/pkjmesra/PKDevTools).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

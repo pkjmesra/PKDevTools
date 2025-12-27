@@ -872,20 +872,3 @@ MAX_CAPTION_LENGTH = 1024  # Telegram caption limit
 ---
 
 For more details, see the [source code](https://github.com/pkjmesra/PKDevTools) or [Architecture documentation](ARCHITECTURE.md).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
