@@ -135,7 +135,7 @@ def afterMarketStockDataExists(intraday=False, forceLoad=False, date_suffix=True
         cache_date = PKDateUtilities.previousTradingDate(curr) #curr - datetime.timedelta(3)
     if weekday == 5 or weekday == 6:  # for saturday and sunday
         cache_date = PKDateUtilities.previousTradingDate(curr) # curr - datetime.timedelta(days=weekday - 4)
-    cache_date = cache_date.strftime("%d%m%y")
+    cache_date = cache_date.strftime("%d%m%Y")
     pattern = f"{'intraday_' if intraday else ''}stock_data"
     cache_file = pattern + (f"_{str(cache_date)}" if date_suffix else "") + ".pkl"
     exists = False
