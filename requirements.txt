@@ -8,7 +8,7 @@ cloudscraper
 cryptography
 filelock
 gitpython
-libsql
+# libsql # Docker build dependency. Docker builds fail if this is kept. If needed, install separately.
 mistletoe
 pynacl
 numpy
