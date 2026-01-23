@@ -100,7 +100,7 @@ jobs:
         - id: should_run
           continue-on-error: true
           name: check latest commit is less than a week
-          if: ${{ github.event_name == 'workflow_call' }} || ${{ github.event_name == 'workflow_dispatch' }}
+          if: ${{ github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' }}
           shell: bash
           run: test -z $(git rev-list  --after="7 days"  ${{ github.sha }} --max-count=1) && echo "::set-output name=should_run::false"
 
@@ -210,6 +210,11 @@ jobs:
         if: ${{ matrix.platform_id == 'win_amd64' }}
         run: |
           pip3.12 install https://github.com/pkjmesra/libsql-python/releases/download/released/libsql-0.1.6-cp312-cp312-win_amd64.whl
+
+      - name: Install dependencies only for non-Windows platforms
+        if: ${{ matrix.platform_id != 'win_amd64' }}
+        run: |
+          pip3.12 install libsql
 
       - name: Install Python Dependencies
         run: |
