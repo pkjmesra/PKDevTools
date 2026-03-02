@@ -110,13 +110,7 @@ class Committer:
                     return_code = process.returncode
                     
                     # Log everything
-                    log_message = f"Command executed: {clean_command}\n"
-                    log_message += f"Exit code: {return_code}\n"
-                    
-                    if stdout:
-                        log_message += f"Output:\n{stdout}\n"
-                    if stderr:
-                        log_message += f"Errors:\n{stderr}\n"
+                    log_message = f"Command_executed: {clean_command} | Exit_code: {return_code} | Output: {str(stdout).replace('\n','. ')} | Errors: {str(stderr).replace('\n','. ')}"
                     
                     default_logger().info(log_message)
                     
