@@ -349,9 +349,8 @@ class PKDataProvider:
             from PKDevTools.classes.Fetcher import fetcher
             
             # Construct GitHub raw URL
-            date_str = PKDateUtilities.currentDateTime().strftime("%Y-%m-%d")
-            base_url = "https://raw.githubusercontent.com/pkjmesra/PKScreener/actions-data-download/results/Data/"
-            file_name = f"stock_data_{date_str}.pkl"
+            _, file_name = Archiver.afterMarketStockDataExists()
+            base_url = "https://raw.githubusercontent.com/pkjmesra/PKScreener/actions-data-download/actions-data-download/"
             url = f"{base_url}{file_name}"
             
             f = fetcher()
