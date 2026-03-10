@@ -23,20 +23,27 @@ SOFTWARE.
 
 """
 
-from dotenv import dotenv_values
+from dotenv import dotenv_values, find_dotenv
 
 from PKDevTools.classes.Singleton import SingletonType
-
+from PKDevTools.classes.log import default_logger
 
 class PKEnvironment(metaclass=SingletonType):
     def __init__(self):
         super(PKEnvironment, self).__init__()
         self._load_secrets()
 
-    def _load_secrets(self):
+    def _load_secrets(self, env_file_path=".env.dev", retry=False):
         """Load all secrets from .env.dev file and expose as attributes"""
-        self._allSecrets = dotenv_values(".env.dev")
+        self._allSecrets = dotenv_values(env_file_path)
 
+        if not retry and (not self._allSecrets or not any(self._allSecrets.values())):
+            # If no secrets found, try loading from .env as fallback
+            default_logger().warning(f".env.dev file not found. Searching...")
+            file_path=find_dotenv(filename=".env.dev")
+            if file_path:
+                default_logger().info(f".env.dev file found at {file_path}.")
+                self._load_secrets(env_file_path=file_path, retry=True)
         # Ensure required keys exist with empty defaults
         required_keys = ["GITHUB_TOKEN", "CHAT_ID", "TOKEN", "chat_idADMIN"]
         for key in required_keys:
@@ -48,6 +55,7 @@ class PKEnvironment(metaclass=SingletonType):
             # Convert key to valid Python identifier if needed
             attr_name = self._sanitize_key(key)
             setattr(self, attr_name, value)
+            default_logger().debug(f"PKEnvironment().{attr_name} set.")
 
     def _sanitize_key(self, key: str) -> str:
         """Convert environment key to valid Python attribute name"""
