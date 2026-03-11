@@ -449,6 +449,7 @@ class DBManager:
         self.libsql_available = False
         self.url = None
         self.token = None
+        self.conn = None
         
         try:
             # First check if libsql is importable
