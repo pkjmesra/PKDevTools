@@ -446,16 +446,31 @@ class DBManager:
         Reads TDU (Turso Database URL) and TAT (Turso Auth Token) from environment secrets.
         Initializes connection parameters but doesn't establish immediate connection.
         """
+        self.libsql_available = False
+        self.url = None
+        self.token = None
+        
         try:
+            # First check if libsql is importable
+            import libsql
+            self.libsql_available = True
+            
+            # Then try to get credentials
             local_secrets = PKEnvironment().allSecrets
-            self.url = local_secrets["TDU"]
-            self.token = local_secrets["TAT"]
-        except Exception as e:  # pragma: no cover
-            print(f"Could not init library (__init__):\n{e}")
+            self.url = local_secrets.get("TDU")
+            self.token = local_secrets.get("TAT")
+            
+            if not self.url or not self.token:
+                print("Turso credentials missing, using local SQLite fallback")
+                self.libsql_available = False
+                
+        except ImportError as e:
+            print(f"libsql not available: {e}, using local SQLite fallback")
+            self.libsql_available = False
+        except Exception as e:
+            print(f"Could not init library: {e}")
             default_logger().debug(e, exc_info=True)
-            self.url = None
-            self.token = None
-        self.conn = None
+            self.libsql_available = False
 
     def shouldSkipLoading(self):
         """Check if libsql is available for database operations.
@@ -480,12 +495,19 @@ class DBManager:
             libsql.Connection: An active database connection object.
         """
         try:
+            if not self.libsql_available:
+                # Use local SQLite instead
+                import sqlite3
+                db_path = os.path.join(Archiver.get_user_data_dir(), "local_cache.db")
+                self.conn = sqlite3.connect(db_path)
+                return self.conn
+
             if self.conn is None:
                 # Connect to remote Turso database using libsql
-                self.conn = libsql.connect(
-    database=self.url, auth_token=self.token)
-        except Exception as e:  # pragma: no cover
-            print(f"Could not establish connection:\n{e}")
+                import libsql
+                self.conn = libsql.connect(database=self.url, auth_token=self.token)
+        except Exception as e:
+            print(f"Could not establish connection: {e}")
             default_logger().debug(e, exc_info=True)
         return self.conn
 
@@ -525,7 +547,8 @@ class DBManager:
             return result
 
         except Exception as e:
-            conn.rollback()  # Revert on error
+            if conn:
+                conn.rollback()  # Revert on error
             # Handle specific libsql errors
             if "panicked at" in str(e):
                 raise RuntimeError(
@@ -1306,7 +1329,8 @@ class DBManager:
             yield conn  # The block of code inside 'with' runs here
             conn.commit()
         except Exception as e:
-            conn.rollback()
+            if conn:
+                conn.rollback()
             default_logger().error(f"Transaction failed: {e}")
             raise
         finally:
