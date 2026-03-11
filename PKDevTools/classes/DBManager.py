@@ -528,6 +528,7 @@ class DBManager:
             RuntimeError: If there's a database error
         """
         try:
+            conn = None
             conn = self.connection()
             if conn is None:
                 raise RuntimeError("Database connection failed")
@@ -1325,6 +1326,7 @@ class DBManager:
     @contextlib.contextmanager
     def transaction(self):
         """Provides a transactional scope around a series of operations."""
+        conn = None
         conn = self.connection()
         try:
             yield conn  # The block of code inside 'with' runs here
