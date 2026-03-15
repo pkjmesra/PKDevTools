@@ -57,6 +57,10 @@ __all__ = [
     "log_to",
     "tracelog",
     "suppress_stdout_stderr",
+    "enable_debug_for",
+    "disable_debug_for",
+    "reset_debug_filters",
+    "set_selective_debug",
 ]
 __trace__ = False
 __filter__ = None
@@ -69,6 +73,130 @@ _thread_lock = Lock()
 
 # Process-specific handler tracking
 _process_handlers = {}
+# Module-specific logger instances
+_module_loggers = {}
+
+# Debug filters - which components should show debug logs
+_debug_filters = {
+    'packages': set(),      # e.g., {'PKBrokers', 'PKScreener'}
+    'modules': set(),       # e.g., {'PKBrokers.bot.tickbot', 'PKScreener.classes.AssetsManager'}
+    'classes': set(),       # e.g., {'KiteTokenWatcher', 'InMemoryCandleStore'}
+    'functions': set(),     # e.g., {'process_tick', 'export_daily_candles'}
+    'files': set(),         # e.g., {'kiteTokenWatcher.py', 'dataSharingManager.py'}
+}
+
+# Global debug mode flag - when True, only filtered components show debug logs
+_selective_debug = True
+
+
+def enable_debug_for(component_type, component_names):
+    """
+    Enable debug logging for specific components.
+    
+    Args:
+        component_type: One of 'package', 'module', 'class', 'function', 'file'
+        component_names: Single name or list of names to enable debug for
+    
+    Examples:
+    >>> enable_debug_for('package', 'PKBrokers')
+    >>> enable_debug_for('module', 'PKBrokers.bot.tickbot')
+    >>> enable_debug_for('class', 'KiteTokenWatcher')
+    >>> enable_debug_for('function', 'process_tick')
+    >>> enable_debug_for('file', 'kiteTokenWatcher.py')
+    """
+    global _debug_filters
+    
+    if not isinstance(component_names, list):
+        component_names = [component_names]
+    
+    plural_type = component_type + 's'
+    if plural_type in _debug_filters:
+        _debug_filters[plural_type].update(component_names)
+        logger = default_logger()
+        logger.debug(f"Enabled debug for {component_type}: {component_names}")
+
+
+def disable_debug_for(component_type, component_names):
+    """
+    Disable debug logging for specific components.
+    
+    Args:
+        component_type: One of 'package', 'module', 'class', 'function', 'file'
+        component_names: Single name or list of names to disable debug for
+    Examples:
+    >>> disable_debug_for('package', 'PKBrokers')
+    >>> disable_debug_for('module', 'PKBrokers.bot.tickbot')
+    >>> disable_debug_for('class', 'KiteTokenWatcher')
+    >>> disable_debug_for('function', 'process_tick')
+    >>> disable_debug_for('file', 'kiteTokenWatcher.py')
+    """
+    global _debug_filters
+    
+    if not isinstance(component_names, list):
+        component_names = [component_names]
+    
+    plural_type = component_type + 's'
+    if plural_type in _debug_filters:
+        for name in component_names:
+            _debug_filters[plural_type].discard(name)
+        logger = default_logger()
+        logger.debug(f"Disabled debug for {component_type}: {component_names}")
+
+
+def reset_debug_filters():
+    """Reset all debug filters to empty."""
+    global _debug_filters
+    for key in _debug_filters:
+        _debug_filters[key].clear()
+    logger = default_logger()
+    logger.debug("Reset all debug filters")
+
+
+def set_selective_debug(enabled=True):
+    """
+    Enable or disable selective debug mode.
+    
+    When enabled, debug logs only appear for filtered components.
+    When disabled, all debug logs appear (traditional behavior).
+    """
+    global _selective_debug
+    _selective_debug = enabled
+
+
+def _should_log_debug(caller_info):
+    """
+    Determine if debug logging should occur based on caller information.
+    
+    Args:
+        caller_info: Dict with keys 'package', 'module', 'class', 'function', 'file'
+    
+    Returns:
+        True if debug should be logged, False otherwise
+    """
+    global _selective_debug, _debug_filters
+    
+    # If selective debug is disabled, log everything
+    if not _selective_debug:
+        return True
+    
+    # Check each filter type
+    if caller_info.get('package') and caller_info['package'] in _debug_filters['packages']:
+        return True
+    
+    if caller_info.get('module') and caller_info['module'] in _debug_filters['modules']:
+        return True
+    
+    if caller_info.get('class') and caller_info['class'] in _debug_filters['classes']:
+        return True
+    
+    if caller_info.get('function') and caller_info['function'] in _debug_filters['functions']:
+        return True
+    
+    if caller_info.get('file') and caller_info['file'] in _debug_filters['files']:
+        return True
+    
+    # No filters matched
+    return False
 
 
 class colors:
@@ -205,46 +333,46 @@ class emptylogger:
 
 class filterlogger:
     """
-    Thread and process-safe logger implementation.
+    Thread and process-safe logger implementation with module name detection.
 
     This logger handles both multi-threaded and multiprocessing environments
     by using appropriate locking mechanisms and process-specific configuration.
-
+    
     Features:
-    - Process-safe singleton instantiation
+    - Module-specific logger instances
+    - Process-safe singleton instantiation per module
     - Thread-safe logging operations within processes
     - Automatic process-specific handler management
     - Filter-based message filtering
     - Caller information injection
+    - Selective debug logging
     """
 
-    _instance = None
-
-    def __new__(cls, logger=None):
+    def __new__(cls, module_name="PKDevTools"):
         """
-        Process-safe singleton instantiation.
+        Process-safe singleton instantiation with module-specific loggers.
 
-        Uses multiprocessing lock to ensure only one instance per process
+        Uses multiprocessing lock to ensure only one instance per module per process
         while allowing different instances in different processes.
 
         Args:
-            logger: Existing logger instance to wrap (optional)
+            module_name: Name of the module requesting the logger
 
         Returns:
-            filterlogger instance for the current process
+            filterlogger instance for the specified module
         """
         with _process_lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-                cls._instance._initialized = False
-            return cls._instance
+            if module_name not in _module_loggers:
+                _module_loggers[module_name] = super().__new__(cls)
+                _module_loggers[module_name]._initialized = False
+            return _module_loggers[module_name]
 
-    def __init__(self, logger=None):
+    def __init__(self, module_name="PKDevTools"):
         """
-        Initialize the logger for the current process.
+        Initialize the logger for the specified module.
 
         Args:
-            logger: Existing logger instance to wrap (optional)
+            module_name: Name of the module for logging (e.g., 'PKBrokers.bot.tickbot')
         """
         if getattr(self, "_initialized", False):
             return
@@ -253,7 +381,9 @@ class filterlogger:
             if getattr(self, "_initialized", False):
                 return
 
-            self._logger = logger or logging.getLogger(f"PKDevTools_{current_process().pid}_{get_ident()}")
+            self._module_name = module_name
+            # Create hierarchical logger name
+            self._logger = logging.getLogger(module_name)
             self._initialized = True
             # Store process ID for handler management
             self._process_id = current_process().pid
@@ -290,15 +420,15 @@ class filterlogger:
                 self.logger.setLevel(level)
 
     @staticmethod
-    def getlogger(logger):
+    def getlogger(module_name="PKDevTools"):
         """
         Factory method to get appropriate logger instance.
 
         Returns emptylogger if PKDevTools_Default_Log_Level is not set,
-        otherwise returns a filterlogger instance.
+        otherwise returns a filterlogger instance for the specified module.
 
         Args:
-            logger: Logger instance to wrap
+            module_name: Name of the module requesting the logger
 
         Returns:
             emptylogger or filterlogger instance
@@ -306,7 +436,7 @@ class filterlogger:
         if "PKDevTools_Default_Log_Level" not in os.environ.keys():
             return emptylogger()
 
-        return filterlogger(logger=logger)
+        return filterlogger(module_name=module_name)
 
     def flush(self):
         """
@@ -391,6 +521,49 @@ class filterlogger:
             return True
         return __filter__ in message.upper()
 
+    def _get_caller_info(self):
+        """
+        Extract detailed caller information for debug filtering.
+        
+        Returns:
+            Dict with keys: package, module, class, function, file
+        """
+        caller_info = {
+            'package': None,
+            'module': None,
+            'class': None,
+            'function': None,
+            'file': None
+        }
+        
+        try:
+            # Get the caller frame (skip logger methods)
+            frame = inspect.stack()[3]
+            
+            # File name
+            caller_info['file'] = os.path.basename(frame.filename)
+            
+            # Function name
+            caller_info['function'] = frame.function
+            
+            # Class name (if any)
+            if 'self' in frame.frame.f_locals:
+                caller_info['class'] = frame.frame.f_locals['self'].__class__.__name__
+            elif 'cls' in frame.frame.f_locals:
+                caller_info['class'] = frame.frame.f_locals['cls'].__name__
+            
+            # Module and package info
+            module = inspect.getmodule(frame[0])
+            if module and module.__name__:
+                module_name = module.__name__
+                caller_info['module'] = module_name
+                caller_info['package'] = module_name.split('.')[0]
+                
+        except Exception:
+            pass
+        
+        return caller_info
+
     def _format_message_with_caller_info(self, message):
         """
         Add caller information to the log message.
@@ -405,12 +578,6 @@ class filterlogger:
             Formatted message with caller information
         """
         try:
-            # frame_1 = inspect.stack()[1]
-            # # filename = (frame[0].f_code.co_filename).rsplit('/', 1)[1]
-            # components = str(frame_1).split(",")
-            # filename_1 = components[4].split("/")[-1].split("\\")[-1]
-            # message = f"{filename_1} - {components[5]} - {components[6]} - {message}"
-
             frame_2 = inspect.stack()[2]  # Skip logger method and caller
             filename_2 = os.path.basename(frame_2.filename)
             return f"{filename_2} - {frame_2.function} - {frame_2.lineno} - {message}"
@@ -419,13 +586,18 @@ class filterlogger:
 
     def debug(self, e, exc_info=False):
         """
-        Log a debug message.
+        Log a debug message - only if selective debug filters allow it.
 
         Args:
             e: Message or exception to log
             exc_info: If True, include exception information
         """
         if "PKDevTools_Default_Log_Level" not in os.environ.keys():
+            return
+
+        # Check if debug should be logged based on caller
+        caller_info = self._get_caller_info()
+        if not _should_log_debug(caller_info):
             return
 
         line = self._format_message_with_caller_info(str(e))
@@ -438,7 +610,7 @@ class filterlogger:
 
     def info(self, line):
         """
-        Log an info message.
+        Log an info message (always logged, not filtered).
 
         Args:
             line: Message to log
@@ -459,7 +631,7 @@ class filterlogger:
 
     def warn(self, line):
         """
-        Log a warning message.
+        Log a warning message (always logged, not filtered).
 
         Args:
             line: Message to log
@@ -476,7 +648,7 @@ class filterlogger:
 
     def error(self, line):
         """
-        Log an error message.
+        Log an error message (always logged, not filtered).
 
         Args:
             line: Message to log
@@ -511,7 +683,7 @@ class filterlogger:
 
     def critical(self, line):
         """
-        Log a critical message.
+        Log a critical message (always logged, not filtered).
 
         Args:
             line: Message to log
@@ -551,31 +723,83 @@ def setup_custom_logger(
     levelname=logging.DEBUG,
     trace=False,
     log_file_path="PKDevTools-logs.txt",
+    trace_file_path=None,
     filter=None,
+    selective_debug=True,
 ):
     """
-    Set up and configure a custom logger instance.
+    Set up and configure a custom logger instance with optional tracing and selective debug.
 
     Args:
         name: Name of the logger
         levelname: Default logging level
         trace: Enable tracing mode
-        log_file_path: Path to log file
+        log_file_path: Path to main log file
+        trace_file_path: Path to trace log file (optional, defaults to log_file_path + '.trace')
         filter: String filter for messages (only messages containing this string will be logged)
+        selective_debug: Enable selective debug filtering
 
     Returns:
         Configured logger instance (emptylogger if logging disabled)
+
+    Usage Examples:
+        # Enable debug only for specific modules
+        >>> setup_custom_logger("MyApp", selective_debug=True)
+        >>> enable_debug_for('module', 'PKBrokers.bot.tickbot')
+        >>> enable_debug_for('class', 'KiteTokenWatcher')
+        >>> enable_debug_for('function', 'process_tick')
+
+    # 1. Basic tracing:
+    >>> from PKDevTools.classes.log import trace_log, setup_custom_logger
+
+    >>> # Setup with tracing enabled
+    >>> logger = setup_custom_logger("MyApp", trace=True)
+
+    >>> # Manual trace logs
+    >>> trace_log("Starting database connection")
+    >>> # ... do something
+    >>> trace_log("Database connection established")
+
+    # 2. Function tracing with decorator:
+    >>> from PKDevTools.classes.log import tracelog
+
+    >>> @tracelog
+    ... def calculate_price(amount, tax_rate=0.18):
+    ...     return amount * (1 + tax_rate)
+
+    from PKDevTools.classes.log import tracemethod
+
+    # 3. Class method tracing:
+    >>> @tracemethod
+    ... class StockAnalyzer:
+    ...     def calculate_rsi(self, prices):
+    ...         # This method will be automatically traced
+    ...         pass
+
+    >>> def calculate_macd(self, prices):
+    ...     # This method will be automatically traced
+    ...     pass
+
+    # 4. Separate trace file:
+    >>> # Send trace logs to a separate file
+    >>> logger = setup_custom_logger(
+    ...     "MyApp", 
+    ...     trace=True,
+    ...     trace_file_path="/var/log/myapp/trace.log"
+    ... )
     """
-    global __trace__, __filter__
+    global __trace__, __filter__, _selective_debug
 
     __trace__ = trace
     __filter__ = filter.upper() if filter else None
+    _selective_debug = selective_debug
 
     # Only setup logging if environment variable is set
     if "PKDevTools_Default_Log_Level" not in os.environ.keys():
         return emptylogger()
 
-    logger = filterlogger.getlogger(logging.getLogger(name))
+    # Main application logger
+    logger = filterlogger.getlogger(name)
 
     # Set the log level from environment variable
     try:
@@ -584,19 +808,34 @@ def setup_custom_logger(
     except (ValueError, KeyError):
         logger.level = levelname
 
-    # Configure handlers
+    # Configure main logger handlers
     logger.addHandlers(log_file_path=log_file_path, levelname=logger.level)
 
     # Setup trace logger if tracing is enabled
     if trace:
-        trace_logger = filterlogger.getlogger(
-            logging.getLogger("PKDevTools_file_logger")
+        # Create a separate trace logger with hierarchical name
+        trace_logger_name = f"{name}.trace"
+        trace_logger = filterlogger.getlogger(trace_logger_name)
+        trace_logger.level = logging.DEBUG  # Trace always uses DEBUG
+        
+        # Use separate trace file if specified
+        trace_path = trace_file_path or f"{log_file_path}.trace"
+        
+        # Add handler for trace logger
+        trace_formatter = logging.Formatter(
+            fmt="%(asctime)s - %(name)s - TRACE - %(message)s"
         )
-        trace_logger.level = logging.DEBUG  # Tracing always uses DEBUG level
-        trace_logger.addHandlers(
-    log_file_path=log_file_path,
-     levelname=logging.DEBUG)
-        logger.info("Tracing started")
+        
+        trace_handler = logging.FileHandler(trace_path, mode="a", encoding="utf-8")
+        trace_handler.setFormatter(trace_formatter)
+        trace_handler.setLevel(logging.DEBUG)
+        trace_logger.logger.addHandler(trace_handler)
+        
+        logger.info(f"Tracing enabled - trace logs will be written to {trace_path}")
+        
+        # Store trace logger reference
+        global _trace_logger
+        _trace_logger = trace_logger
 
     # Turn off warnings
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -607,15 +846,51 @@ def setup_custom_logger(
 
 def default_logger():
     """
-    Get the default logger instance.
-
+    Get the default logger instance with automatic module detection.
+    
+    Detects the calling module's top-level package (PKBrokers, PKScreener, PKNSETools, etc.)
+    to provide proper module-specific logging across different libraries.
+    
     Returns:
         filterlogger instance if logging enabled, otherwise emptylogger
     """
-    if "PKDevTools_Default_Log_Level" in os.environ.keys():
-        return filterlogger.getlogger(logging.getLogger("PKDevTools"))
-    else:
+    if "PKDevTools_Default_Log_Level" not in os.environ.keys():
         return emptylogger()
+    
+    # Automatically detect the calling module
+    try:
+        # Stack: [0] = this function, [1] = calling function, [2] = original caller
+        frame = inspect.stack()[2]
+        module = inspect.getmodule(frame[0])
+        
+        if module and module.__name__:
+            module_name = module.__name__
+            # Extract the top-level package name (first part before any dot)
+            # Examples:
+            #   "PKBrokers.bot.tickbot" -> "PKBrokers"
+            #   "PKScreener.classes.AssetsManager" -> "PKScreener"
+            #   "PKNSETools.utils" -> "PKNSETools"
+            #   "PKDevTools.classes.log" -> "PKDevTools"
+            top_level_package = module_name.split('.')[0]
+            
+            # If it's one of our known packages, use the full path for clarity
+            if top_level_package in ['PKBrokers', 'PKScreener', 'PKNSETools', 'PKDevTools']:
+                # For our packages, use the full module path (e.g., "PKBrokers.bot.tickbot")
+                # but limit to 2-3 levels to keep logs readable
+                parts = module_name.split('.')
+                if len(parts) > 3:
+                    # Keep first 3 parts for readability
+                    module_name = '.'.join(parts[:3])
+            else:
+                # For other packages, just use the top-level name
+                module_name = top_level_package
+        else:
+            module_name = "PKDevTools"
+            
+    except Exception:
+        module_name = "PKDevTools"
+    
+    return filterlogger.getlogger(module_name)
 
 
 def file_logger():
@@ -626,22 +901,50 @@ def file_logger():
         filterlogger instance if logging enabled, otherwise emptylogger
     """
     if "PKDevTools_Default_Log_Level" in os.environ.keys():
-        return filterlogger.getlogger(
-            logging.getLogger("PKDevTools_file_logger"))
+        return filterlogger.getlogger("PKDevTools_file_logger")
     else:
         return emptylogger()
 
 
-def trace_log(line):
+def trace_log(line, level=logging.DEBUG):
     """
-    Log tracing information - always works if tracing is enabled.
-
+    Log tracing information - only logs if tracing is enabled.
+    
     Args:
         line: Tracing message to log
+        level: Logging level for the trace (default: DEBUG)
     """
-    global __trace__
+    global __trace__, _trace_logger
     if __trace__:
-        file_logger().info(f"TRACE: {line}")
+        try:
+            # Get caller information
+            frame = inspect.stack()[1]
+            filename = os.path.basename(frame.filename)
+            caller_info = f"{filename}:{frame.function}:{frame.lineno}"
+            
+            # Format trace message
+            trace_msg = f"[TRACE] {caller_info} - {line}"
+            
+            # Use trace logger if available
+            if _trace_logger:
+                if level == logging.DEBUG:
+                    _trace_logger.debug(trace_msg)
+                elif level == logging.INFO:
+                    _trace_logger.info(trace_msg)
+                elif level == logging.WARNING:
+                    _trace_logger.warning(trace_msg)
+                else:
+                    _trace_logger.debug(trace_msg)
+            else:
+                # Fallback to file_logger
+                file_logger().info(trace_msg)
+        except Exception:
+            # If anything fails in tracing, don't break the application
+            pass
+
+
+# Global trace logger reference
+_trace_logger = None
 
 
 def flatten(line):
@@ -791,14 +1094,59 @@ def measure_time(f):
     return timed if default_logger().level == logging.DEBUG else log_to(None)
 
 
-# Conditional tracelog decorator
-tracelog = (
-    log_to(trace_log)
-    if "PKDevTools_Default_Log_Level" in os.environ.keys()
-    and (default_logger().level == logging.DEBUG or __trace__)
-    else log_to(None)
-)
+def tracelog(func):
+    """
+    Decorator to trace function calls with arguments and return values.
+    
+    Usage:
+        @tracelog
+        def my_function(a, b):
+            return a + b
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if __trace__:
+            try:
+                # Get function signature
+                sig = inspect.signature(func)
+                bound_args = sig.bind(*args, **kwargs)
+                bound_args.apply_defaults()
+                
+                # Format arguments
+                args_str = ", ".join(f"{k}={v}" for k, v in bound_args.arguments.items())
+                
+                # Log function entry
+                trace_log(f"→ {func.__name__}({args_str})")
+                
+                # Execute function
+                start_time = time.time()
+                result = func(*args, **kwargs)
+                elapsed = (time.time() - start_time) * 1000  # Convert to ms
+                
+                # Log function exit with result and timing
+                trace_log(f"← {func.__name__} returned {result!r} in {elapsed:.2f}ms")
+                
+                return result
+            except Exception as e:
+                trace_log(f"✗ {func.__name__} raised {type(e).__name__}: {e}")
+                raise
+        else:
+            return func(*args, **kwargs)
+    return wrapper
 
+def tracemethod(cls):
+    """
+    Class decorator to trace all methods of a class.
+    
+    Usage:
+        @tracemethod
+        class MyClass:
+            def method1(self): ...
+            def method2(self): ...
+    """
+    for name, method in inspect.getmembers(cls, inspect.isfunction):
+        setattr(cls, name, tracelog(method))
+    return cls
 
 class suppress_stdout_stderr(object):
     """
@@ -871,3 +1219,5 @@ def cleanup_logging():
         process_id = current_process().pid
         if process_id in _process_handlers:
             del _process_handlers[process_id]
+        # Clear module loggers
+        _module_loggers.clear()
