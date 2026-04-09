@@ -41,6 +41,7 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         self.enableUserInput = enableUserInput or (
             "PKDevTools_Default_Log_Level" in os.environ.keys()
         )
+        self.env_keys = os.environ.keys()
         self.lines = 0
         self.timeit = "timeit" in os.environ.keys()
         if self.timeit:
@@ -61,6 +62,8 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         flush: Literal[False] | bool = False,
         enableMultipleLineOutput=False,
     ) -> None:
+        if "RUNNER" in self.env_keys:
+            return
         # end = '\r' if (not enableMultipleLineOutput) else end
         # flush = True if (not enableMultipleLineOutput) else flush
         if self.timeit:
@@ -82,12 +85,16 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
             self.lines -= 1
 
     def moveCursorToStartPosition(self):
+        if "RUNNER" in self.env_keys:
+            return
         for _ in range(self.lines):
             self.moveCursorUpLines(1)
             self.lines -= 1
 
     def moveCursorUpLines(self, lines):
         try:
+            if "RUNNER" in self.env_keys:
+                return
             for _ in range(lines):
                 if sys.stdout is not None:
                     sys.stdout.write("\x1b[1A")  # cursor up one line
