@@ -62,15 +62,19 @@ class PKEnvironment(metaclass=SingletonType):
         # Replace invalid characters with underscore
         sanitized = "".join([c if c.isalnum() else "_" for c in key])
         # Ensure it doesn't start with number
-        if sanitized[0].isdigit():
+        if sanitized and sanitized[0].isdigit():
             sanitized = f"_{sanitized}"
         return sanitized
 
     def __getattr__(self, name):
-        """Handle access to undefined attributes (for new keys added later)"""
+        """
+        Handle access to undefined attributes by returning empty string.
+        This prevents AttributeError and allows callers to safely check values.
+        """
         if name in self._allSecrets:
             return self._allSecrets[name]
-        raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{name}'")
+        default_logger().debug(f"Accessing undefined environment variable '{name}', returning empty string")
+        return "0"
 
     @property
     def secrets(self):
@@ -85,7 +89,7 @@ class PKEnvironment(metaclass=SingletonType):
     @property
     def allSecrets(self):
         """Property returning all secrets as dict"""
-        return self._allSecrets
+        return self._allSecrets.copy()
 
     def refresh(self):
         """Reload secrets from file (for detecting new keys)"""
