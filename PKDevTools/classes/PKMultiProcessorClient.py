@@ -93,6 +93,14 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.task_queue = task_queue
         self.result_queue = result_queue
         self.logging_queue = logging_queue
+        if task_queue is not None and result_queue is not None:
+            if logging_queue is None:
+                # Create a queue if none was provided
+                self.logging_queue = multiprocessing.Queue()
+            else:
+                self.logging_queue = logging_queue
+        else:
+            self.logging_queue = logging_queue
         # processingCounter and processingResultsCounter
         # are sunchronized counters that can be used within
         # processorMethod via hostRef.processingCounter
@@ -117,6 +125,16 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.logLevel = (
             defaultLogger.level if defaultLogger is not None else logging.NOTSET
         )
+        # Also check if it's an emptylogger
+        if hasattr(defaultLogger, 'level') and callable(defaultLogger.level):
+            self.logLevel = defaultLogger.level()
+        elif hasattr(defaultLogger, 'level'):
+            self.logLevel = defaultLogger.level
+        else:
+            self.logLevel = logging.DEBUG
+        # Force debug level in child processes when parent has it
+        if os.environ.get("PKDevTools_Default_Log_Level") == "10":
+            self.logLevel = logging.DEBUG
 
         self.keyboardInterruptEvent = keyboardInterruptEvent
         self.stockList = stockList
@@ -158,31 +176,62 @@ class PKMultiProcessorClient(multiprocessing.Process):
         self.paused = False
 
     def _setupLogger(self):
+        """Setup logger for child process with proper queue handling and timeout."""
         # create the logger to use.
-        logger = logging.getLogger("PKDevTools.subprocess")
+        logger = logging.getLogger("pkscreener")
         # The only handler desired is the SubProcessLogHandler.  If any others
         # exist, remove them. In this case, on Unix and Linux the StreamHandler
         # will be inherited.
-
-        for handler in logger.handlers:
-            # just a check for my sanity
-            assert not isinstance(handler, SubProcessLogHandler)
+        # Clear existing handlers
+        for handler in logger.handlers[:]:
             logger.removeHandler(handler)
-        # add the handler
-        handler = SubProcessLogHandler(self.logging_queue)
-        formatter = logging.Formatter(
-            fmt="\n%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d\n%(message)s\n"
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        
+        # CRITICAL: Check if logging_queue exists before adding handler
+        if self.logging_queue is not None:
+            # Use a custom handler with timeout to avoid blocking
+            from PKDevTools.classes.multiprocessing_logging import SubProcessLogHandler
+            
+            # Patch the handler to use put with timeout instead of put_nowait
+            class TimeoutSubProcessLogHandler(SubProcessLogHandler):
+                def emit(self, record):
+                    try:
+                        # Use put with timeout instead of put_nowait to avoid queue full issues
+                        self.queue.put(self._format_record(record), timeout=0.1)
+                    except Exception:
+                        # If queue is full or error, just drop the log (don't block)
+                        pass
+            
+            handler = TimeoutSubProcessLogHandler(self.logging_queue)
+            formatter = logging.Formatter(
+                fmt="\n%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(module)s - %(funcName)s - %(lineno)d\n%(message)s\n"
+            )
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+        else:
+            # Fallback: Add file handler when no queue
+            log_file = os.path.join(Archiver.get_user_data_dir(), "pkscreener-logs.txt")
+            file_handler = logging.FileHandler(log_file, mode='a')
+            formatter = logging.Formatter(
+                fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+            # print(f"Child process {os.getpid()} logging to {log_file}", file=sys.stderr)
 
+        # Add console handler for debugging (optional)
+        console_handler = logging.StreamHandler()
+        console_formatter = logging.Formatter(
+            fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        console_handler.setFormatter(console_formatter)
+        logger.addHandler(console_handler)
+        
         # On Windows, the level will not be inherited.  Also, we could just
         # set the level to log everything here and filter it in the main
         # process handlers.  For now, just set it from the global default.
+
         logger.setLevel(self.logLevel)
         self.default_logger = logger
-        # if self.default_logger is not None:
-        #     self.default_logger.info("PKMultiProcessorClient initialized.")
 
     def _reloadDatabase(self):
         if self.refreshDatabase and self.dbFileNamePrimary is not None:
