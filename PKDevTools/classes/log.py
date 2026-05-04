@@ -86,7 +86,7 @@ _debug_filters = {
 }
 
 # Global debug mode flag - when True, only filtered components show debug logs
-_selective_debug = True
+_selective_debug = False
 
 
 def enable_debug_for(component_type, component_names):
@@ -725,7 +725,7 @@ def setup_custom_logger(
     log_file_path="PKDevTools-logs.txt",
     trace_file_path=None,
     filter=None,
-    selective_debug=True,
+    selective_debug=False,
 ):
     """
     Set up and configure a custom logger instance with optional tracing and selective debug.
