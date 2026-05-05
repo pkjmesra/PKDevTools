@@ -61,6 +61,9 @@ __all__ = [
     "disable_debug_for",
     "reset_debug_filters",
     "set_selective_debug",
+    "get_debug_filters",
+    "is_debug_enabled_for",
+    "print_debug_filter_status",
 ]
 __trace__ = False
 __filter__ = None
@@ -89,6 +92,118 @@ _debug_filters = {
 _selective_debug = True
 
 
+def _init_debug_filters_from_env():
+    """
+    Initialize debug filters from environment variables.
+    
+    Environment Variables:
+    -----------------------
+    PKDEVTOOLS_DEBUG_PACKAGES : Comma-separated list of package names to debug
+        Example: PKDEVTOOLS_DEBUG_PACKAGES="PKBrokers,PKScreener"
+    
+    PKDEVTOOLS_DEBUG_MODULES : Comma-separated list of module names to debug
+        Example: PKDEVTOOLS_DEBUG_MODULES="PKScreener.classes.AssetsManager,PKBrokers.bot.tickbot"
+    
+    PKDEVTOOLS_DEBUG_CLASSES : Comma-separated list of class names to debug
+        Example: PKDEVTOOLS_DEBUG_CLASSES="KiteTokenWatcher,InMemoryCandleStore"
+    
+    PKDEVTOOLS_DEBUG_FUNCTIONS : Comma-separated list of function names to debug
+        Example: PKDEVTOOLS_DEBUG_FUNCTIONS="process_tick,export_daily_candles,loadStockData"
+    
+    PKDEVTOOLS_DEBUG_FILES : Comma-separated list of file names to debug
+        Example: PKDEVTOOLS_DEBUG_FILES="AssetsManager.py,KiteTokenWatcher.py"
+    
+    PKDEVTOOLS_DEBUG_ALL : Set to '1', 'true', 'yes', or 'on' to disable selective filtering
+        Example: PKDEVTOOLS_DEBUG_ALL=1
+    
+    PKDEVTOOLS_LOG_LEVEL : Override the default log level (0-50)
+        Example: PKDEVTOOLS_LOG_LEVEL=10  # DEBUG level
+    
+    PKDEVTOOLS_TRACE_ENABLED : Set to '1', 'true', 'yes', or 'on' to enable tracing
+        Example: PKDEVTOOLS_TRACE_ENABLED=1
+    
+    PKDEVTOOLS_SELECTIVE_DEBUG : Set to '0', 'false', 'no', or 'off' to disable selective debug
+        Example: PKDEVTOOLS_SELECTIVE_DEBUG=0
+    
+    Usage Examples:
+    ----------------
+    # Debug only PKBrokers package
+    $ export PKDEVTOOLS_DEBUG_PACKAGES="PKBrokers"
+    $ python your_script.py
+    
+    # Debug specific module and class
+    $ export PKDEVTOOLS_DEBUG_MODULES="PKScreener.classes.AssetsManager"
+    $ export PKDEVTOOLS_DEBUG_CLASSES="KiteTokenWatcher"
+    $ python your_script.py
+    
+    # Debug multiple items
+    $ export PKDEVTOOLS_DEBUG_PACKAGES="PKBrokers,PKScreener"
+    $ export PKDEVTOOLS_DEBUG_FUNCTIONS="process_tick,export_daily_candles"
+    $ python your_script.py
+    
+    # Debug specific file
+    $ export PKDEVTOOLS_DEBUG_FILES="AssetsManager.py,KiteTokenWatcher.py"
+    $ python your_script.py
+    
+    # Enable all debug (disables selective filtering)
+    $ export PKDEVTOOLS_DEBUG_ALL=1
+    $ python your_script.py
+    
+    # Combine environment variables with code-based filters
+    $ export PKDEVTOOLS_DEBUG_PACKAGES="PKScreener"
+    $ python -c "from PKDevTools.classes.log import enable_debug_for; enable_debug_for('function', 'my_function')"
+    """
+    global _debug_filters, _selective_debug
+    
+    # Check if we should enable all debug (disable selective mode)
+    debug_all = os.environ.get("PKDEVTOOLS_DEBUG_ALL", "").lower()
+    if debug_all in ('1', 'true', 'yes', 'on'):
+        _selective_debug = False
+        # Try to log, but logger might not be initialized yet
+        try:
+            logger = default_logger()
+            logger.info("Debug all enabled via PKDEVTOOLS_DEBUG_ALL environment variable")
+        except:
+            pass
+        return
+    
+    # Check if selective debug should be disabled
+    selective_debug_env = os.environ.get("PKDEVTOOLS_SELECTIVE_DEBUG", "")
+    if selective_debug_env.lower() in ('0', 'false', 'no', 'off'):
+        _selective_debug = False
+        try:
+            logger = default_logger()
+            logger.info("Selective debug disabled via PKDEVTOOLS_SELECTIVE_DEBUG environment variable")
+        except:
+            pass
+    
+    # Parse each environment variable and add to filters
+    env_mappings = {
+        'PKDEVTOOLS_DEBUG_PACKAGES': 'packages',
+        'PKDEVTOOLS_DEBUG_MODULES': 'modules', 
+        'PKDEVTOOLS_DEBUG_CLASSES': 'classes',
+        'PKDEVTOOLS_DEBUG_FUNCTIONS': 'functions',
+        'PKDEVTOOLS_DEBUG_FILES': 'files',
+    }
+    
+    for env_var, filter_type in env_mappings.items():
+        value = os.environ.get(env_var, "")
+        if value:
+            # Split by comma and strip whitespace
+            items = [item.strip() for item in value.split(',') if item.strip()]
+            if items:
+                _debug_filters[filter_type].update(items)
+                # Try to log, but logger might not be initialized yet
+                try:
+                    logger = default_logger()
+                    logger.debug(f"Added to {filter_type} from env {env_var}: {items}")
+                except:
+                    pass
+
+# Initialize filters from environment variables when module loads
+_init_debug_filters_from_env()
+
+
 def enable_debug_for(component_type, component_names):
     """
     Enable debug logging for specific components.
@@ -98,11 +213,12 @@ def enable_debug_for(component_type, component_names):
         component_names: Single name or list of names to enable debug for
     
     Examples:
-    >>> enable_debug_for('package', 'PKBrokers')
-    >>> enable_debug_for('module', 'PKBrokers.bot.tickbot')
-    >>> enable_debug_for('class', 'KiteTokenWatcher')
-    >>> enable_debug_for('function', 'process_tick')
-    >>> enable_debug_for('file', 'kiteTokenWatcher.py')
+        >>> enable_debug_for('package', 'PKBrokers')
+        >>> enable_debug_for('module', 'PKBrokers.bot.tickbot')
+        >>> enable_debug_for('class', 'KiteTokenWatcher')
+        >>> enable_debug_for('function', 'process_tick')
+        >>> enable_debug_for('file', 'kiteTokenWatcher.py')
+        >>> enable_debug_for('function', ['process_tick', 'export_daily_candles'])
     """
     global _debug_filters
     
@@ -123,12 +239,13 @@ def disable_debug_for(component_type, component_names):
     Args:
         component_type: One of 'package', 'module', 'class', 'function', 'file'
         component_names: Single name or list of names to disable debug for
+    
     Examples:
-    >>> disable_debug_for('package', 'PKBrokers')
-    >>> disable_debug_for('module', 'PKBrokers.bot.tickbot')
-    >>> disable_debug_for('class', 'KiteTokenWatcher')
-    >>> disable_debug_for('function', 'process_tick')
-    >>> disable_debug_for('file', 'kiteTokenWatcher.py')
+        >>> disable_debug_for('package', 'PKBrokers')
+        >>> disable_debug_for('module', 'PKBrokers.bot.tickbot')
+        >>> disable_debug_for('class', 'KiteTokenWatcher')
+        >>> disable_debug_for('function', 'process_tick')
+        >>> disable_debug_for('file', 'kiteTokenWatcher.py')
     """
     global _debug_filters
     
@@ -158,9 +275,101 @@ def set_selective_debug(enabled=True):
     
     When enabled, debug logs only appear for filtered components.
     When disabled, all debug logs appear (traditional behavior).
+    
+    Args:
+        enabled: True to enable selective debug, False to disable
     """
     global _selective_debug
     _selective_debug = enabled
+    logger = default_logger()
+    logger.debug(f"Selective debug mode: {'enabled' if enabled else 'disabled'}")
+
+
+def get_debug_filters():
+    """
+    Get current debug filter settings.
+    
+    Returns:
+        dict: Current debug filters with lists of enabled components
+        
+    Example:
+        >>> filters = get_debug_filters()
+        >>> print(filters['packages'])
+        ['PKBrokers', 'PKScreener']
+    """
+    global _debug_filters
+    return {k: list(v) for k, v in _debug_filters.items()}
+
+
+def is_debug_enabled_for(component_type, component_name):
+    """
+    Check if debug is enabled for a specific component.
+    
+    Args:
+        component_type: One of 'package', 'module', 'class', 'function', 'file'
+        component_name: Name of the component to check
+    
+    Returns:
+        bool: True if debug is enabled for this component
+        
+    Example:
+        >>> if is_debug_enabled_for('file', 'AssetsManager.py'):
+        ...     print("Debug enabled for AssetsManager")
+    """
+    global _debug_filters, _selective_debug
+    
+    if not _selective_debug:
+        return True
+    
+    plural_type = component_type + 's'
+    if plural_type in _debug_filters:
+        return component_name in _debug_filters[plural_type]
+    
+    return False
+
+
+def print_debug_filter_status():
+    """
+    Print current debug filter configuration to console.
+    
+    This is useful for debugging and understanding what components
+    are currently configured for debug logging.
+    
+    Example:
+        >>> print_debug_filter_status()
+        ============================================================
+        DEBUG FILTER CONFIGURATION
+        ============================================================
+        Selective Debug Mode: ENABLED
+        
+        PACKAGES:
+          - PKBrokers
+          - PKScreener
+        
+        MODULES:
+          - PKScreener.classes.AssetsManager
+        
+        FUNCTIONS:
+          - process_tick
+          - loadStockData
+        ============================================================
+    """
+    global _debug_filters, _selective_debug
+    
+    print("\n" + "="*60)
+    print("DEBUG FILTER CONFIGURATION")
+    print("="*60)
+    print(f"Selective Debug Mode: {'ENABLED' if _selective_debug else 'DISABLED (all debug enabled)'}")
+    
+    if _selective_debug:
+        for filter_type, items in _debug_filters.items():
+            if items:
+                print(f"\n{filter_type.upper()}:")
+                for item in sorted(items):
+                    print(f"  - {item}")
+            else:
+                print(f"\n{filter_type.upper()}: (none)")
+    print("="*60)
 
 
 def _should_log_debug(caller_info):
@@ -787,6 +996,14 @@ def setup_custom_logger(
     """
     Set up and configure a custom logger instance with optional tracing and selective debug.
 
+    Environment variables override:
+        PKDEVTOOLS_LOG_LEVEL: Override log level (0-50)
+            Example: PKDEVTOOLS_LOG_LEVEL=10  # DEBUG level
+        PKDEVTOOLS_TRACE_ENABLED: Set to '1' to enable tracing
+            Example: PKDEVTOOLS_TRACE_ENABLED=1
+        PKDEVTOOLS_SELECTIVE_DEBUG: Set to '0' to disable selective debug
+            Example: PKDEVTOOLS_SELECTIVE_DEBUG=0
+
     Args:
         name: Name of the logger
         levelname: Default logging level
@@ -806,47 +1023,50 @@ def setup_custom_logger(
         >>> enable_debug_for('class', 'KiteTokenWatcher')
         >>> enable_debug_for('function', 'process_tick')
 
-    # 1. Basic tracing:
-    >>> from PKDevTools.classes.log import trace_log, setup_custom_logger
+        # With environment variables
+        $ export PKDEVTOOLS_DEBUG_MODULES="PKBrokers.bot.tickbot"
+        $ export PKDEVTOOLS_LOG_LEVEL=10
+        $ python your_script.py
 
-    >>> # Setup with tracing enabled
-    >>> logger = setup_custom_logger("MyApp", trace=True)
+        # Basic tracing:
+        >>> from PKDevTools.classes.log import trace_log, setup_custom_logger
+        >>> logger = setup_custom_logger("MyApp", trace=True)
+        >>> trace_log("Starting database connection")
+        >>> # ... do something
+        >>> trace_log("Database connection established")
 
-    >>> # Manual trace logs
-    >>> trace_log("Starting database connection")
-    >>> # ... do something
-    >>> trace_log("Database connection established")
+        # Function tracing with decorator:
+        >>> from PKDevTools.classes.log import tracelog
+        >>> @tracelog
+        ... def calculate_price(amount, tax_rate=0.18):
+        ...     return amount * (1 + tax_rate)
 
-    # 2. Function tracing with decorator:
-    >>> from PKDevTools.classes.log import tracelog
+        # Class method tracing:
+        >>> from PKDevTools.classes.log import tracemethod
+        >>> @tracemethod
+        ... class StockAnalyzer:
+        ...     def calculate_rsi(self, prices):
+        ...         # This method will be automatically traced
+        ...         pass
 
-    >>> @tracelog
-    ... def calculate_price(amount, tax_rate=0.18):
-    ...     return amount * (1 + tax_rate)
-
-    from PKDevTools.classes.log import tracemethod
-
-    # 3. Class method tracing:
-    >>> @tracemethod
-    ... class StockAnalyzer:
-    ...     def calculate_rsi(self, prices):
-    ...         # This method will be automatically traced
-    ...         pass
-
-    >>> def calculate_macd(self, prices):
-    ...     # This method will be automatically traced
-    ...     pass
-
-    # 4. Separate trace file:
-    >>> # Send trace logs to a separate file
-    >>> logger = setup_custom_logger(
-    ...     "MyApp", 
-    ...     trace=True,
-    ...     trace_file_path="/var/log/myapp/trace.log"
-    ... )
+        # Separate trace file:
+        >>> logger = setup_custom_logger(
+        ...     "MyApp", 
+        ...     trace=True,
+        ...     trace_file_path="/var/log/myapp/trace.log"
+        ... )
     """
     global __trace__, __filter__, _selective_debug
 
+    # Check environment variables for overrides
+    env_trace = os.environ.get("PKDEVTOOLS_TRACE_ENABLED", "")
+    if env_trace.lower() in ('1', 'true', 'yes', 'on'):
+        trace = True
+    
+    env_selective = os.environ.get("PKDEVTOOLS_SELECTIVE_DEBUG", "")
+    if env_selective.lower() in ('0', 'false', 'no', 'off'):
+        selective_debug = False
+    
     __trace__ = trace
     __filter__ = filter.upper() if filter else None
     _selective_debug = selective_debug
@@ -860,8 +1080,13 @@ def setup_custom_logger(
 
     # Set the log level from environment variable
     try:
-        env_level = int(os.environ["PKDevTools_Default_Log_Level"])
-        logger.level = env_level
+        # First check for PKDEVTOOLS_LOG_LEVEL override
+        env_level = os.environ.get("PKDEVTOOLS_LOG_LEVEL")
+        if env_level is not None:
+            level = int(env_level)
+        else:
+            level = int(os.environ["PKDevTools_Default_Log_Level"])
+        logger.level = level
     except (ValueError, KeyError):
         logger.level = levelname
 
@@ -1021,6 +1246,7 @@ def default_logger():
         pass  # Fallback to PKDevTools
     
     return filterlogger.getlogger("PKDevTools")
+
 
 def file_logger():
     """
@@ -1263,6 +1489,7 @@ def tracelog(func):
             return func(*args, **kwargs)
     return wrapper
 
+
 def tracemethod(cls):
     """
     Class decorator to trace all methods of a class.
@@ -1276,6 +1503,7 @@ def tracemethod(cls):
     for name, method in inspect.getmembers(cls, inspect.isfunction):
         setattr(cls, name, tracelog(method))
     return cls
+
 
 class suppress_stdout_stderr(object):
     """
