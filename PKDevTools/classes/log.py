@@ -524,7 +524,7 @@ class filterlogger:
     def _get_caller_info(self):
         """
         Extract detailed caller information for debug filtering.
-        Skips decorator and framework frames.
+        Skips debugger, decorator, and framework frames.
         
         Returns:
             Dict with keys: package, module, class, function, file
@@ -537,17 +537,40 @@ class filterlogger:
             'file': None
         }
         
-        # Skip these modules when looking for the real caller
-        skip_modules = {
-            'halo', 'decorator', 'functools', 'contextlib'
+        # Patterns to skip
+        skip_patterns = [
+            'debugpy', 'pydevd', 'ipykernel', 'IPython',  # Debuggers/IDEs
+            'halo', 'decorator', 'functools', 'contextlib',  # Decorators
+            'pkscreener.classes.PKAnalytics',  # Analytics decorators
+            'PKDevTools.classes.log','log.py'  # Logging itself
+        ]
+        
+        skip_functions = {
+            'wrapper', 'decorator', 'timed', 'wrap', '__call__', 'new_func',
+            'run', 'call', 'invoke', '_run_with_interrupt_thread'
         }
         
         try:
             # Walk up the stack to find the first relevant frame
-            # Skip frame 0 (this method), frame 1 (debug method)
-            for i in range(2, len(inspect.stack())):
+            for i in range(1, len(inspect.stack())):
                 frame_info = inspect.stack()[i]
                 frame = frame_info[0]
+                filename = frame_info.filename
+                function_name = frame_info.function
+                
+                # Skip debugger frames
+                should_skip = False
+                for pattern in skip_patterns:
+                    if pattern in filename.lower():
+                        should_skip = True
+                        break
+                
+                if should_skip:
+                    continue
+                
+                # Skip wrapper functions
+                if function_name in skip_functions:
+                    continue
                 
                 # Check the module
                 module = inspect.getmodule(frame)
@@ -555,16 +578,17 @@ class filterlogger:
                     module_name = module.__name__
                     
                     # Skip decorator modules
-                    if any(skip in module_name for skip in skip_modules):
-                        continue
+                    should_skip = False
+                    for pattern in skip_patterns:
+                        if pattern in module_name.lower():
+                            should_skip = True
+                            break
                     
-                    # Skip wrapper functions
-                    function_name = frame_info.function
-                    if function_name in ('wrapper', 'decorator', 'timed', 'wrap', '__call__', 'new_func'):
+                    if should_skip:
                         continue
                     
                     # Found a real caller
-                    caller_info['file'] = os.path.basename(frame_info.filename)
+                    caller_info['file'] = os.path.basename(filename)
                     caller_info['function'] = function_name
                     caller_info['module'] = module_name
                     caller_info['package'] = module_name.split('.')[0]
@@ -575,14 +599,23 @@ class filterlogger:
                     elif 'cls' in frame.f_locals:
                         caller_info['class'] = frame.f_locals['cls'].__name__
                     
+                    # Also try to get class from module name if available
+                    if not caller_info['class'] and '.' in module_name:
+                        parts = module_name.split('.')
+                        if len(parts) >= 2:
+                            caller_info['class'] = parts[-1]
+                    
                     break
                     
         except Exception:
             # Fallback to simple method
             try:
-                frame = inspect.stack()[2]
-                caller_info['file'] = os.path.basename(frame.filename)
-                caller_info['function'] = frame.function
+                for i in range(1, 4):
+                    frame_info = inspect.stack()[i] if i < len(inspect.stack()) else None
+                    if frame_info and 'debugpy' not in frame_info.filename:
+                        caller_info['file'] = os.path.basename(frame_info.filename)
+                        caller_info['function'] = frame_info.function
+                        break
             except Exception:
                 pass
         
@@ -872,8 +905,8 @@ def default_logger():
     """
     Get the default logger instance with automatic module detection.
     
-    Detects the calling module's top-level package (PKBrokers, PKScreener, PKNSETools, etc.)
-    by walking up the stack until we find a module that's not a decorator/framework.
+    Detects the calling module's top-level package by walking up the stack
+    and skipping debugger, IDE, decorator, and framework frames.
     
     Returns:
         filterlogger instance if logging enabled, otherwise emptylogger
@@ -881,32 +914,71 @@ def default_logger():
     if "PKDevTools_Default_Log_Level" not in os.environ.keys():
         return emptylogger()
     
-    # Skip decorator and framework frames to find the real caller
-    skip_modules = {
-        'halo', 'decorator', 'functools', 'contextlib'
+    # Patterns to skip (debugger, IDE, decorators, frameworks)
+    skip_patterns = [
+        'debugpy',           # VSCode debugger
+        'pydevd',            # PyDev debugger
+        'ipykernel',         # Jupyter kernel
+        'IPython',           # IPython
+        'pytest',            # pytest framework
+        'unittest',          # unittest framework
+        'halo',              # Halo spinner decorator
+        'decorator',         # Decorator module
+        'functools',         # functools.wraps
+        'contextlib',        # context managers
+        'pkscreener.classes.PKAnalytics',  # Analytics decorators
+        'PKDevTools.classes.log',          # Logging itself
+    ]
+    
+    # Function names to skip (common wrapper names)
+    skip_functions = {
+        'wrapper', 'decorator', 'timed', 'wrap', '__call__', 'new_func',
+        'run', 'call', 'invoke', '_run_with_interrupt_thread',  # Debugger internals
+        '__main__',  # Main block
     }
     
     try:
-        # Walk up the stack to find the first relevant frame
         stack = inspect.stack()
         
+        # Look for the first non-debugger, non-decorator frame
         for frame_info in stack:
             frame = frame_info[0]
-            module = inspect.getmodule(frame)
+            filename = frame_info.filename
+            function_name = frame_info.function
             
+            # Skip if the filename matches any debugger/IDE pattern
+            should_skip = False
+            for pattern in skip_patterns:
+                if pattern in filename.lower():
+                    should_skip = True
+                    break
+            
+            if should_skip:
+                continue
+            
+            # Skip common wrapper function names
+            if function_name in skip_functions:
+                continue
+            
+            # Get the module from the frame
+            module = inspect.getmodule(frame)
             if module and module.__name__:
                 module_name = module.__name__
                 
-                # Skip decorator and framework modules
-                if any(skip in module_name for skip in skip_modules):
+                # Skip if module is in skip patterns
+                should_skip = False
+                for pattern in skip_patterns:
+                    if pattern in module_name.lower():
+                        should_skip = True
+                        break
+                
+                if should_skip:
                     continue
                 
-                # Also check if this is a wrapper/decorator function
-                function_name = frame_info.function
-                if function_name in ('wrapper', 'decorator', 'timed', 'wrap', '__call__'):
+                # Skip if the module name indicates a decorator
+                if 'decorator' in module_name.lower() or 'wrapper' in module_name.lower():
                     continue
                 
-                # Found a likely real caller
                 # Extract the top-level package name
                 top_level_package = module_name.split('.')[0]
                 
@@ -919,37 +991,36 @@ def default_logger():
                         module_name = '.'.join(parts[:3])
                     elif len(parts) >= 2:
                         module_name = '.'.join(parts[:2])
+                    else:
+                        module_name = top_level_package
                 else:
                     module_name = top_level_package
                 
-                # Extra check: If this is still a decorator module, continue
-                if module_name in ['halo', 'Halo', 'decorator']:
-                    continue
-                    
-                # Use this module name
-                return filterlogger.getlogger(module_name)
+                # Final check: ensure we don't have an empty or invalid module name
+                if module_name and module_name not in ['', 'PKDevTools', 'logging', '__main__']:
+                    return filterlogger.getlogger(module_name)
         
-        # If we couldn't find a good frame, use the original method's frame
-        # This is a fallback for direct calls from the main script
-        frame = stack[2] if len(stack) > 2 else stack[0]
-        if frame:
-            module = inspect.getmodule(frame[0])
-            if module and module.__name__:
-                module_name = module.__name__
-                top_level_package = module_name.split('.')[0]
-                if top_level_package in ['PKBrokers', 'PKScreener', 'PKNSETools', 'PKDevTools']:
-                    parts = module_name.split('.')
-                    if len(parts) > 3:
-                        module_name = '.'.join(parts[:3])
-                else:
-                    module_name = top_level_package
-                return filterlogger.getlogger(module_name)
-                
+        # If we couldn't find a good frame, use the caller's direct frame
+        # but still try to skip debugger frames
+        for frame_info in stack[1:5]:  # Check first few frames
+            filename = frame_info.filename
+            if 'debugpy' not in filename and 'pydevd' not in filename:
+                module = inspect.getmodule(frame_info[0])
+                if module and module.__name__:
+                    module_name = module.__name__
+                    top_level_package = module_name.split('.')[0]
+                    if top_level_package in ['PKBrokers', 'PKScreener', 'PKNSETools', 'PKDevTools']:
+                        parts = module_name.split('.')
+                        if len(parts) > 3:
+                            module_name = '.'.join(parts[:3])
+                        return filterlogger.getlogger(module_name)
+                    elif module_name not in ['PKDevTools', 'logging']:
+                        return filterlogger.getlogger(module_name)
+        
     except Exception as e:
         pass  # Fallback to PKDevTools
     
     return filterlogger.getlogger("PKDevTools")
-
 
 def file_logger():
     """
