@@ -55,6 +55,58 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
         except Exception:
             return f"anonymous.{uuid.uuid4().hex[:16]}"
 
+    def _flatten_params(self, params, prefix=''):
+        """
+        Flatten nested dictionaries into dot-notation keys.
+        GA4 only accepts primitive values (string, number, boolean).
+        """
+        flattened = {}
+        
+        if not params:
+            return flattened
+        
+        for key, value in params.items():
+            # Sanitize the key for GA4
+            safe_key = self._sanitize_param_name(key)
+            if prefix:
+                safe_key = f"{prefix}_{safe_key}"
+            
+            if isinstance(value, dict):
+                # Recursively flatten nested dicts
+                nested = self._flatten_params(value, safe_key)
+                flattened.update(nested)
+            elif isinstance(value, list):
+                # Convert lists to JSON string (flattened)
+                import json
+                flattened[safe_key] = json.dumps(value)[:100]  # Truncate if needed
+            else:
+                # Primitive values are fine
+                flattened[safe_key] = value
+        
+        return flattened
+
+    def _sanitize_param_name(self, param_name):
+        """Sanitize parameter names for GA4 compatibility."""
+        import re
+        if not param_name:
+            return "param"
+        
+        # Replace invalid characters with underscores
+        sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', str(param_name))
+        
+        # Ensure it starts with a letter
+        if sanitized and not sanitized[0].isalpha():
+            sanitized = "p_" + sanitized
+        
+        # Truncate to 40 characters (GA4 limit)
+        if len(sanitized) > 40:
+            sanitized = sanitized[:40]
+        
+        # Remove consecutive underscores
+        sanitized = re.sub(r'_+', '_', sanitized)
+        
+        return sanitized
+    
     def notify(self, sender, **kwargs):
         if "eventType" in kwargs and kwargs["eventType"] == "ga":
             # Capture GA event
@@ -63,47 +115,65 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
             if event_params is None:
                 event_params = {}
 
-            # Add required GA4 parameters
-            event_params["engagement_time_msec"] = event_params.get("engagement_time_msec", "1000")
-            event_params["session_id"] = event_params.get("session_id", self.client_id)
-
+            flattened_params = self._flatten_params(event_params)
+            # Add required GA4 parameters as primitive values
+            flattened_params["engagement_time_msec"] = str(flattened_params.get("engagement_time_msec", "1000"))
+            flattened_params["session_id"] = str(flattened_params.get("session_id", str(uuid.uuid4())))
+            
+            # Sanitize event name
+            sanitized_event_name = self._sanitize_event_name(event_name)
+            
+            # Ensure all values are primitive (string, number, boolean)
+            clean_params = {}
+            for key, value in flattened_params.items():
+                if isinstance(value, (str, int, float, bool)):
+                    clean_params[key] = value
+                elif isinstance(value, dict):
+                    # If still a dict after flattening, convert to JSON string
+                    import json
+                    clean_params[key] = json.dumps(value)[:100]
+                else:
+                    # Convert anything else to string
+                    clean_params[key] = str(value)[:100]
+            
             payload = {
-                "client_id": self.client_id,
-                "events": [{"name": event_name, "params": event_params}],
+                "client_id": self._ga_client_id,
+                "events": [{
+                    "name": sanitized_event_name,
+                    "params": clean_params
+                }],
             }
             
-            MEASUREMENT_ID = "G-T0TLV56Y0C"
-            API_SECRET = "2dD6iqHQQl2EzhCvHXA7EQ"
-            
-            # FIRST: Use debug endpoint to validate
-            debug_endpoint = f"https://www.google-analytics.com/debug/mp/collect?measurement_id={MEASUREMENT_ID}&api_secret={API_SECRET}"
-            
-            try:
-                # Validate first
-                debug_response = requests.post(debug_endpoint, json=payload, timeout=10)
-                if debug_response.status_code == 200:
-                    debug_result = debug_response.json()
-                    if debug_result.get('validationMessages'):
-                        
-                        default_logger().warning(f"GA4 Validation Errors: {debug_result['validationMessages']}")
-                        # Still try to send even with validation errors
-                    else:
-                        
-                        default_logger().debug(f"GA4 Validation passed for {event_name}")
-                
-                # Then send to real endpoint
-                GA_ENDPOINT = f"https://www.google-analytics.com/mp/collect?measurement_id={MEASUREMENT_ID}&api_secret={API_SECRET}"
-                response = requests.post(GA_ENDPOINT, json=payload, timeout=10)
-                
-                
-                if response.status_code in [200, 204]:
-                    default_logger().debug(f"GA4 Event '{event_name}' sent successfully")
-                else:
-                    default_logger().warning(f"GA4 Error: {response.status_code} - {response.text}")
+            # Send asynchronously
+            import threading
+            def send():
+                try:
+                    MEASUREMENT_ID = "G-T0TLV56Y0C"
+                    API_SECRET = "2dD6iqHQQl2EzhCvHXA7EQ"
                     
-            except Exception as e:
-                
-                default_logger().debug(f"Failed to send GA4 event: {e}")
+                    # Use debug endpoint for validation
+                    debug_url = f"https://www.google-analytics.com/debug/mp/collect?measurement_id={MEASUREMENT_ID}&api_secret={API_SECRET}"
+                    debug_response = requests.post(debug_url, json=payload, timeout=5)
+                    
+                    if debug_response.status_code == 200:
+                        result = debug_response.json()
+                        if result.get('validationMessages'):
+                            from PKDevTools.classes.log import default_logger
+                            for msg in result['validationMessages']:
+                                default_logger().warning(f"GA4 Validation: {msg.get('description', msg)}")
+                        else:
+                            # No validation errors, send to real endpoint
+                            GA_ENDPOINT = f"https://www.google-analytics.com/mp/collect?measurement_id={MEASUREMENT_ID}&api_secret={API_SECRET}"
+                            requests.post(GA_ENDPOINT, json=payload, timeout=5)
+                    if debug_response.status_code in [200, 204]:
+                        default_logger().debug(f"GA4 Event '{event_name}' sent successfully")
+                    else:
+                        default_logger().warning(f"GA4 Error: {debug_response.status_code} - {debug_response.text}")
+                        
+                except Exception as e:
+                    default_logger().debug(f"Failed to send GA4 event: {e}")
+            
+            threading.Thread(target=send, daemon=True).start()
         else:
             notificationText = (
                 kwargs["notification"] if "notification" in kwargs else ""
