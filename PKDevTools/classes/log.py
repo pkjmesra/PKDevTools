@@ -86,7 +86,7 @@ _debug_filters = {
 }
 
 # Global debug mode flag - when True, only filtered components show debug logs
-_selective_debug = False
+_selective_debug = True
 
 
 def enable_debug_for(component_type, component_names):
@@ -782,7 +782,7 @@ def setup_custom_logger(
     log_file_path="PKDevTools-logs.txt",
     trace_file_path=None,
     filter=None,
-    selective_debug=False,
+    selective_debug=True,
 ):
     """
     Set up and configure a custom logger instance with optional tracing and selective debug.
@@ -927,7 +927,7 @@ def default_logger():
         'functools',         # functools.wraps
         'contextlib',        # context managers
         'pkscreener.classes.PKAnalytics',  # Analytics decorators
-        'PKDevTools.classes.log',          # Logging itself
+        'PKDevTools.classes.log', 'log.py'          # Logging itself
     ]
     
     # Function names to skip (common wrapper names)
