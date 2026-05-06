@@ -85,6 +85,34 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
         
         return flattened
 
+    def _sanitize_event_name(self, event_name):
+        """
+        Sanitize event name for GA4 compatibility.
+        GA4 allows: letters, numbers, underscores only.
+        Max length: 40 characters.
+        """
+        if not event_name:
+            return "unknown_event"
+        
+        # Replace dots, dashes, spaces, and other special chars with underscores
+        sanitized = event_name.replace('.', '_').replace('-', '_').replace(' ', '_')
+        
+        # Ensure it starts with a letter (not number or underscore)
+        if sanitized and not sanitized[0].isalpha():
+            sanitized = "evt_" + sanitized
+        
+        # Truncate to 40 characters (GA4 limit)
+        if len(sanitized) > 40:
+            sanitized = sanitized[:40]
+        
+        # Remove consecutive underscores
+        sanitized = sanitized.replace('__', '_')
+        
+        # Remove trailing underscore
+        sanitized = sanitized.rstrip('_')
+        
+        return sanitized
+    
     def _sanitize_param_name(self, param_name):
         """Sanitize parameter names for GA4 compatibility."""
         import re
@@ -137,7 +165,7 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
                     clean_params[key] = str(value)[:100]
             
             payload = {
-                "client_id": self._ga_client_id,
+                "client_id": self.client_id,
                 "events": [{
                     "name": sanitized_event_name,
                     "params": clean_params
@@ -158,7 +186,6 @@ class PKNotificationService(SingletonMixin, metaclass=SingletonType):
                     if debug_response.status_code == 200:
                         result = debug_response.json()
                         if result.get('validationMessages'):
-                            from PKDevTools.classes.log import default_logger
                             for msg in result['validationMessages']:
                                 default_logger().warning(f"GA4 Validation: {msg.get('description', msg)}")
                         else:
