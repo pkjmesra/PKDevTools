@@ -8,6 +8,7 @@ cloudscraper
 cryptography
 filelock
 gitpython
+halo
 # libsql # Docker build dependency. Docker builds fail if this is kept. If needed, install separately.
 mistletoe
 pynacl
