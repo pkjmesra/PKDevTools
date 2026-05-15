@@ -62,7 +62,10 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         flush: Literal[False] | bool = False,
         enableMultipleLineOutput=False,
     ) -> None:
-        if "RUNNER" in self.env_keys or (not pkHalo.ENABLE_SPINNER and any("[+]" in str(v) for v in values)):
+        if "RUNNER" in self.env_keys or (
+            not pkHalo.ENABLE_SPINNER and 
+            any(sub in str(v) for v in values for sub in ["[+]", "[!]", "=>"])
+        ):
             return
         # end = '\r' if (not enableMultipleLineOutput) else end
         # flush = True if (not enableMultipleLineOutput) else flush
