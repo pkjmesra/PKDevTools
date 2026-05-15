@@ -28,7 +28,7 @@ import sys
 import time
 
 from PKDevTools.classes.Singleton import SingletonMixin, SingletonType
-
+import PKDevTools.classes.PKHalo as pkHalo
 
 class OutputControls(SingletonMixin, metaclass=SingletonType):
     from typing_extensions import Literal
@@ -62,7 +62,7 @@ class OutputControls(SingletonMixin, metaclass=SingletonType):
         flush: Literal[False] | bool = False,
         enableMultipleLineOutput=False,
     ) -> None:
-        if "RUNNER" in self.env_keys:
+        if "RUNNER" in self.env_keys or (not pkHalo.ENABLE_SPINNER and any("[+]" in str(v) for v in values)):
             return
         # end = '\r' if (not enableMultipleLineOutput) else end
         # flush = True if (not enableMultipleLineOutput) else flush
