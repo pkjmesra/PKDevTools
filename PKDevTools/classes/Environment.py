@@ -42,7 +42,7 @@ class PKEnvironment(metaclass=SingletonType):
             default_logger().warning(f".env.dev file not found. Searching...")
             file_path=find_dotenv(filename=".env.dev")
             if file_path:
-                default_logger().info(f".env.dev file found at {file_path}.")
+                # default_logger().info(f".env.dev file found at {file_path}.")
                 self._load_secrets(env_file_path=file_path, retry=True)
         # Ensure required keys exist with empty defaults
         required_keys = ["GITHUB_TOKEN", "CHAT_ID", "TOKEN", "chat_idADMIN"]
@@ -55,7 +55,7 @@ class PKEnvironment(metaclass=SingletonType):
             # Convert key to valid Python identifier if needed
             attr_name = self._sanitize_key(key)
             setattr(self, attr_name, value)
-            default_logger().debug(f"PKEnvironment().{attr_name} set.")
+            # default_logger().debug(f"PKEnvironment().{attr_name} set.")
 
     def _sanitize_key(self, key: str) -> str:
         """Convert environment key to valid Python attribute name"""
@@ -73,7 +73,7 @@ class PKEnvironment(metaclass=SingletonType):
         """
         if name in self._allSecrets:
             return self._allSecrets[name]
-        default_logger().debug(f"Accessing undefined environment variable '{name}', returning empty string")
+        default_logger().warning(f"Accessing undefined environment variable '{name}', returning empty string")
         return "0"
 
     @property
