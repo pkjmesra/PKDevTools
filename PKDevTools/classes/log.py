@@ -89,7 +89,7 @@ _debug_filters = {
 }
 
 # Global debug mode flag - when True, only filtered components show debug logs
-_selective_debug = True
+_selective_debug = True if os.environ.get("PK_DEBUG_SELECTIVE", "1") == "1" else False
 _logger_name = "pkscreener"
 
 def _init_debug_filters_from_env():
@@ -167,15 +167,20 @@ def _init_debug_filters_from_env():
             pass
         return
     
-    # Check if selective debug should be disabled
+    # Check if selective debug is explicitly set in environment
     selective_debug_env = os.environ.get("PK_DEBUG_SELECTIVE", "")
-    if selective_debug_env.lower() in ('0', 'false', 'no', 'off'):
+    if selective_debug_env.lower() in ('1', 'true', 'yes', 'on'):
+        _selective_debug = True
+    elif selective_debug_env.lower() in ('0', 'false', 'no', 'off'):
         _selective_debug = False
         try:
             logger = default_logger()
             logger.info("Selective debug disabled via PK_DEBUG_SELECTIVE environment variable")
         except:
             pass
+    else:
+        # If not set, default to True
+        _selective_debug = True
     
     # Parse each environment variable and add to filters
     env_mappings = {
@@ -281,6 +286,7 @@ def set_selective_debug(enabled=True):
     """
     global _selective_debug
     _selective_debug = enabled
+    os.environ["PK_DEBUG_SELECTIVE"] = "1" if enabled else "0"
     logger = default_logger()
     logger.debug(f"Selective debug mode: {'enabled' if enabled else 'disabled'}")
 
@@ -683,10 +689,13 @@ class filterlogger:
             if process_id in _process_handlers:
                 return _process_handlers[process_id]
 
+            # Let's make the results directory where we'll push all outputs
+            os.makedirs(os.path.dirname(os.path.join(os.getcwd(), f"results{os.sep}")), exist_ok=True)
+            resultsDir = os.path.join(os.getcwd(), "results")
+            os.makedirs(os.path.dirname(os.path.join(resultsDir, f"Data{os.sep}")), exist_ok=True)
+            log_dir = os.path.join(resultsDir, "Data")
             if log_file_path is None:
-                log_file_path = os.path.join(
-                    tempfile.gettempdir(), f"PKDevTools-logs-{process_id}.txt"
-                )
+                log_file_path = os.path.join(log_dir, f"pkscreener-logs.txt")
 
             trace_formatter = logging.Formatter(
                 fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -984,11 +993,30 @@ class filterlogger:
             self.logger.removeHandler(hdl)
 
 
+def set_logger_level_handler(logger=None, log_file_path=None, levelname=logging.DEBUG):
+    if logger is None:
+        return
+    # Set the log level from environment variable
+    try:
+        # First check for PK_LOG_LEVEL override
+        env_level = os.environ.get("PK_LOG_LEVEL")
+        if env_level is not None:
+            level = int(env_level)
+        else:
+            level = int(os.environ["PKDevTools_Default_Log_Level"])
+        logger.level = level
+    except (ValueError, KeyError):
+        logger.level = levelname
+
+    # Configure main logger handlers
+    if hasattr(logger, 'addHandlers'):
+        logger.addHandlers(log_file_path=log_file_path, levelname=logger.level)
+
 def setup_custom_logger(
     name,
     levelname=logging.DEBUG,
     trace=False,
-    log_file_path="PKDevTools-logs.txt",
+    log_file_path="pkscreener-logs.txt",
     trace_file_path=None,
     filter=None,
     selective_debug=True,
@@ -1078,20 +1106,7 @@ def setup_custom_logger(
     # Main application logger
     logger = filterlogger.getlogger(name)
     _logger_name = name
-    # Set the log level from environment variable
-    try:
-        # First check for PK_LOG_LEVEL override
-        env_level = os.environ.get("PK_LOG_LEVEL")
-        if env_level is not None:
-            level = int(env_level)
-        else:
-            level = int(os.environ["PKDevTools_Default_Log_Level"])
-        logger.level = level
-    except (ValueError, KeyError):
-        logger.level = levelname
-
-    # Configure main logger handlers
-    logger.addHandlers(log_file_path=log_file_path, levelname=logger.level)
+    set_logger_level_handler(logger, log_file_path=log_file_path, levelname=levelname)
 
     # Setup trace logger if tracing is enabled
     if trace:
@@ -1129,13 +1144,15 @@ def tryAddHandlers(logger):
     global _logger_name
     if not _logger_name or len(_logger_name) == 0:
         return
-    if logger and logger.logger and logger.logger.name and logger.logger.name == _logger_name:
-        return
     try:
         prev_logger = filterlogger.getlogger(_logger_name)
-        if prev_logger and prev_logger.logger and prev_logger.logger.handlers:
-            for h in prev_logger.logger.handlers:
-                logger.logger.addHandler(h)
+        if prev_logger and prev_logger.logger:
+            if len(prev_logger.logger.handlers) >= 1:
+                for h in prev_logger.logger.handlers:
+                    logger.logger.addHandler(h)
+            else:
+                set_logger_level_handler(logger, log_file_path=None, 
+                                         levelname=logging.DEBUG)
     except:
         pass
 
