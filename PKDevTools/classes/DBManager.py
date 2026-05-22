@@ -197,6 +197,7 @@ class LocalOTPCache:
             print(f"[EMERGENCY-OTP] Generated OTP: {otp[:3]}*** for user {userid}")
             
             # Create password-protected PDF
+            # After creating the PDF, attempt to commit with retries
             pdf_filename = f"{userid}"
             print(f"[EMERGENCY-OTP] Creating PDF: {pdf_filename}")
             if PKPikey.createFile(pdf_filename, otp, str(userid)):
@@ -231,32 +232,44 @@ class LocalOTPCache:
                     pdf_path = PKPikey.savedFilePath(pdf_filename)
                     
                     # Use SafeGitHubCommitter to commit directly via GitHub API
-                    github_token = os.environ.get('CI_PAT') or os.environ.get('GITHUB_TOKEN')
+                    github_token = PKEnvironment().allSecrets.get('CI_PAT') or PKEnvironment().allSecrets.get('GITHUB_TOKEN') or PKEnvironment().allSecrets.get("PKG")
                     if github_token and os.path.exists(pdf_path):
                         from PKDevTools.classes.Committer import SafeGitHubCommitter
                         committer = SafeGitHubCommitter(github_token, "pkjmesra")
-                        
-                        # Commit the PDF file to SubData branch
-                        result = committer.commit_large_binary_file(
-                            target_repo="PKScreener",
-                            target_branch="SubData",
-                            local_file_path=pdf_path,
-                            remote_file_path=f"results/Data/{userid}.pdf",
-                            commit_message=f"[Emergency-OTP-{userid}-{PKDateUtilities.currentDateTime().strftime('%Y%m%d')}]"
-                        )
-                        
-                        if result.get('success'):
-                            print(f"[EMERGENCY-OTP] Committed PDF for user {userid} to SubData branch")
-                            default_logger().info(f"LocalOTPCache: Committed emergency PDF for user {userid} to SubData")
+                        for attempt in range(3):
+                            # Commit the PDF file to SubData branch
+                            result = committer.commit_large_binary_file(
+                                target_repo="PKScreener",
+                                target_branch="SubData",
+                                local_file_path=pdf_path,
+                                remote_file_path=f"results/Data/{userid}.pdf",
+                                commit_message=f"[Emergency-OTP-{userid}-{PKDateUtilities.currentDateTime().strftime('%Y%m%d')}]"
+                            )
+                            
+                            if result.get('success'):
+                                default_logger().info(f"LocalOTPCache: Committed emergency PDF for user {userid} to SubData")
+                                # Verify the file is actually reachable
+                                verify_url = f"https://raw.githubusercontent.com/pkjmesra/PKScreener/SubData/results/Data/{userid}.pdf"
+                                import requests
+                                for verify_attempt in range(5):
+                                    resp = requests.head(verify_url, timeout=10)
+                                    if resp.status_code == 200:
+                                        default_logger().info(f"[EMERGENCY-OTP] for {userid} PDF verified at {verify_url}")
+                                        break
+                                    sleep(2)
+                                break
+                            else:
+                                default_logger().warning(f"⚠️ [EMERGENCY-OTP] for {userid} Commit attempt {attempt+1} failed: {result.get('error')}")
+                                sleep(3)
                         else:
-                            print(f"[EMERGENCY-OTP] Failed to commit PDF: {result.get('error')}")
-                            default_logger().debug(f"LocalOTPCache: Failed to commit PDF: {result.get('error')}")
+                            default_logger().warning(f"⚠️ [EMERGENCY-OTP] All commit attempts for {userid} failed – PDF not uploaded")
+                            return 0, None
                     else:
-                        print(f"[EMERGENCY-OTP] No GitHub token available or PDF not found, skipping commit")
+                        default_logger().warning(f"⚠️ [EMERGENCY-OTP] No GitHub token available or PDF not found, skipping commit")
+                        return 0, None
                 except Exception as commit_err:
-                    print(f"[EMERGENCY-OTP] Error committing PDF: {commit_err}")
-                    default_logger().debug(f"LocalOTPCache: Error committing PDF: {commit_err}")
-                    # PDF created locally, user can still be notified
+                    default_logger().error(f"🛑 🛑 🛑 🛑 [EMERGENCY-OTP] LocalOTPCache: Error committing PDF: {commit_err}")
+                    return 0, None
                 
                 return otp, "Free"
             else:
