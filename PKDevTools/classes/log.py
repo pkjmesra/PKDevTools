@@ -89,7 +89,7 @@ _debug_filters = {
 }
 
 # Global debug mode flag - when True, only filtered components show debug logs
-_selective_debug = True if os.environ.get("PK_DEBUG_SELECTIVE", "1") == "1" else False
+_selective_debug = False if "PK_DEBUG_ALL" in os.environ.keys() else (True if os.environ.get("PK_DEBUG_SELECTIVE", "1") == "1" else False)
 _logger_name = "pkscreener"
 
 def _init_debug_filters_from_env():
