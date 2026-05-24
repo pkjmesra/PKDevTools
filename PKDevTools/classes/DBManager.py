@@ -236,7 +236,7 @@ class LocalOTPCache:
                     if github_token and os.path.exists(pdf_path):
                         from PKDevTools.classes.Committer import SafeGitHubCommitter
                         committer = SafeGitHubCommitter(github_token, "pkjmesra")
-                        for attempt in range(3):
+                        for attempt in range(2):
                             # Commit the PDF file to SubData branch
                             result = committer.commit_large_binary_file(
                                 target_repo="PKScreener",
@@ -251,7 +251,7 @@ class LocalOTPCache:
                                 # Verify the file is actually reachable
                                 verify_url = f"https://raw.githubusercontent.com/pkjmesra/PKScreener/SubData/results/Data/{userid}.pdf"
                                 import requests
-                                for verify_attempt in range(5):
+                                for verify_attempt in range(2):
                                     resp = requests.head(verify_url, timeout=10)
                                     if resp.status_code == 200:
                                         default_logger().info(f"[EMERGENCY-OTP] for {userid} PDF verified at {verify_url}")
